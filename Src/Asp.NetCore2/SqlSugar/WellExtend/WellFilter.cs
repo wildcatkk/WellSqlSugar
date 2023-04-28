@@ -33,11 +33,30 @@ namespace SqlSugar
             }
         }
 
+        public ISugarQueryable<T> WellFilter(bool isDeleted = false)
+        {
+            List<IConditionalModel> conditions = new List<IConditionalModel>();
+
+            Type type = typeof(T);
+            if (type.GetInterface(nameof(ILogicalDelete)) != null)
+            {
+                conditions.Add(nameof(ILogicalDelete.IsDeleted), isDeleted);
+            
+                return this.Where(conditions);
+            }
+            else
+            {
+                return this;
+            }
+        }
+
     }
 
 
     public partial interface ISugarQueryable<T>
     {
         ISugarQueryable<T> WellFilter(long factoryId, bool isDeleted = false);
+
+        ISugarQueryable<T> WellFilter(bool isDeleted = false);
     }
 }
