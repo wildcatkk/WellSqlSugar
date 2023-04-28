@@ -22,7 +22,7 @@ namespace OrmTest
             db.DbMaintenance.CreateDatabase(); 
             db.CodeFirst.InitTables(typeof(CodeFirstTable1));//Create CodeFirstTable1 
             db.Insertable(new CodeFirstTable1() { Name = "a", Text="a" }).ExecuteCommand();
-            var list = db.Queryable<CodeFirstTable1>().ToSugarList();
+            var list = db.Queryable<CodeFirstTable1>().ToList();
             db.Aop.OnLogExecuting=(sql,p)=>Console.WriteLine(sql);
             db.CurrentConnectionConfig.MoreSettings = new ConnMoreSettings()
             {
@@ -35,7 +35,7 @@ namespace OrmTest
             db.CodeFirst.InitTables<CodeFirstNoUpper4>();
             db.CodeFirst.InitTables<CodeFirstNoUpper4>();
             db.Insertable(new CodeFirstNoUpper4() { Id = Guid.NewGuid() + "", Name = "a" }).ExecuteCommand();
-            var list2 = db.Queryable<CodeFirstNoUpper4>().Where(it => it.Id != null).ToSugarList();
+            var list2 = db.Queryable<CodeFirstNoUpper4>().Where(it => it.Id != null).ToList();
             db.Updateable(list2).ExecuteCommand();
             db.Deleteable(list2).ExecuteCommand();
             db.Updateable(list2.First()).ExecuteCommand();

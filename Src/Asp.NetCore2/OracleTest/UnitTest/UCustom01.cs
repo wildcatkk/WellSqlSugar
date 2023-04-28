@@ -25,7 +25,7 @@ namespace OrmTest
             db.Insertable(new List<UnitDate>() {
              new UnitDate(){   date1=DateTime.Now,date2=DateTime.Now} 
             }).ExecuteCommand();
-            var list=db.Queryable<UnitDate>().ToSugarList();
+            var list=db.Queryable<UnitDate>().ToList();
         }
 
         public class UnitDate 

@@ -28,12 +28,12 @@ namespace OrmTest
                 .Select(X1 => new {
                     x1 = X1.Id,
                     x2 = X1.Name
-                }).ToSugarList();
+                }).ToList();
 
             var list2 = db.Queryable<UpperOrder>().LeftJoin<UpperItem>((X1, Y1) =>
            X1.Id == Y1.Id)
              .Where(X1 => X1.Id == 1)
-             .Select<VUpperOrder>().ToSugarList();
+             .Select<VUpperOrder>().ToList();
         }
 
         public class VUpperOrder

@@ -25,9 +25,9 @@ namespace OrmTest
             //Order add filter  
             db.QueryFilter.Add(new TableFilterItem<Order>(it => it.Name.Contains("a"),true));
 
-            db.Queryable<Order>().ToSugarList();
+            db.Queryable<Order>().ToList();
 
-            db.Queryable<Order>().ToSugarList();
+            db.Queryable<Order>().ToList();
             //SELECT [Id],[Name],[Price],[CreateTime],[CustomId] FROM [Order]  WHERE  ([Name] like '%'+@MethodConst0+'%') 
 
             //delete Filter
@@ -35,14 +35,14 @@ namespace OrmTest
 
             db.Queryable<OrderItem, Order>((i, o) => i.OrderId == o.Id)
                 .Where(i => i.OrderId != 0)
-                .Select("i.*").ToSugarList();
+                .Select("i.*").ToList();
             //SELECT i.* FROM [OrderDetail] i  ,[Order]  o  WHERE ( [i].[OrderId] = [o].[Id] )  AND ( [i].[OrderId] <> @OrderId0 )  AND  ([o].[Name] like '%'+@MethodConst1+'%')
 
             //no filter
-            db.Queryable<Order>().Filter(null, false).ToSugarList();
+            db.Queryable<Order>().Filter(null, false).ToList();
             //SELECT [Id],[Name],[Price],[CreateTime],[CustomId] FROM [Order]
 
-            db.Queryable<OrderItem>().LeftJoin<Order>((x, y) => x.ItemId == y.Id).ToSugarList();
+            db.Queryable<OrderItem>().LeftJoin<Order>((x, y) => x.ItemId == y.Id).ToList();
         }
 
 
@@ -74,7 +74,7 @@ namespace OrmTest
                              .Where(it => it.Name == "jack")
                              .Filter("Myfilter1")
                              //IF .Filter("Myfilter",false)  only execute Myfilter
-                             .ToSugarList();
+                             .ToList();
             //SELECT [Id],[Name],[Price],[CreateTime],[CustomId] FROM [Order] 
             //WHERE ( [Name] = 'jack' )  AND  name like '%a%'
 
@@ -83,12 +83,12 @@ namespace OrmTest
                           .Where(o => o.Name == "jack")
                           .Filter("Myfilter1")
                           .Select(o => o)
-                          .ToSugarList();
+                          .ToList();
             //SELECT o.* FROM[Order] o, [OrderDetail]  i WHERE ( [o].[Id] = [i].[OrderId])  
             //AND([o].[Name] = 'jack')  AND o.name like '%a%'
 
             //no filter
-            db2.Queryable<Order>().Filter(null, false).ToSugarList();
+            db2.Queryable<Order>().Filter(null, false).ToList();
             //SELECT [Id],[Name],[Price],[CreateTime],[CustomId] FROM [Order]
         }
 

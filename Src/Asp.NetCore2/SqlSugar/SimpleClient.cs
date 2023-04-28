@@ -117,12 +117,12 @@ namespace SqlSugar
         }
         public virtual List<T> GetList()
         {
-            return Context.Queryable<T>().ToSugarList();
+            return Context.Queryable<T>().ToList();
         }
 
         public virtual List<T> GetList(Expression<Func<T, bool>> whereExpression)
         {
-            return Context.Queryable<T>().Where(whereExpression).ToSugarList();
+            return Context.Queryable<T>().Where(whereExpression).ToList();
         }
         public virtual T GetSingle(Expression<Func<T, bool>> whereExpression)
         {
@@ -271,12 +271,12 @@ namespace SqlSugar
         }
         public virtual Task<List<T>> GetListAsync()
         {
-            return Context.Queryable<T>().ToSugarListAsync();
+            return Context.Queryable<T>().ToListAsync();
         }
 
         public virtual Task<List<T>> GetListAsync(Expression<Func<T, bool>> whereExpression)
         {
-            return Context.Queryable<T>().Where(whereExpression).ToSugarListAsync();
+            return Context.Queryable<T>().Where(whereExpression).ToListAsync();
         }
         public virtual Task<T> GetSingleAsync(Expression<Func<T, bool>> whereExpression)
         {

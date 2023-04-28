@@ -723,7 +723,7 @@ namespace SqlSugar
                            CSharpTypeName=whereCol.PropertyInfo.PropertyType.Name
                       }
                     };
-                    var list = this.Context.Queryable<TObject>().Where(wheres).ToSugarList();
+                    var list = this.Context.Queryable<TObject>().Where(wheres).ToList();
                     foreach (var item in entitys)
                     {
                         var whereValue = item.GetType().GetProperty(filedName).GetValue(item, null);
@@ -780,7 +780,7 @@ namespace SqlSugar
                            FieldValue=string.Join(",",inValues)
                       }
                     };
-                    var list = this.Context.Queryable<TObject>().Where(wheres).ToSugarList();
+                    var list = this.Context.Queryable<TObject>().Where(wheres).ToList();
                     foreach (var item in entitys)
                     {
                         var whereValue = item.GetType().GetProperty(whereCol.PropertyName).GetValue(item, null);
@@ -885,7 +885,7 @@ namespace SqlSugar
                            FieldValue=string.Join(",",inValues.Distinct())
                       }
                     };
-                    var list = this.Context.Queryable<TObject>().Where(wheres).ToSugarList();
+                    var list = this.Context.Queryable<TObject>().Where(wheres).ToList();
                     foreach (var item in entitys)
                     {
                         var whereValue = item.GetType().GetProperty(mainFiledName).GetValue(item, null);
@@ -942,7 +942,7 @@ namespace SqlSugar
                            FieldValue=string.Join(",",inValues)
                       }
                     };
-                    var list = this.Context.Queryable<TObject>().Where(wheres).ToSugarList();
+                    var list = this.Context.Queryable<TObject>().Where(wheres).ToList();
                     foreach (var item in entitys)
                     {
                         var whereValue = item.GetType().GetProperty(whereCol.PropertyName).GetValue(item, null);

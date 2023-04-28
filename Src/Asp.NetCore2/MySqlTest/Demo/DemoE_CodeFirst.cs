@@ -24,7 +24,7 @@ namespace OrmTest
             db.Insertable(new CodeFirstTable1() { Name = "a", Text="a" }).ExecuteCommand();
             db.CodeFirst.InitTables<CharTest>();
             db.Insertable(new CharTest() { xx = Guid.NewGuid().ToString() }).ExecuteCommand();
-            var list=db.Queryable<CharTest>().ToSugarList();
+            var list=db.Queryable<CharTest>().ToList();
             Console.WriteLine("#### CodeFirst end ####");
         }
     }

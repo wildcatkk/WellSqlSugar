@@ -131,7 +131,7 @@ namespace SqlSugar
         }
         public override async Task CreateTempAsync<T>(DataTable dt) 
         {
-            await this.Context.Queryable<T>().Where(it => false).AS(dt.TableName).Select("  * into  temp mytemptable").ToSugarListAsync();
+            await this.Context.Queryable<T>().Where(it => false).AS(dt.TableName).Select("  * into  temp mytemptable").ToListAsync();
             dt.TableName = "mytemptable";
         }
 

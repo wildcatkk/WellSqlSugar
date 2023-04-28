@@ -12,15 +12,8 @@ namespace SqlSugar
     /// </summary>
     public partial class QueryableProvider<T>
     {
-        private T BaseAttributeProcess<T>(T t) where T : class, new()
+        private List<T> AttributeProcess<T>(List<T> t)
         {
-            return t == null ? null : BaseAttributeProcess(new List<T> { t }).First();
-        }
-
-        private List<T> BaseAttributeProcess<T>(List<T> t) where T : class, new()
-        {
-            if (t == null) return null;
-
             var type = typeof(T);
             var typeCons = new List<KeyValuePair<WhereType, ConditionalModel>>();
 
@@ -34,7 +27,7 @@ namespace SqlSugar
 
             var typeModels = new List<IConditionalModel> { new ConditionalCollections { ConditionalList = typeCons } };
 
-            var typeList = Context.Queryable("SysDictType", "SysDictType").Where(typeModels).ToSugarList();
+            var typeList = Context.Queryable("SysDictType", "SysDictType").Where(typeModels).ToList();
 
             foreach (var item in t)
             {
@@ -77,7 +70,7 @@ namespace SqlSugar
             var itemModels = new List<IConditionalModel> { new ConditionalCollections { ConditionalList = itemCons } };
 
             //var itemList = DbContext.SugarScope.Queryable<SysDictItem>().Where(itemModels).ToList();
-            var itemList = Context.Queryable("SysDictItem", "SysDictItem").Where(typeModels).ToSugarList();
+            var itemList = Context.Queryable("SysDictItem", "SysDictItem").Where(typeModels).ToList();
 
             foreach (var item in t)
             {
@@ -133,7 +126,7 @@ namespace SqlSugar
                     ConditionalModels = new List<IConditionalModel>()
                 });
 
-                newInfo.TableList = Context.Queryable<dynamic>().AS(tbName).Where(newInfo.ConditionalModels).ToSugarList();
+                newInfo.TableList = Context.Queryable<dynamic>().AS(tbName).Where(newInfo.ConditionalModels).ToList();
                 
                 //var itemList = Context.Queryable("SysDictItem", "SysDictItem").Where(typeModels).ToSugarList();
 
@@ -201,7 +194,6 @@ namespace SqlSugar
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         private  List<KeyValuePair<WhereType, ConditionalModel>> GetDictTypeCondModel<T>( T t)
-            where T : class, new()
         {
             var type = typeof(T);
 
@@ -235,7 +227,6 @@ namespace SqlSugar
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         private  List<KeyValuePair<WhereType, ConditionalModel>> GetDictItemCondModel<T>( T t)
-            where T : class, new()
         {
             var type = typeof(T);
 
@@ -269,7 +260,6 @@ namespace SqlSugar
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         private static EntityTableInfo GetDictForeignCondModel<T>(List<T> list, EntityTableInfo tableInfo)
-            where T : class, new()
         {
             var type = typeof(T);
 

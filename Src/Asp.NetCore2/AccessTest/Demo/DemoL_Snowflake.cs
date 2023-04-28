@@ -35,7 +35,7 @@ namespace OrmTest
             {
                 Name="哈哈"
             }).ExecuteReturnSnowflakeId();
-            var ids = db.Insertable(db.Queryable<SnowflakeModel>().Take(10).ToSugarList()).ExecuteReturnSnowflakeIdList();
+            var ids = db.Insertable(db.Queryable<SnowflakeModel>().Take(10).ToList()).ExecuteReturnSnowflakeIdList();
             Console.WriteLine(db.Queryable<SnowflakeModel>().Count());
         }
     }

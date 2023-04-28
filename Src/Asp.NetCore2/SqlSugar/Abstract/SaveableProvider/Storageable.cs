@@ -158,7 +158,7 @@ namespace SqlSugar
             if (whereExpression == null && pkInfos.Any())
             {
                 this.Context.Utilities.PageEach(allDatas, 300, item => {
-                 var addItems=this.Context.Queryable<T>().Filter(null, this.isDisableFilters).TranLock(this.lockType).AS(asname).WhereClassByPrimaryKey(item.Select(it => it.Item).ToList()).ToSugarList();
+                 var addItems=this.Context.Queryable<T>().Filter(null, this.isDisableFilters).TranLock(this.lockType).AS(asname).WhereClassByPrimaryKey(item.Select(it => it.Item).ToList()).ToList();
                     dbDataList.AddRange(addItems);
                 });
             }
@@ -240,7 +240,7 @@ namespace SqlSugar
             if (whereExpression == null && pkInfos.Any())
             {
                 await this.Context.Utilities.PageEachAsync(allDatas, 300,async item => {
-                    var addItems =await this.Context.Queryable<T>().Filter(null,this.isDisableFilters).AS(asname).TranLock(this.lockType).WhereClassByPrimaryKey(item.Select(it => it.Item).ToList()).ToSugarListAsync();
+                    var addItems =await this.Context.Queryable<T>().Filter(null,this.isDisableFilters).AS(asname).TranLock(this.lockType).WhereClassByPrimaryKey(item.Select(it => it.Item).ToList()).ToListAsync();
                     dbDataList.AddRange(addItems);
                 });
             }
@@ -336,13 +336,13 @@ namespace SqlSugar
                         {
                             List<IConditionalModel> conditList = new List<IConditionalModel>();
                             SetConditList(itemList, whereColumns, conditList);
-                            var addItem = this.Context.Queryable<T>().AS(asname).Where(conditList).ToSugarList();
+                            var addItem = this.Context.Queryable<T>().AS(asname).Where(conditList).ToList();
                             this.dbDataList.AddRange(addItem);
                         });
                     }
                     else
                     {
-                        this.dbDataList.AddRange(this.Context.Queryable<T>().AS(asname).Where(queryableWhereExp).ToSugarList());
+                        this.dbDataList.AddRange(this.Context.Queryable<T>().AS(asname).Where(queryableWhereExp).ToList());
                     }
                 }
                 this.whereExpression = columns;

@@ -19,7 +19,7 @@ namespace SqlSugar
         public async virtual Task<T[]> ToArrayAsync()
         {
 
-            var result = await this.ToSugarListAsync();
+            var result = await this.ToListAsync();
             if (result.HasValue())
                 return result.ToArray();
             else
@@ -33,7 +33,7 @@ namespace SqlSugar
                 return default(T);
             }
             Check.Exception(this.QueryBuilder.SelectValue.HasValue(), "'InSingle' and' Select' can't be used together,You can use .Select(it=>...).Single(it.id==1)");
-            var list = await In(pkValue).ToSugarListAsync();
+            var list = await In(pkValue).ToListAsync();
             if (list == null) return default(T);
             else return list.SingleOrDefault();
         }
@@ -49,7 +49,7 @@ namespace SqlSugar
             QueryBuilder.Skip = null;
             QueryBuilder.Take = null;
             QueryBuilder.OrderByValue = null;
-            var result = await this.ToSugarListAsync();
+            var result = await this.ToListAsync();
             QueryBuilder.Skip = oldSkip;
             QueryBuilder.Take = oldTake;
             QueryBuilder.OrderByValue = oldOrderBy;
@@ -88,14 +88,14 @@ namespace SqlSugar
             if (QueryBuilder.Skip.HasValue)
             {
                 QueryBuilder.Take = 1;
-                var list = await this.ToSugarListAsync();
+                var list = await this.ToListAsync();
                 return list.FirstOrDefault();
             }
             else
             {
                 QueryBuilder.Skip = 0;
                 QueryBuilder.Take = 1;
-                var result = await this.ToSugarListAsync();
+                var result = await this.ToListAsync();
                 if (result.HasValue())
                     return result.FirstOrDefault();
                 else
@@ -149,7 +149,7 @@ namespace SqlSugar
              this.QueryBuilder.Includes == null &&
              this.QueryBuilder.IsDistinct == false)
             {
-                var list = await this.Clone().Select<int>(" COUNT(1) ").ToSugarListAsync();
+                var list = await this.Clone().Select<int>(" COUNT(1) ").ToListAsync();
                 return list.FirstOrDefault();
             }
             MappingTableList expMapping;
@@ -250,20 +250,22 @@ namespace SqlSugar
             }
             else
             {
-                var list = await this.Select(expression).ToSugarListAsync();
+                var list = await this.Select(expression).ToListAsync();
                 return list;
             }
         }
-        public Task<List<T>> ToSugarListAsync()
+        public async Task<List<T>> ToListAsync()
         {
             InitMapping();
-            return _ToListAsync<T>();
+            var list = await _ToListAsync<T>();
+            
+            return list is null ? null : AttributeProcess(list);
         }
 
         public Task<List<T>> ToListAsync(CancellationToken token) 
         {
             this.Context.Ado.CancellationToken = token;
-            return ToSugarListAsync();
+            return ToListAsync();
         }
         public Task<List<T>> ToPageListAsync(int pageNumber, int pageSize, CancellationToken token) 
         {
@@ -273,7 +275,7 @@ namespace SqlSugar
         public Task<List<T>> ToPageListAsync(int pageIndex, int pageSize)
         {
             pageIndex = _PageList(pageIndex, pageSize);
-            return ToSugarListAsync();
+            return ToListAsync();
         }
         public async virtual Task<List<TResult>> ToPageListAsync<TResult>(int pageIndex, int pageSize, RefAsync<int> totalNumber, Expression<Func<T, TResult>> expression)
         {
@@ -330,13 +332,13 @@ namespace SqlSugar
                 var cacheService = this.Context.CurrentConnectionConfig.ConfigureExternalServices.DataInfoCacheService;
                 var result = CacheSchemeMain.GetOrCreate<string>(cacheService, this.QueryBuilder, () =>
                 {
-                    return this.Context.Utilities.SerializeObject(this.ToSugarList(), typeof(T));
+                    return this.Context.Utilities.SerializeObject(this.ToList(), typeof(T));
                 }, CacheTime, this.Context, CacheKey);
                 return result;
             }
             else
             {
-                return this.Context.Utilities.SerializeObject(await this.ToSugarListAsync(), typeof(T));
+                return this.Context.Utilities.SerializeObject(await this.ToListAsync(), typeof(T));
             }
         }
         public async Task<string> ToJsonPageAsync(int pageIndex, int pageSize)
@@ -392,7 +394,7 @@ namespace SqlSugar
             {
                 totalNumber.Value = await this.Clone().CountAsync();
                 _ToOffsetPage(pageIndex, pageSize);
-                return await this.Clone().ToSugarListAsync();
+                return await this.Clone().ToListAsync();
             }
         }
         
@@ -431,7 +433,7 @@ namespace SqlSugar
                     {
                         if (cancellationTokenSource?.IsCancellationRequested == true) return;
                         if (number + singleMaxReads > pageSize) singleMaxReads = NowCount;
-                        foreach (var item in await this.Clone().Skip(Skip).Take(singleMaxReads).ToSugarListAsync())
+                        foreach (var item in await this.Clone().Skip(Skip).Take(singleMaxReads).ToListAsync())
                         {
                             if (cancellationTokenSource?.IsCancellationRequested == true) return;
                             action.Invoke(item);
@@ -494,7 +496,7 @@ ParameterT parameter)
             }
             else
             {
-                result = await this.Clone().Where(conditionals, true).ToSugarListAsync();
+                result = await this.Clone().Where(conditionals, true).ToListAsync();
                 queryableContext.TempChildLists[key] = result;
             }
             List<object> listObj = result.Select(it => (object)it).ToList();
@@ -531,7 +533,7 @@ ParameterT parameter)
                     queryableContext.TempChildLists = new Dictionary<string, object>();
                 await this.Context.Utilities.PageEachAsync(ids, 200, async pageIds =>
                 {
-                    result.AddRange(await this.Clone().In(thisFiled, pageIds).ToSugarListAsync());
+                    result.AddRange(await this.Clone().In(thisFiled, pageIds).ToListAsync());
                 });
                 queryableContext.TempChildLists[key] = result;
             }
@@ -558,20 +560,20 @@ ParameterT parameter)
             this.QueryBuilder.ResultType = typeof(SugarCacheDictionary);
             var keyName = QueryBuilder.GetExpressionValue(key, ResolveExpressType.FieldSingle).GetResultString();
             var valueName = QueryBuilder.GetExpressionValue(value, ResolveExpressType.FieldSingle).GetResultString();
-            var list = await this.Select<KeyValuePair<string, object>>(keyName + "," + valueName).ToSugarListAsync();
+            var list = await this.Select<KeyValuePair<string, object>>(keyName + "," + valueName).ToListAsync();
             var result = list.ToDictionary(it => it.Key.ObjToString(), it => it.Value);
             return result;
         }
         public async Task<List<T>> ToTreeAsync(Expression<Func<T, IEnumerable<object>>> childListExpression, Expression<Func<T, object>> parentIdExpression, object rootValue, object[] childIds)
         {
-            var list = await this.ToSugarListAsync();
+            var list = await this.ToListAsync();
             return TreeAndFilterIds(childListExpression, parentIdExpression, rootValue, childIds, ref list);
         }
         public async Task<List<T>> ToTreeAsync(Expression<Func<T, IEnumerable<object>>> childListExpression, Expression<Func<T, object>> parentIdExpression, object rootValue)
         {
             var entity = this.Context.EntityMaintenance.GetEntityInfo<T>();
             var pk = GetTreeKey(entity); ;
-            var list = await this.ToSugarListAsync();
+            var list = await this.ToListAsync();
             return GetTreeRoot(childListExpression, parentIdExpression, pk, list, rootValue);
         }
         public async Task<List<T>> ToParentListAsync(Expression<Func<T, object>> parentIdExpression, object primaryKeyValue)
@@ -662,7 +664,7 @@ ParameterT parameter)
         {
             var entity = this.Context.EntityMaintenance.GetEntityInfo<T>();
             var pk = GetTreeKey(entity);
-            var list = await this.ToSugarListAsync();
+            var list = await this.ToListAsync();
             return GetChildList(parentIdExpression, pk, list, primaryKeyValue, isContainOneself);
         }
     }

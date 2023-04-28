@@ -116,7 +116,7 @@ namespace OrmTest
             List<IConditionalModel> conModels = new List<IConditionalModel>();
             conModels.Add(new ConditionalModel() { FieldName = "id", ConditionalType = ConditionalType.Equal, FieldValue = "1" });//id=1
             var data7 = orderDb.GetPageList(conModels, p, it => it.Name, OrderByType.Asc);
-            orderDb.AsQueryable().Where(x => x.Id == 1).ToSugarList();
+            orderDb.AsQueryable().Where(x => x.Id == 1).ToList();
 
             //Insert
             orderDb.Insert(insertObj);
@@ -181,7 +181,7 @@ namespace OrmTest
             db.CodeFirst.InitTables<AttributeTable>();//Create Table
 
             db.Insertable(new AttributeTable() { Id = Guid.NewGuid().ToString(), Name = "Name" }).ExecuteCommand();
-            var list = db.Queryable<AttributeTable>().ToSugarList();
+            var list = db.Queryable<AttributeTable>().ToList();
 
             Console.WriteLine("#### Custom Attribute End ####");
         }

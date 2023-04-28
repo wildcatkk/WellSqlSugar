@@ -225,7 +225,7 @@ namespace SqlSugar
             var abDb = this.Context;
             abDb = GetCrossDatabase(abDb, mappingEntity.Type);
             var queryable = abDb.Queryable<object>();
-            var abids = queryable.AS(mappingEntity.DbTableName).Filter(mappingEntity.Type).Where(conditionalModels).Select<SugarAbMapping>($"{queryable.SqlBuilder.GetTranslationColumnName(aColumn.DbColumnName)} as aid,{queryable.SqlBuilder.GetTranslationColumnName(bColumn.DbColumnName)} as bid").ToSugarList();
+            var abids = queryable.AS(mappingEntity.DbTableName).Filter(mappingEntity.Type).Where(conditionalModels).Select<SugarAbMapping>($"{queryable.SqlBuilder.GetTranslationColumnName(aColumn.DbColumnName)} as aid,{queryable.SqlBuilder.GetTranslationColumnName(bColumn.DbColumnName)} as bid").ToList();
 
             List<IConditionalModel> conditionalModels2 = new List<IConditionalModel>();
             conditionalModels2.Add((new ConditionalModel()

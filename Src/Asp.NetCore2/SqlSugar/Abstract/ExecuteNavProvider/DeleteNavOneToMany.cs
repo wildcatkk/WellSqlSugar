@@ -28,7 +28,7 @@ namespace SqlSugar
                 SetContext(() => this._Context.Deleteable(prentList).ExecuteCommand());
 
             var ids = _ParentList.Select(it => parentPkColumn.PropertyInfo.GetValue(it)).ToList();
-            var childList = GetChildList<TChild>().In(thisFkColumn.DbColumnName, ids).ToSugarList();
+            var childList = GetChildList<TChild>().In(thisFkColumn.DbColumnName, ids).ToList();
 
             this._ParentList = childList.Cast<object>().ToList();
             this._ParentPkColumn = thisPkColumn;

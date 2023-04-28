@@ -22,10 +22,10 @@ namespace OrmTest
             db.DbMaintenance.CreateDatabase(); 
             db.CodeFirst.InitTables(typeof(CodeFirstTable1));//Create CodeFirstTable1 
             db.Insertable(new CodeFirstTable1() { Name = "a", Text="a" }).ExecuteCommand();
-            var list = db.Queryable<CodeFirstTable1>().ToSugarList();
+            var list = db.Queryable<CodeFirstTable1>().ToList();
             db.CodeFirst.InitTables<CodeFirstChar2>();
             db.Insertable(new CodeFirstChar2() { CharTest = '1' }).ExecuteCommand();
-            var list2=db.Queryable<CodeFirstChar2>().ToSugarList();
+            var list2=db.Queryable<CodeFirstChar2>().ToList();
             Console.WriteLine("#### CodeFirst end ####");
         }
     }

@@ -40,7 +40,7 @@ namespace SqlSugar
                 .Rows.Cast<System.Data.DataRow>().Select(it => it[0]).ToList();
 
 
-            var childList = GetChildList<TChild>().In(thisPkColumn.DbColumnName, bids).ToSugarList();
+            var childList = GetChildList<TChild>().In(thisPkColumn.DbColumnName, bids).ToList();
             if (_WhereList.HasValue()) 
             {
                 bids = childList.Select(it => thisPkColumn.PropertyInfo.GetValue(it)).ToList();

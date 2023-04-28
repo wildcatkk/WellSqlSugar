@@ -242,10 +242,10 @@ namespace OrmTest
                                  {
                                      foreach (var item in it.Provinces)
                                      {
-                                         item.citys = db.Queryable<City>().Where(y => y.ProvinceId == item.Id).ToSugarList();
+                                         item.citys = db.Queryable<City>().Where(y => y.ProvinceId == item.Id).ToList();
                                      }
                                  })
-                                 .ToSugarList();
+                                 .ToList();
         }
         private static void SubIdentity(SqlSugarClient db)
         {
@@ -322,10 +322,10 @@ namespace OrmTest
                                  {
                                      foreach (var item in it.Provinces)
                                      {
-                                         item.citys = db.Queryable<City1>().Where(y => y.ProvinceId == item.Id).ToSugarList();
+                                         item.citys = db.Queryable<City1>().Where(y => y.ProvinceId == item.Id).ToList();
                                      }
                                  })
-                                 .ToSugarList();
+                                 .ToList();
         }
     }
 }

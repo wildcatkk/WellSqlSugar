@@ -53,8 +53,8 @@ namespace OrmTest
                 .Include(t => t.B) 
                 .ExecuteCommand();
 
-            var list= db.Queryable<ClassA>().ToSugarList();
-            var list2=db.Queryable<ClassA>().Includes(z => z.B).ToSugarList();
+            var list= db.Queryable<ClassA>().ToList();
+            var list2=db.Queryable<ClassA>().Includes(z => z.B).ToList();
             if (list2.Count == 0) 
             {
                 throw new Exception("unit error");

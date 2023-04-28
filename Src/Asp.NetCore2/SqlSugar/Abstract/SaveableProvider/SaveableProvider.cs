@@ -37,7 +37,7 @@ namespace SqlSugar
                 var pkInfo = this.EntityInfo.Columns.Where(it=>it.IsIgnore==false).Where(it => it.DbColumnName.Equals(pks.First(), StringComparison.CurrentCultureIgnoreCase)).First();
                 var pkValues = saveObjects.Select(it=>it.GetType().GetProperty(pkInfo.PropertyName).GetValue(it,null));
                 if(existsObjects==null)
-                    existsObjects=this.Context.Queryable<T>().In(pkValues).ToSugarList();
+                    existsObjects=this.Context.Queryable<T>().In(pkValues).ToList();
                 this.Context.Ado.IsDisableMasterSlaveSeparation = isDisableMasterSlaveSeparation;
                 return saveObjects.Where(it=>!
                 existsObjects.Any(e=>
@@ -59,7 +59,7 @@ namespace SqlSugar
                 var pkInfo = this.EntityInfo.Columns.Where(it => it.IsIgnore == false).Where(it => it.DbColumnName.Equals(pks.First(), StringComparison.CurrentCultureIgnoreCase)).First();
                 var pkValues = saveObjects.Select(it => it.GetType().GetProperty(pkInfo.PropertyName).GetValue(it, null));
                 if (existsObjects == null)
-                    existsObjects = this.Context.Queryable<T>().In(pkValues).ToSugarList();
+                    existsObjects = this.Context.Queryable<T>().In(pkValues).ToList();
                 this.Context.Ado.IsDisableMasterSlaveSeparation = isDisableMasterSlaveSeparation;
                 return saveObjects.Where(it => 
                 existsObjects.Any(e =>

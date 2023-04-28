@@ -29,7 +29,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarList();
+                    simpleDb.Queryable<Order>().Take(10).ToList();
                     System.Threading.Thread.Sleep(1);
                 }
 
@@ -38,7 +38,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarList();
+                    simpleDb.Queryable<Order>().Take(10).ToList();
                     System.Threading.Thread.Sleep(10);
                 }
 
@@ -47,7 +47,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarList();
+                    simpleDb.Queryable<Order>().Take(10).ToList();
                     System.Threading.Thread.Sleep(6);
                 }
 
@@ -65,7 +65,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarList();
+                    simpleDb.Queryable<Order>().Take(10).ToList();
                     System.Threading.Thread.Sleep(1);
                 }
 
@@ -74,7 +74,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarList();
+                    simpleDb.Queryable<Order>().Take(10).ToList();
                     System.Threading.Thread.Sleep(10);
                 }
 
@@ -83,7 +83,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarList();
+                    simpleDb.Queryable<Order>().Take(10).ToList();
                     System.Threading.Thread.Sleep(6);
                 }
 
@@ -101,7 +101,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarList();
+                    simpleDb.Queryable<Order>().Take(10).ToList();
                     System.Threading.Thread.Sleep(1);
                 }
 
@@ -110,7 +110,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarList();
+                    simpleDb.Queryable<Order>().Take(10).ToList();
                     System.Threading.Thread.Sleep(10);
                 }
 
@@ -119,7 +119,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarList();
+                    simpleDb.Queryable<Order>().Take(10).ToList();
                     System.Threading.Thread.Sleep(6);
                 }
 
@@ -137,7 +137,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarList();
+                    simpleDb.Queryable<Order>().Take(10).ToList();
                     System.Threading.Thread.Sleep(1);
                 }
 
@@ -146,7 +146,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarList();
+                    simpleDb.Queryable<Order>().Take(10).ToList();
                     System.Threading.Thread.Sleep(10);
                 }
 
@@ -155,7 +155,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarList();
+                    simpleDb.Queryable<Order>().Take(10).ToList();
                     System.Threading.Thread.Sleep(6);
                 }
 
@@ -175,7 +175,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarListAsync().Wait();
+                    simpleDb.Queryable<Order>().Take(10).ToListAsync().Wait();
                     System.Threading.Thread.Sleep(1);
                 }
 
@@ -184,7 +184,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarListAsync().Wait(); ;
+                    simpleDb.Queryable<Order>().Take(10).ToListAsync().Wait(); ;
                     System.Threading.Thread.Sleep(10);
                 }
 
@@ -193,7 +193,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarListAsync().Wait();
+                    simpleDb.Queryable<Order>().Take(10).ToListAsync().Wait();
                     System.Threading.Thread.Sleep(6);
                 }
 
@@ -211,7 +211,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarListAsync().Wait();
+                    simpleDb.Queryable<Order>().Take(10).ToListAsync().Wait();
                     System.Threading.Thread.Sleep(1);
                 }
 
@@ -220,7 +220,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarListAsync().Wait();
+                    simpleDb.Queryable<Order>().Take(10).ToListAsync().Wait();
                     System.Threading.Thread.Sleep(10);
                 }
 
@@ -229,7 +229,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarListAsync().Wait();
+                    simpleDb.Queryable<Order>().Take(10).ToListAsync().Wait();
                     System.Threading.Thread.Sleep(6);
                 }
 
@@ -247,7 +247,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarListAsync().Wait();
+                    simpleDb.Queryable<Order>().Take(10).ToListAsync().Wait();
                     System.Threading.Thread.Sleep(1);
                 }
 
@@ -256,7 +256,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarListAsync().Wait();
+                    simpleDb.Queryable<Order>().Take(10).ToListAsync().Wait();
                     System.Threading.Thread.Sleep(10);
                 }
 
@@ -265,7 +265,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarListAsync().Wait();
+                    simpleDb.Queryable<Order>().Take(10).ToListAsync().Wait();
                     System.Threading.Thread.Sleep(6);
                 }
 
@@ -283,7 +283,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarListAsync().Wait();
+                    simpleDb.Queryable<Order>().Take(10).ToListAsync().Wait();
                     System.Threading.Thread.Sleep(1);
                 }
 
@@ -292,7 +292,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarListAsync().Wait();
+                    simpleDb.Queryable<Order>().Take(10).ToListAsync().Wait();
                     System.Threading.Thread.Sleep(10);
                 }
 
@@ -301,7 +301,7 @@ namespace OrmTest
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    simpleDb.Queryable<Order>().Take(10).ToSugarListAsync().Wait();
+                    simpleDb.Queryable<Order>().Take(10).ToListAsync().Wait();
                     System.Threading.Thread.Sleep(6);
                 }
 

@@ -34,12 +34,12 @@ namespace OrmTest
             ////根据最近3个表进行查询
             var list = db.Queryable<OrderSpliteTest>()
                 .SplitTable(DateTime.Now.Date.AddYears(-1), DateTime.Now)
-                .ToSugarList();
+                .ToList();
 
             Console.WriteLine();
 
             //根据时间选出的表进行查询
-            var list2 = db.Queryable<OrderSpliteTest>().SplitTable(tabs => tabs.Where(it=> it.Date>=DateTime.Now.AddYears(-2))).ToSugarList();
+            var list2 = db.Queryable<OrderSpliteTest>().SplitTable(tabs => tabs.Where(it=> it.Date>=DateTime.Now.AddYears(-2))).ToList();
 
             Console.WriteLine();
 
@@ -50,7 +50,7 @@ namespace OrmTest
 
             var tableName = db.SplitHelper<OrderSpliteTest>().GetTableName(DateTime.Now.AddDays(0));
 
-            var listNull= db.Queryable<OrderSpliteTest>().SplitTable(ta => ta.InTableNames(tableName)).ToSugarList();
+            var listNull= db.Queryable<OrderSpliteTest>().SplitTable(ta => ta.InTableNames(tableName)).ToList();
 
             var tableName2 = db.SplitHelper(new OrderSpliteTest() {  Time=DateTime.Now}).GetTableNames();
             var tableName3 = db.SplitHelper(new List<OrderSpliteTest> {

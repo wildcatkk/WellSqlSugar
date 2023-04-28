@@ -28,7 +28,7 @@ namespace OrmTest
             {
                 AdoTest(i).GetAwaiter().GetResult();
             }
-            var id = db.Queryable<UTran121>().ToSugarList().First().ID;
+            var id = db.Queryable<UTran121>().ToList().First().ID;
             if (id != 2000)
             {
                 throw new Exception("unit error");
@@ -80,7 +80,7 @@ namespace OrmTest
             {
                 Test(i).GetAwaiter().GetResult();
             }
-            var id = db.Queryable<UTran121>().ToSugarList().First().ID;
+            var id = db.Queryable<UTran121>().ToList().First().ID;
             if (id != 2000)
             {
                 throw new Exception("unit error");
