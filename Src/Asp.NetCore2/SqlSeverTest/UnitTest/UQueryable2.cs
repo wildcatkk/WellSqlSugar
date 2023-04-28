@@ -14,30 +14,30 @@ namespace OrmTest
             var list4 = Db.Queryable<ABMapping>()
                             .Mapper(it => it.A, it => it.AId)
                             .Where(it => it.A.Name == "a")
-                            .ToList();
+                            .ToSugarList();
 
 
             var list5 = Db.Queryable<ABMapping>()
                    .Mapper(it => it.A, it => it.AId, it => it.A.Id)
                    .Where(it => it.A.Name == "a")
-                   .ToList();
+                   .ToSugarList();
 
 
             var list3 = Db.Queryable<Order>()
                 .Mapper(it => it.Items, it => it.Items.First().OrderId)
                 .Where(it => it.Items.Count() > 0)
-                .ToList();
+                .ToSugarList();
 
             var list6 = Db.Queryable<Order>()
                .Mapper(it => it.Items, it => it.Items.First().OrderId)
                .Where(it => it.Items.Any())
-               .ToList();
+               .ToSugarList();
             var list7= Db.Queryable<Order>()
                .Mapper(it => it.Items, it => it.Items.First().OrderId)
                .Where(it => it.Items.Any(y => y.ItemId == 1))
-               .ToList();
+               .ToSugarList();
 
-            var sql=Db.Queryable<Order>().AS("[order]").ToList();
+            var sql=Db.Queryable<Order>().AS("[order]").ToSugarList();
 
             var sql1 = Db.Queryable<Order, OrderItem, Custom>((o, i, c) => new JoinQueryInfos(
              JoinType.Left, o.Id == i.OrderId,
@@ -63,9 +63,9 @@ namespace OrmTest
             .AS("[order]")
             .AS<OrderItem>("[orderdetail]")
             .AS<Custom>("[custom]")
-           .Select<ViewOrder>().ToList();
+           .Select<ViewOrder>().ToSugarList();
 
-            Db.Queryable<object>().AS("[order]").Select("*").ToList();
+            Db.Queryable<object>().AS("[order]").Select("*").ToSugarList();
 
             var qu1=Db.Queryable<Order>().Select(it => new
             {
@@ -80,7 +80,7 @@ namespace OrmTest
             {
                 id1=x.Id,
                 name=y.Name
-            }).ToList();
+            }).ToSugarList();
 
             var qu3 = Db.Queryable<Order>().Select(it => new
             {
@@ -92,10 +92,10 @@ namespace OrmTest
          
             .Select(it=> new Order() {
                  Id=SqlFunc.IIF(2>it.id,1,2)
-            }).ToList();
+            }).ToSugarList();
 
 
-            var qu4 = Db.Queryable<Order>().OrderBy(it=>it.Id+it.Id).ToList();
+            var qu4 = Db.Queryable<Order>().OrderBy(it=>it.Id+it.Id).ToSugarList();
         }
     }
 }

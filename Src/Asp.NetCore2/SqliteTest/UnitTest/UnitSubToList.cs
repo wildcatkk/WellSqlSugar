@@ -46,7 +46,7 @@ namespace OrmTest
                     disCount = SqlFunc.Subqueryable<Custom>().Where(d => d.Name == c.Name).ToList()
                 },
                 true)
-              .ToList();
+              .ToSugarList();
             if (test1.Any(z => z.disCount.Any(y => y.Id != z.CustomId)))
             {
                 throw new Exception("unit error");
@@ -57,7 +57,7 @@ namespace OrmTest
                   disCount = SqlFunc.Subqueryable<Custom>().Where(d => d.Id == o.CustomId).ToList()
               },
               true)
-            .ToList();
+            .ToSugarList();
             if (test2.Any(z => z.disCount.Any(y => y.Id != z.CustomId))||test2.Any(z=>z.Id==0))
             {
                 throw new Exception("unit error");
@@ -74,7 +74,7 @@ namespace OrmTest
                     OrderName = o.Name,
                     disCount = SqlFunc.Subqueryable<Custom>().Where(d => d.Name == c.Name).ToList()
                 })
-           .ToList();
+           .ToSugarList();
             if (test1.Any(z => z.disCount.Any(y => y.Id != z.CustomId)))
             {
                 throw new Exception("unit error");
@@ -87,7 +87,7 @@ namespace OrmTest
                     cusName = o.Name,
                     Orders = SqlFunc.Subqueryable<Order>().Where(d => d.CustomId == o.Id).ToList()
                 })
-                .ToList();
+                .ToSugarList();
             if (test2.Any(z => z.Orders.Any(y => y.CustomId != z.Id))|| test2.First().Orders.Count()==0)
             {
                 throw new Exception("unit error");
@@ -106,7 +106,7 @@ namespace OrmTest
                     OrderName = o.Name,
                     disCount = SqlFunc.Subqueryable<OrderItem>().Where(d => d.ItemId == i.ItemId).ToList()
                 })
-           .ToList();
+           .ToSugarList();
             if (test1.Any(z => z.disCount.Any(y => y.ItemId != z.itemId)))
             {
                 throw new Exception("unit error");
@@ -124,7 +124,7 @@ namespace OrmTest
                  OrderName = o.Name,
                  disCount = SqlFunc.Subqueryable<OrderItem>().Where(d => d.ItemId == i.ItemId).ToList()
              })
-            .ToList();
+            .ToSugarList();
             if (test2.Any(z => z.disCount.Any(y => y.ItemId != z.itemId)))
             {
                 throw new Exception("unit error");
@@ -155,7 +155,7 @@ namespace OrmTest
                 OrderName = o.Name,
                 disCount = SqlFunc.Subqueryable<OrderItem>().Where(d => d.ItemId == i.ItemId).ToList()
             })
-           .ToList();
+           .ToSugarList();
             if (test1.Any(z => z.disCount.Any(y => y.ItemId != z.itemId)))
             {
                 throw new Exception("unit error");
@@ -173,7 +173,7 @@ namespace OrmTest
                  OrderName = o.Name,
                  disCount = SqlFunc.Subqueryable<OrderItem>().Where(d => d.ItemId == i.ItemId).ToList()
              })
-            .ToList();
+            .ToSugarList();
             if (test2.Any(z => z.disCount.Any(y => y.ItemId != z.itemId)))
             {
                 throw new Exception("unit error");
@@ -200,7 +200,7 @@ namespace OrmTest
                 OrderName=it.Name,
                 disCount = SqlFunc.Subqueryable<Custom>().Where(c=>c.Id==it.CustomId).ToList()
             })
-           .ToList();
+           .ToSugarList();
 
             if (test1.Any(z => z.disCount.Any(y => y.Id != z.CustomId))) 
             {
@@ -214,7 +214,7 @@ namespace OrmTest
                 OrderName = it.Name,
                 disCount = SqlFunc.Subqueryable<Custom>().Where(c => c.Id == it.CustomId).ToList()
             })
-            .ToList();
+            .ToSugarList();
 
 
             if (test2.Any(z => z.disCount.Any(y => y.Id != z.CustomId)))
@@ -230,7 +230,7 @@ namespace OrmTest
                 OrderName = it.Name,
                 disCount = SqlFunc.Subqueryable<Custom>().Where(c => c.Id == it.CustomId).ToList()
             })
-           .ToListAsync().GetAwaiter().GetResult();
+           .ToSugarListAsync().GetAwaiter().GetResult();
 
             if (test3.Any(z => z.disCount.Any(y => y.Id != z.CustomId)))
             {
@@ -244,7 +244,7 @@ namespace OrmTest
                 OrderName = it.Name,
                 disCount = SqlFunc.Subqueryable<Custom>().Where(c => c.Id == it.CustomId).ToList()
             })
-            .ToListAsync().GetAwaiter().GetResult();
+            .ToSugarListAsync().GetAwaiter().GetResult();
 
             if (test4.Any(z => z.disCount.Any(y => y.Id != z.CustomId)))
             {
@@ -259,7 +259,7 @@ namespace OrmTest
                 Id = it.Id,
                 disCount = SqlFunc.Subqueryable<Order>().ToList()
             })
-           .ToList();
+           .ToSugarList();
 
             if (test1.First().disCount.Count != test1.Count) 
             {
@@ -271,7 +271,7 @@ namespace OrmTest
                 Id = it.Id,
                 disCount = SqlFunc.Subqueryable<Order>().ToList()
             })
-            .ToList();
+            .ToSugarList();
 
             if (test2.First().disCount.Count != test2.Count)
             {
@@ -283,7 +283,7 @@ namespace OrmTest
                 Id = it.Id,
                 disCount = SqlFunc.Subqueryable<Order>().ToList()
             })
-           .ToListAsync().GetAwaiter().GetResult();
+           .ToSugarListAsync().GetAwaiter().GetResult();
 
             if (test3.First().disCount.Count != test3.Count)
             {
@@ -295,7 +295,7 @@ namespace OrmTest
                 Id = it.Id,
                 disCount = SqlFunc.Subqueryable<Order>().ToList()
             })
-            .ToListAsync().GetAwaiter().GetResult();
+            .ToSugarListAsync().GetAwaiter().GetResult();
 
             if (test4.First().disCount.Count != test4.Count)
             {

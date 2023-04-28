@@ -70,7 +70,7 @@ namespace Test
                            .AS("order", "o")
                            .AddJoinInfo("orderdetail", "d", onList, JoinType.Left)
                            .Select(selectItems)
-                           .ToList();
+                           .ToSugarList();
             var json = @"
 {
 	""Table"":[ ""order"",""o""],
@@ -87,7 +87,7 @@ namespace Test
                      .AS("order").GroupBy(new List<GroupByModel> {
                  new GroupByModel(){
                   FieldName="id"
-                 } }).Select("iD").ToList();
+                 } }).Select("iD").ToSugarList();
 
             var json = @"
 {
@@ -112,7 +112,7 @@ namespace Test
                   FieldName="name",
                    OrderByType=OrderByType.Asc
                  }
-                }).ToList();
+                }).ToSugarList();
 
 
             var x1 = jsonToSqlClient.Queryable("{Table:\"order\",OrderBy:[{FieldName:\"id\"},{FieldName:\"name\",OrderByType:\"desc\"}]}").ToSqlList();
@@ -143,7 +143,7 @@ namespace Test
                  };
             jsonToSqlClient.Context
                 .Queryable<object>()
-                .AS("order").Select(list).ToList();
+                .AS("order").Select(list).ToSugarList();
         }
         private static void Description(JsonClient jsonToSqlClient)
         {

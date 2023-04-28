@@ -22,7 +22,7 @@ namespace OrmTest
             Db.Fastest<UnitIdentity1>().BulkCopy(new List<UnitIdentity1>() {
               data
             });
-            var list = Db.Queryable<UnitIdentity1>().ToList();
+            var list = Db.Queryable<UnitIdentity1>().ToSugarList();
             if (list.Count != 1 || data.Name != list.First().Name)
             {
                 throw new Exception("unit Bulk");
@@ -32,7 +32,7 @@ namespace OrmTest
               data,
               data
             });
-            list = Db.Queryable<UnitIdentity1>().ToList();
+            list = Db.Queryable<UnitIdentity1>().ToSugarList();
             if (list.Count != 3 || !list.Any(it => it.Name == "2"))
             {
                 throw new Exception("unit Bulk");
@@ -47,7 +47,7 @@ namespace OrmTest
                  Name="111"
                }
             });
-            list = Db.Queryable<UnitIdentity1>().ToList();
+            list = Db.Queryable<UnitIdentity1>().ToSugarList();
             if (list.First(it => it.Id == 1).Name != "222")
             {
                 throw new Exception("unit Bulk");
@@ -90,7 +90,7 @@ namespace OrmTest
                 table = false
             }
             });
-            var list1 = Db.Queryable<UnitBulk23131>().ToList();
+            var list1 = Db.Queryable<UnitBulk23131>().ToSugarList();
             SqlSugar.Check.Exception(list1.First().table == true, "unit error");
             Db.Fastest<UnitBulk23131>().BulkUpdate(new List<UnitBulk23131> {
             new UnitBulk23131()
@@ -99,7 +99,7 @@ namespace OrmTest
                 table = true
             }
             });
-            var list2 = Db.Queryable<UnitBulk23131>().ToList();
+            var list2 = Db.Queryable<UnitBulk23131>().ToSugarList();
             SqlSugar.Check.Exception(list2.First().table == false, "unit error");
 
             Db.DbMaintenance.TruncateTable<UnitBulk23131>();
@@ -110,7 +110,7 @@ namespace OrmTest
                 table = true
             }
             });
-            var list3 = Db.Queryable<UnitBulk23131>().ToList();
+            var list3 = Db.Queryable<UnitBulk23131>().ToSugarList();
             SqlSugar.Check.Exception(list3.First().table == false, "unit error");
             Db.Fastest<UnitBulk23131>().BulkUpdate(new List<UnitBulk23131> {
             new UnitBulk23131()
@@ -119,7 +119,7 @@ namespace OrmTest
                 table = false
             }
             });
-            list3 = Db.Queryable<UnitBulk23131>().ToList();
+            list3 = Db.Queryable<UnitBulk23131>().ToSugarList();
             SqlSugar.Check.Exception(list3.First().table == true, "unit error");
 
             Db.DbMaintenance.TruncateTable<UnitBulk23131>();
@@ -130,7 +130,7 @@ namespace OrmTest
                 table = null
             }
             });
-            var list4 = Db.Queryable<UnitBulk23131>().ToList();
+            var list4 = Db.Queryable<UnitBulk23131>().ToSugarList();
             SqlSugar.Check.Exception(list4.First().table == true, "unit error");
             var db = Db;
             db.CodeFirst.InitTables<UnitTestoffset11>();
@@ -138,14 +138,14 @@ namespace OrmTest
             new  UnitTestoffset11 { },
              new  UnitTestoffset11 {  DateTimeOffset= DateTimeOffset.Now}
             });
-            var list5 = db.Queryable<UnitTestoffset11>().ToList();
+            var list5 = db.Queryable<UnitTestoffset11>().ToSugarList();
 
             Db.CodeFirst.InitTables<UnitIdentity111111111>();
             Db.DbMaintenance.TruncateTable<UnitIdentity111111111>();
             Db.Fastest<UnitIdentity111111111>().BulkCopy(new List<UnitIdentity111111111> {
               new UnitIdentity111111111(){ Id=1, Name="True" }
             });
-            var list6 = db.Queryable<UnitIdentity111111111>().ToList();
+            var list6 = db.Queryable<UnitIdentity111111111>().ToSugarList();
             if (list6.First().Name != "True")
             {
                 throw new Exception("unit error");
@@ -156,7 +156,7 @@ namespace OrmTest
             db.Insertable(new UnitBool01() { Bool = false }).ExecuteCommand();
             db.Fastest<UnitBool01>().BulkCopy(new List<UnitBool01>() { new UnitBool01() { Bool = true } });
             db.Fastest<UnitBool01>().BulkCopy(new List<UnitBool01>() { new UnitBool01() { Bool = false } });
-            var list7 = db.Queryable<UnitBool01>().ToList();
+            var list7 = db.Queryable<UnitBool01>().ToSugarList();
             var list8 = db.Queryable<UnitBool01>().ToDataTable();
             var json = db.Utilities.SerializeObject(db.Utilities.DataTableToDictionaryList(list8));
             if (json != "[{\"Bool\":1},{\"Bool\":0},{\"Bool\":1},{\"Bool\":0}]")

@@ -40,15 +40,15 @@ namespace OrmTest
             var query1 = db.Queryable<Order>();
             var queryable2 = db.Reportable(list).ToQueryable<int>();
             var x = db.Queryable(queryable2, query1, (x2, x1) => x1.Id.Equals(x2.ColumnName))
-                .Select((x2, x1) => new { x = x1.Id, x2 = x2.ColumnName  }).ToList();
+                .Select((x2, x1) => new { x = x1.Id, x2 = x2.ColumnName  }).ToSugarList();
         }
         private static void Demo2(SqlSugarClient db)
         {
-            var list = db.Queryable<OrderItem>().ToList();
+            var list = db.Queryable<OrderItem>().ToSugarList();
             var query1 = db.Queryable<Order>();
             var queryable2 = db.Reportable(list).ToQueryable();
             var x = db.Queryable(query1, queryable2, (x1, x2) => x1.Id.Equals(x2.OrderId))
-                .Select((x1, x2) => new { name = x1.Name,id=x1.Id, orderid = x2.OrderId }).ToList();
+                .Select((x1, x2) => new { name = x1.Name,id=x1.Id, orderid = x2.OrderId }).ToSugarList();
         }
         private static void Demo3(SqlSugarClient db)
         {
@@ -96,7 +96,7 @@ namespace OrmTest
                 {
                     count=SqlFunc.AggregateSum(SqlFunc.IIF(x2.id>0,1,0)) ,
                     date=x1.ColumnName.ToString("yyyy-MM")
-                }).ToList();
+                }).ToSugarList();
         }
 
 

@@ -24,7 +24,7 @@ namespace OrmTest
                 }).ExecuteCommand();
             }
 
-            var list0 = db.Queryable<t1>().InnerJoin<t2>((m, j) => m.id == j.id).Where((m) => m.id == 1).Select((m, j) => new { m, j.json1, j.json2 }).ToList();
+            var list0 = db.Queryable<t1>().InnerJoin<t2>((m, j) => m.id == j.id).Where((m) => m.id == 1).Select((m, j) => new { m, j.json1, j.json2 }).ToSugarList();
             Console.WriteLine(string.Format("{0}:{1}", list0[0].json1.a, list0[0].json1.c.x));  //可以得到json1的值
         }
         public class t1

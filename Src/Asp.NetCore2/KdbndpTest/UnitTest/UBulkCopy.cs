@@ -29,7 +29,7 @@ namespace OrmTest
             Db.Fastest<UnitIdentity1>().BulkCopy(new List<UnitIdentity1>() {
               data1
             });
-            var list=Db.Queryable<UnitIdentity1>().ToList();
+            var list=Db.Queryable<UnitIdentity1>().ToSugarList();
             if (list.Count != 1 || data1.Name != list.First().Name) 
             {
                 throw new Exception("unit Bulk");
@@ -39,7 +39,7 @@ namespace OrmTest
               data2,
               data3
             });
-            list = Db.Queryable<UnitIdentity1>().ToList();
+            list = Db.Queryable<UnitIdentity1>().ToSugarList();
             if (list.Count != 3 || !list.Any(it=>it.Name=="c"))
             {
                 throw new Exception("unit Bulk");
@@ -54,7 +54,7 @@ namespace OrmTest
                  Name="111"
                }
             });
-            list = Db.Queryable<UnitIdentity1>().ToList();
+            list = Db.Queryable<UnitIdentity1>().ToSugarList();
             if (list.First(it=>it.Id==1).Name!="222")
             {
                 throw new Exception("unit Bulk");

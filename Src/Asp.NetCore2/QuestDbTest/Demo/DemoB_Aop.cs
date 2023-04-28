@@ -54,8 +54,8 @@ namespace OrmTest
             };
 
 
-            db.Queryable<Order>().ToList();
-            db.Queryable<OrderItem>().ToList();
+            db.Queryable<Order>().ToSugarList();
+            db.Queryable<OrderItem>().ToSugarList();
 
             //OnDiffLogEvent
             var data = db.Queryable<Order>().First();

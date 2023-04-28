@@ -24,7 +24,7 @@ namespace SqlSugar
 
 
             var ids = _ParentList.Select(it => parentColumn.PropertyInfo.GetValue(it)).ToList();
-            List<TChild> childList = this._Context.Queryable<TChild>().In(thisPkColumn.DbColumnName, ids).ToList();
+            List<TChild> childList = this._Context.Queryable<TChild>().In(thisPkColumn.DbColumnName, ids).ToSugarList();
 
             this._ParentList = childList.Cast<object>().ToList();
             this._ParentPkColumn = thisPkColumn;

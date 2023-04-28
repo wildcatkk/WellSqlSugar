@@ -31,7 +31,7 @@ namespace OrmTest
 
              var x=db.QueryableWithAttr<OperatorInfo>()
                 //.CrossQueryWithAttr()
-                .Includes(z => z.Roles).ToList();
+                .Includes(z => z.Roles).ToSugarList();
 
             if (x.First().Roles.Count == 0) 
             {

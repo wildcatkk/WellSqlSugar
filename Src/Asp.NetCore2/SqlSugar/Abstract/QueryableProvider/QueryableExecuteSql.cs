@@ -28,7 +28,7 @@ namespace SqlSugar
             QueryBuilder.Skip = null;
             QueryBuilder.Take = null;
             QueryBuilder.OrderByValue = null;
-            var result = this.ToList();
+            var result = this.ToSugarList();
             QueryBuilder.Skip = oldSkip;
             QueryBuilder.Take = oldTake;
             QueryBuilder.OrderByValue = oldOrderBy;
@@ -63,13 +63,13 @@ namespace SqlSugar
             if (QueryBuilder.Skip.HasValue)
             {
                 QueryBuilder.Take = 1;
-                return this.ToList().FirstOrDefault();
+                return this.ToSugarList().FirstOrDefault();
             }
             else
             {
                 QueryBuilder.Skip = 0;
                 QueryBuilder.Take = 1;
-                var result = this.ToList();
+                var result = this.ToSugarList();
                 if (result.HasValue())
                     return result.FirstOrDefault();
                 else
@@ -93,7 +93,7 @@ namespace SqlSugar
         }
         public virtual bool Any()
         {
-            return this.Select("1").ToList().Count() > 0;
+            return this.Select("1").ToSugarList().Count() > 0;
         }
 
         public virtual List<TResult> ToList<TResult>(Expression<Func<T, TResult>> expression)
@@ -106,7 +106,7 @@ namespace SqlSugar
             }
             else
             {
-                var list = this.Select(expression).ToList();
+                var list = this.Select(expression).ToSugarList();
                 return list;
             }
         }
@@ -122,7 +122,7 @@ namespace SqlSugar
                 this.QueryBuilder.IsDistinct == false)
             {
 
-                return this.Clone().Select<int>(" COUNT(1) ").ToList().FirstOrDefault();
+                return this.Clone().Select<int>(" COUNT(1) ").ToSugarList().FirstOrDefault();
             }
             MappingTableList expMapping;
             int result;
@@ -193,7 +193,7 @@ namespace SqlSugar
         public virtual T[] ToArray()
         {
 
-            var result = this.ToList();
+            var result = this.ToSugarList();
             if (result.HasValue())
                 return result.ToArray();
             else
@@ -207,13 +207,13 @@ namespace SqlSugar
                 var cacheService = this.Context.CurrentConnectionConfig.ConfigureExternalServices.DataInfoCacheService;
                 var result = CacheSchemeMain.GetOrCreate<string>(cacheService, this.QueryBuilder, () =>
                 {
-                    return this.Context.Utilities.SerializeObject(this.ToList(), typeof(T));
+                    return this.Context.Utilities.SerializeObject(this.ToSugarList(), typeof(T));
                 }, CacheTime, this.Context, CacheKey);
                 return result;
             }
             else
             {
-                return this.Context.Utilities.SerializeObject(this.ToList(), typeof(T));
+                return this.Context.Utilities.SerializeObject(this.ToSugarList(), typeof(T));
             }
         }
         public virtual string ToJsonPage(int pageIndex, int pageSize)
@@ -226,11 +226,11 @@ namespace SqlSugar
         }
         public virtual DataTable ToPivotTable<TColumn, TRow, TData>(Func<T, TColumn> columnSelector, Expression<Func<T, TRow>> rowSelector, Func<IEnumerable<T>, TData> dataSelector)
         {
-            return this.ToList().ToPivotTable(columnSelector, rowSelector, dataSelector);
+            return this.ToSugarList().ToPivotTable(columnSelector, rowSelector, dataSelector);
         }
         public virtual List<dynamic> ToPivotList<TColumn, TRow, TData>(Func<T, TColumn> columnSelector, Expression<Func<T, TRow>> rowSelector, Func<IEnumerable<T>, TData> dataSelector)
         {
-            return this.ToList().ToPivotList(columnSelector, rowSelector, dataSelector);
+            return this.ToSugarList().ToPivotList(columnSelector, rowSelector, dataSelector);
         }
         public virtual string ToPivotJson<TColumn, TRow, TData>(Func<T, TColumn> columnSelector, Expression<Func<T, TRow>> rowSelector, Func<IEnumerable<T>, TData> dataSelector)
         {
@@ -241,7 +241,7 @@ namespace SqlSugar
         {
             var entity = this.Context.EntityMaintenance.GetEntityInfo<T>();
             var pk = GetTreeKey(entity);
-            var list = this.ToList();
+            var list = this.ToSugarList();
             return GetChildList(parentIdExpression, pk, list, primaryKeyValue, isContainOneself);
         }
 
@@ -334,12 +334,12 @@ namespace SqlSugar
         {
             var entity = this.Context.EntityMaintenance.GetEntityInfo<T>();
             var pk = GetTreeKey(entity);
-            var list = this.ToList();
+            var list = this.ToSugarList();
             return GetTreeRoot(childListExpression, parentIdExpression, pk, list, rootValue);
         }
         public  List<T> ToTree(Expression<Func<T, IEnumerable<object>>> childListExpression, Expression<Func<T, object>> parentIdExpression, object rootValue, object[] childIds)
         {
-            var list =  this.ToList();
+            var list =  this.ToSugarList();
             return TreeAndFilterIds(childListExpression, parentIdExpression, rootValue, childIds, ref list);
         }
 
@@ -410,13 +410,13 @@ namespace SqlSugar
                 keyName = this.QueryBuilder.TableShortName + "." + keyName;
                 valueName = this.QueryBuilder.TableShortName + "." + valueName;
             }
-            var result = this.Select<KeyValuePair<string, object>>(keyName + "," + valueName).ToList().ToDictionary(it => it.Key.ObjToString(), it => it.Value);
+            var result = this.Select<KeyValuePair<string, object>>(keyName + "," + valueName).ToSugarList().ToDictionary(it => it.Key.ObjToString(), it => it.Value);
             return result;
         }
 
         public List<Dictionary<string, object>> ToDictionaryList()
         {
-            var list = this.ToList();
+            var list = this.ToSugarList();
             if (list == null)
                 return null;
             else
@@ -424,14 +424,14 @@ namespace SqlSugar
         }
         public async Task<List<Dictionary<string, object>>> ToDictionaryListAsync()
         {
-            var list = await this.ToListAsync();
+            var list = await this.ToSugarListAsync();
             if (list == null)
                 return null;
             else
                 return this.Context.Utilities.DeserializeObject<List<Dictionary<string, object>>>(this.Context.Utilities.SerializeObject(list));
         }
 
-        public virtual List<T> ToList()
+        public virtual List<T> ToSugarList()
         {
             InitMapping();
             return _ToList<T>();
@@ -449,7 +449,7 @@ namespace SqlSugar
 
             var allList = this.Context.Union(queryableList)
                 .Select(it=>new { it=default(T), sql_sugar_index =0})
-                .Select("*").ToList();
+                .Select("*").ToSugarList();
             var result = new List<T>();
             throw new Exception("开发中");
         }
@@ -486,7 +486,7 @@ namespace SqlSugar
                     queryableContext.TempChildLists = new Dictionary<string, object>();
                 this.Context.Utilities.PageEach(ids, 200, pageIds =>
                 {
-                    result.AddRange(this.Clone().In(thisFiled, pageIds).ToList());
+                    result.AddRange(this.Clone().In(thisFiled, pageIds).ToSugarList());
                 });
                 queryableContext.TempChildLists[key] = result;
             }
@@ -543,7 +543,7 @@ namespace SqlSugar
             }
             else
             {
-                result = this.Clone().Where(conditionals, true).ToList();
+                result = this.Clone().Where(conditionals, true).ToSugarList();
                 queryableContext.TempChildLists[key] = result;
             }
             List<object> listObj = result.Select(it => (object)it).ToList();
@@ -588,7 +588,7 @@ namespace SqlSugar
                     {
                         if (cancellationTokenSource?.IsCancellationRequested == true) return;
                         if (number + singleMaxReads > pageSize) singleMaxReads = NowCount;
-                        foreach (var item in this.Clone().Skip(Skip).Take(singleMaxReads).ToList())
+                        foreach (var item in this.Clone().Skip(Skip).Take(singleMaxReads).ToSugarList())
                         {
                             if (cancellationTokenSource?.IsCancellationRequested == true) return;
                             action.Invoke(item);
@@ -621,7 +621,7 @@ namespace SqlSugar
             else
             {
                 _ToOffsetPage(pageIndex, pageSize);
-                return this.ToList();
+                return this.ToSugarList();
             }
         }
         public List<T> ToOffsetPage(int pageIndex, int pageSize, ref int totalNumber)
@@ -635,7 +635,7 @@ namespace SqlSugar
             {
                 totalNumber = this.Clone().Count();
                 _ToOffsetPage(pageIndex, pageSize);
-                return this.Clone().ToList();
+                return this.Clone().ToSugarList();
             }
         }
         public Task<List<T>> ToOffsetPageAsync(int pageIndex, int pageSize)
@@ -648,14 +648,14 @@ namespace SqlSugar
             else
             {
                 _ToOffsetPage(pageIndex, pageSize);
-                return this.ToListAsync();
+                return this.ToSugarListAsync();
             }
         }
 
         public virtual List<T> ToPageList(int pageIndex, int pageSize)
         {
             pageIndex = _PageList(pageIndex, pageSize);
-            return ToList();
+            return ToSugarList();
         }
         public virtual List<TResult> ToPageList<TResult>(int pageIndex, int pageSize, ref int totalNumber, Expression<Func<T, TResult>> expression)
         {

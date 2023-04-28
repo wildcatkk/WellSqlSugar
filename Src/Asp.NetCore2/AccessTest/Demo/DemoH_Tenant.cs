@@ -63,7 +63,7 @@ namespace OrmTest
             public List<T> CommQuery(string sql)
             {
                 //base.Context.Queryable<T>().ToList();可以拿到SqlSugarClient 做复杂操作
-                return base.Context.Queryable<T>().Where(sql).ToList();
+                return base.Context.Queryable<T>().Where(sql).ToSugarList();
             }
 
         }

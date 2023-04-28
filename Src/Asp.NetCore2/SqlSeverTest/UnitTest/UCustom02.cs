@@ -181,7 +181,7 @@ namespace OrmTest
                 SqlFunc.Subqueryable<Test2>().Where(t => t.Test0Id == w.Test0Id && 
                 SqlFunc.Subqueryable<Test3>().Where(t1 => t1.Test0Id == w.Test0Id).Any()).Any()).Select(w => w.Title1)
 
-            }).ToList();
+            }).ToSugarList();
 
         }
 

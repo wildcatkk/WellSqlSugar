@@ -25,12 +25,12 @@ namespace OrmTest
             //db.DbMaintenance.CreateDatabase(); 
             db.CodeFirst.InitTables(typeof(CodeFirstTable1));//Create CodeFirstTable1 
             db.Insertable(new CodeFirstTable1() { Name = "a", Text = "a" }).ExecuteCommand();
-            var list = db.Queryable<CodeFirstTable1>().ToList();
+            var list = db.Queryable<CodeFirstTable1>().ToSugarList();
             TestBool(db);
             TestGuid(db);
             db.CodeFirst.InitTables<CodeFirstTable2>();
             db.Insertable(new List<CodeFirstTable2>() { new CodeFirstTable2() { CreateTime = DateTime.Now, Name = "a", Text = new ulong[] { 1 } } }).ExecuteCommand();
-            var list2=db.Queryable<CodeFirstTable2>().ToList();
+            var list2=db.Queryable<CodeFirstTable2>().ToSugarList();
             Console.WriteLine("#### CodeFirst end ####");
         }
         private static void TestGuid(SqlSugarClient db)
@@ -44,7 +44,7 @@ namespace OrmTest
             Console.Write(db.Queryable<GuidTest>().First().A);
             db.CodeFirst.InitTables<GuidTest22>();
             db.Insertable(new GuidTest22() { }).ExecuteReturnSnowflakeId();
-            var list=db.Queryable<GuidTest22>().ToList();
+            var list=db.Queryable<GuidTest22>().ToSugarList();
         }
         private static void TestBool(SqlSugarClient db)
         {

@@ -11,7 +11,7 @@ namespace SqlSugar
     {
         private void _Includes<T1, TReturn1>(SqlSugarProvider context, params Expression[] expressions)
         {
-            Func<ISugarQueryable<object>,List<object>> SelectR1 = it => it.Select<TReturn1>().ToList().Select(x=>x as object).ToList();
+            Func<ISugarQueryable<object>,List<object>> SelectR1 = it => it.Select<TReturn1>().ToSugarList().Select(x=>x as object).ToList();
             var navigat = new NavigatManager<T>();
             navigat.SelectR1 = SelectR1;
             navigat.Expressions = expressions;
@@ -23,8 +23,8 @@ namespace SqlSugar
         }
         private void _Includes<T1, TReturn1, TReturn2>(SqlSugarProvider context, params Expression[] expressions)
         {
-            Func<ISugarQueryable<object>, List<object>> SelectR1 = it => it.Select<TReturn1>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR2 = it => it.Select<TReturn2>().ToList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR1 = it => it.Select<TReturn1>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR2 = it => it.Select<TReturn2>().ToSugarList().Select(x => x as object).ToList();
             var navigat = new NavigatManager<T>();
             navigat.SelectR1 = SelectR1;
             navigat.SelectR2 = SelectR2;
@@ -37,9 +37,9 @@ namespace SqlSugar
         }
         private void _Includes<T1, TReturn1, TReturn2, TReturn3>(SqlSugarProvider context, params Expression[] expressions)
         {
-            Func<ISugarQueryable<object>, List<object>> SelectR1 = it => it.Select<TReturn1>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR2 = it => it.Select<TReturn2>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR3 = it => it.Select<TReturn3>().ToList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR1 = it => it.Select<TReturn1>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR2 = it => it.Select<TReturn2>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR3 = it => it.Select<TReturn3>().ToSugarList().Select(x => x as object).ToList();
             var navigat = new NavigatManager<T>();
             navigat.SelectR1 = SelectR1;
             navigat.SelectR2 = SelectR2;
@@ -70,7 +70,7 @@ namespace SqlSugar
     {
         private void _Includes<T1, TReturn1>(SqlSugarProvider context, params Expression[] expressions)
         {
-            Func<ISugarQueryable<object>, List<object>> SelectR1 = it => it.Select<TReturn1>().ToList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR1 = it => it.Select<TReturn1>().ToSugarList().Select(x => x as object).ToList();
             var navigat = new NavigatManager<T>();
             navigat.SelectR1 = SelectR1;
             navigat.Expressions = expressions;
@@ -82,8 +82,8 @@ namespace SqlSugar
         }
         private void _Includes<T1, TReturn1, TReturn2>(SqlSugarProvider context, params Expression[] expressions)
         {
-            Func<ISugarQueryable<object>, List<object>> SelectR1 = it => it.Select<TReturn1>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR2 = it => it.Select<TReturn2>().ToList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR1 = it => it.Select<TReturn1>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR2 = it => it.Select<TReturn2>().ToSugarList().Select(x => x as object).ToList();
             var navigat = new NavigatManager<T>();
             navigat.SelectR1 = SelectR1;
             navigat.SelectR2 = SelectR2;
@@ -96,9 +96,9 @@ namespace SqlSugar
         }
         private void _Includes<T1, TReturn1, TReturn2, TReturn3>(SqlSugarProvider context, params Expression[] expressions)
         {
-            Func<ISugarQueryable<object>, List<object>> SelectR1 = it => it.Select<TReturn1>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR2 = it => it.Select<TReturn2>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR3 = it => it.Select<TReturn3>().ToList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR1 = it => it.Select<TReturn1>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR2 = it => it.Select<TReturn2>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR3 = it => it.Select<TReturn3>().ToSugarList().Select(x => x as object).ToList();
             var navigat = new NavigatManager<T>();
             navigat.SelectR1 = SelectR1;
             navigat.SelectR2 = SelectR2;
@@ -112,10 +112,10 @@ namespace SqlSugar
         }
         private void _Includes<T1, TReturn1, TReturn2, TReturn3, TReturn4>(SqlSugarProvider context, params Expression[] expressions)
         {
-            Func<ISugarQueryable<object>, List<object>> SelectR1 = it => it.Select<TReturn1>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR2 = it => it.Select<TReturn2>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR3 = it => it.Select<TReturn3>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR4 = it => it.Select<TReturn4>().ToList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR1 = it => it.Select<TReturn1>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR2 = it => it.Select<TReturn2>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR3 = it => it.Select<TReturn3>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR4 = it => it.Select<TReturn4>().ToSugarList().Select(x => x as object).ToList();
             var navigat = new NavigatManager<T>();
             navigat.SelectR1 = SelectR1;
             navigat.SelectR2 = SelectR2;
@@ -130,11 +130,11 @@ namespace SqlSugar
         }
         private void _Includes<T1, TReturn1, TReturn2, TReturn3, TReturn4, TReturn5>(SqlSugarProvider context, params Expression[] expressions)
         {
-            Func<ISugarQueryable<object>, List<object>> SelectR1 = it => it.Select<TReturn1>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR2 = it => it.Select<TReturn2>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR3 = it => it.Select<TReturn3>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR4 = it => it.Select<TReturn4>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR5 = it => it.Select<TReturn5>().ToList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR1 = it => it.Select<TReturn1>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR2 = it => it.Select<TReturn2>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR3 = it => it.Select<TReturn3>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR4 = it => it.Select<TReturn4>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR5 = it => it.Select<TReturn5>().ToSugarList().Select(x => x as object).ToList();
             var navigat = new NavigatManager<T>();
             navigat.SelectR1 = SelectR1;
             navigat.SelectR2 = SelectR2;
@@ -150,12 +150,12 @@ namespace SqlSugar
         }
         private void _Includes<T1, TReturn1, TReturn2, TReturn3, TReturn4, TReturn5, TReturn6>(SqlSugarProvider context, params Expression[] expressions)
         {
-            Func<ISugarQueryable<object>, List<object>> SelectR1 = it => it.Select<TReturn1>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR2 = it => it.Select<TReturn2>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR3 = it => it.Select<TReturn3>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR4 = it => it.Select<TReturn4>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR5 = it => it.Select<TReturn5>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR6 = it => it.Select<TReturn6>().ToList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR1 = it => it.Select<TReturn1>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR2 = it => it.Select<TReturn2>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR3 = it => it.Select<TReturn3>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR4 = it => it.Select<TReturn4>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR5 = it => it.Select<TReturn5>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR6 = it => it.Select<TReturn6>().ToSugarList().Select(x => x as object).ToList();
             var navigat = new NavigatManager<T>();
             navigat.SelectR1 = SelectR1;
             navigat.SelectR2 = SelectR2;
@@ -172,13 +172,13 @@ namespace SqlSugar
         }
         private void _Includes<T1, TReturn1, TReturn2, TReturn3, TReturn4, TReturn5, TReturn6, TReturn7>(SqlSugarProvider context, params Expression[] expressions)
         {
-            Func<ISugarQueryable<object>, List<object>> SelectR1 = it => it.Select<TReturn1>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR2 = it => it.Select<TReturn2>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR3 = it => it.Select<TReturn3>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR4 = it => it.Select<TReturn4>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR5 = it => it.Select<TReturn5>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR6 = it => it.Select<TReturn6>().ToList().Select(x => x as object).ToList();
-            Func<ISugarQueryable<object>, List<object>> SelectR7 = it => it.Select<TReturn7>().ToList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR1 = it => it.Select<TReturn1>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR2 = it => it.Select<TReturn2>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR3 = it => it.Select<TReturn3>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR4 = it => it.Select<TReturn4>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR5 = it => it.Select<TReturn5>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR6 = it => it.Select<TReturn6>().ToSugarList().Select(x => x as object).ToList();
+            Func<ISugarQueryable<object>, List<object>> SelectR7 = it => it.Select<TReturn7>().ToSugarList().Select(x => x as object).ToList();
             var navigat = new NavigatManager<T>();
             navigat.SelectR1 = SelectR1;
             navigat.SelectR2 = SelectR2;

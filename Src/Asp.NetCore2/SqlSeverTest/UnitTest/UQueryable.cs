@@ -30,9 +30,9 @@ namespace OrmTest
             //var list2 = Db.Queryable<TestTree>().ToList();
 
             Db.CodeFirst.InitTables<UnitGuidTable>();
-            Db.Queryable<UnitGuidTable>().Where(it => it.Id.HasValue).ToList();
+            Db.Queryable<UnitGuidTable>().Where(it => it.Id.HasValue).ToSugarList();
 
-            Db.Queryable<Order>().Where(it => SqlSugar.SqlFunc.Equals(it.CreateTime.Date, it.CreateTime.Date)).ToList();
+            Db.Queryable<Order>().Where(it => SqlSugar.SqlFunc.Equals(it.CreateTime.Date, it.CreateTime.Date)).ToSugarList();
 
             var sql = Db.Queryable<UnitSelectTest>().Select(it => new UnitSelectTest()
             {
@@ -55,20 +55,20 @@ namespace OrmTest
 
             var cts = IEnumerbleContains.Data();
             var list2 = Db.Queryable<Order>()
-                    .Where(p => /*ids.*/cts.Select(c => c.Id).Contains(p.Id)).ToList();
+                    .Where(p => /*ids.*/cts.Select(c => c.Id).Contains(p.Id)).ToSugarList();
 
             var cts2 = IEnumerbleContains.Data().ToList(); ;
             var list3 = Db.Queryable<Order>()
-                    .Where(p => /*ids.*/cts2.Select(c => c.Id).Contains(p.Id)).ToList();
+                    .Where(p => /*ids.*/cts2.Select(c => c.Id).Contains(p.Id)).ToSugarList();
 
 
             var list4 = Db.Queryable<Order>()
-                .Where(p => new List<int> { 1, 2, 3 }.Where(b => b > 1).Contains(p.Id)).ToList();
+                .Where(p => new List<int> { 1, 2, 3 }.Where(b => b > 1).Contains(p.Id)).ToSugarList();
 
             Db.CodeFirst.InitTables<UnitTest3>();
-            var list5 = Db.Queryable<UnitTest3>().Where(it => SqlSugar.SqlFunc.ToString(it.Date.Value.Year) == "1").ToList();
-            var list6 = Db.Queryable<UnitTest3>().Where(it => it.Date.Value.Year == 1).ToList();
-            var list7 = Db.Queryable<UnitTest3>().Where(it => it.Date.Value.Date == DateTime.Now.Date).ToList();
+            var list5 = Db.Queryable<UnitTest3>().Where(it => SqlSugar.SqlFunc.ToString(it.Date.Value.Year) == "1").ToSugarList();
+            var list6 = Db.Queryable<UnitTest3>().Where(it => it.Date.Value.Year == 1).ToSugarList();
+            var list7 = Db.Queryable<UnitTest3>().Where(it => it.Date.Value.Date == DateTime.Now.Date).ToSugarList();
 
 
             SaleOrder saleOrderInfo = new SaleOrder();
@@ -81,7 +81,7 @@ namespace OrmTest
             }, o => o.OrderSn == saleOrderInfo.OrderSn && o.OrderStatus != 1);
 
             var ids = Enumerable.Range(1, 11).ToList();
-            var list8 = Db.Queryable<Order>().Where(it => SqlFunc.ContainsArrayUseSqlParameters(ids, it.Id)).ToList();
+            var list8 = Db.Queryable<Order>().Where(it => SqlFunc.ContainsArrayUseSqlParameters(ids, it.Id)).ToSugarList();
 
             var result2 = Db.Queryable<Unit_SYS_USER>().Where(o => o.XH == UserLoginInfo.XH).Select(o => o.XH).ToSql();
 
@@ -100,28 +100,28 @@ namespace OrmTest
             var  blist3= Db.Queryable<BoolTest3>().Select(it => new BoolTest3()
             {
                 a = string.IsNullOrEmpty(it.Name)
-            }).ToList();
+            }).ToSugarList();
 
             var blist4 = Db.Queryable<BoolTest3>().Select(it => new BoolTest3()
             {
                 a = SqlFunc.IIF(it.a == true, true, false)
-            }).ToList();
+            }).ToSugarList();
 
 
             var blist5 = Db.Queryable<BoolTest3>().Select(it => new BoolTest3()
             {
                 a = SqlFunc.IF(it.a == true).Return(true).End(false)
-            }).ToList();
+            }).ToSugarList();
 
             var blist6 = Db.Queryable<BoolTest3>().Select(it => new BoolTest3()
             {
                 a =it.a==true?true:false
-            }).ToList();
+            }).ToSugarList();
 
             var blist7 = Db.Queryable<BoolTest3>().Select(it => new BoolTest3()
             {
                 a = SqlFunc.Subqueryable<Order>().Any()
-            }).ToList();
+            }).ToSugarList();
             var db = Db;
             db.CodeFirst.InitTables<UserInfo, UserIpRuleInfo>();
             db.Deleteable<UserInfo>().ExecuteCommand();
@@ -150,7 +150,7 @@ namespace OrmTest
                 IpRange = m2.IpRange,
                 Addtime = m2.Addtime,
                 RuleType = m2.RuleType,
-            }).ToList();
+            }).ToSugarList();
             if (string.IsNullOrEmpty(vmList.First().IpRange))
             {
                 throw new Exception("Queryable");
@@ -171,7 +171,7 @@ namespace OrmTest
             {
                 b = it.bytes,
                 name="a"
-            }).ToList();
+            }).ToSugarList();
         }
 
 

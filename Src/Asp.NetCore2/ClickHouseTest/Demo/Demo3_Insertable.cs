@@ -56,7 +56,7 @@ namespace OrmTest
             };
             db.Fastest<Order>().BulkCopy(updateObjs2);
 
-            var list3 = db.Queryable<Order>().Where(it => it.Id == updateObjs2[0].Id).ToList();
+            var list3 = db.Queryable<Order>().Where(it => it.Id == updateObjs2[0].Id).ToSugarList();
       
             Console.WriteLine("#### Insertable End ####");
         }

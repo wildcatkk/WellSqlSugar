@@ -46,7 +46,7 @@ namespace OrmTest
             }).UseSqlServer().ExecuteBulkCopyAsync();
             task.Wait();
             db.Ado.CommitTran();
-            var list = db.Queryable<UinitBlukTable>().ToList();
+            var list = db.Queryable<UinitBlukTable>().ToSugarList();
             db.DbMaintenance.TruncateTable<UinitBlukTable>();
             if (string.Join("", list.Select(it => it.Id)) != "12345678910")
             {

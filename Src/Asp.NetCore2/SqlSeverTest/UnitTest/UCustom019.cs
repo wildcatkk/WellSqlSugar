@@ -45,7 +45,7 @@ namespace OrmTest
                            
                             .InnerJoin<UintTest001>((i, t) => i.group == t.group)
                             .Where((i,t)=>t.addTime < nowTime.AddDays(1))
-                            .ToList();
+                            .ToSugarList();
             var json = @"
 [{""ConditionalList"":[{""Key"":-1,""Value"":{""FieldName"":""id"",""FieldValue"":1517454440779616256,""ConditionalType"":0,""CSharpTypeName"":""long""}},{""Key"":0,""Value"":{""FieldName"":""mobile_phone"",""FieldValue"":""13554067074"",""ConditionalType"":0,""CSharpTypeName"":""string""}},{""Key"":0,""Value"":{""ConditionalList"":[{""Key"":-1,""Value"":{""FieldName"":""template_id"",""FieldValue"":""1374856"",""ConditionalType"":0,""CSharpTypeName"":""long""}},{""Key"":0,""Value"":{""FieldName"":""send_content"",""FieldValue"":""1"",""ConditionalType"":1,""CSharpTypeName"":""string""}}]}}]}]
 ";
@@ -64,7 +64,7 @@ namespace OrmTest
                                 id = SqlFunc.Subqueryable<UintTest001>()
                                 .Where(s => s.id == 1)
                                 .Select(s =>s.id*i.id)
-                            }).ToList();
+                            }).ToSugarList();
             var res22 = db.Queryable<UintTest001>()
                 .InnerJoin<UintTest001>((i, t) => i.group == t.group)
                 .Select((i, t) => new Test001_Ext
@@ -72,7 +72,7 @@ namespace OrmTest
                     id = SqlFunc.Subqueryable<UintTest001>()
                     .Where(s => s.id == 1)
                     .Select(s => s.id * s.id)
-                }).ToList();
+                }).ToSugarList();
             var  res23 = db.Queryable<UintTest001>()
                             .InnerJoin<UintTest001>((i, t) => i.group == t.group)
                             .Select((i, t) => new Test001_Ext
@@ -80,7 +80,7 @@ namespace OrmTest
                                  id = SqlFunc.Subqueryable<UintTest001>()
                                 .Where(s => s.id == 1)
                                 .Select(s => SqlFunc.ToInt32(SqlFunc.AggregateSum(SqlFunc.DateDiff(DateType.Second, s.addTime, s.addTime)) / 3600.0))
-                            }).ToList();
+                            }).ToSugarList();
 
         }
         //建类

@@ -38,7 +38,7 @@ namespace OrmTest
             Console.WriteLine();
 
             //根据时间选出的表进行查询
-            var list2 = db.Queryable<OrderSpliteTest>().SplitTable(tabs => tabs.Where(it=> it.Date>=DateTime.Now.AddYears(-2))).ToList();
+            var list2 = db.Queryable<OrderSpliteTest>().SplitTable(tabs => tabs.Where(it=> it.Date>=DateTime.Now.AddYears(-2))).ToSugarList();
 
             Console.WriteLine();
 

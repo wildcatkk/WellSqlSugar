@@ -174,7 +174,7 @@ namespace SqlSugar
         Task<TResult> AvgAsync<TResult>(Expression<Func<T, TResult>> expression);
         List<TResult> ToList<TResult>(Expression<Func<T, TResult>> expression);
         Task<List<TResult>> ToListAsync<TResult>(Expression<Func<T, TResult>> expression);
-        List<T> ToList();
+        List<T> ToSugarList();
 
         int IntoTable<TableEntityType>();
         int IntoTable(Type TableEntityType);
@@ -194,7 +194,7 @@ namespace SqlSugar
 
         T[] ToArray();
         Task<T[]> ToArrayAsync();
-        Task<List<T>> ToListAsync();
+        Task<List<T>> ToSugarListAsync();
         Task<List<T>> ToListAsync(CancellationToken token);
 
         string ToJson();

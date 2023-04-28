@@ -37,7 +37,7 @@ namespace OrmTest
             db.Insertable(new StudentA() { StudentId = 4, SchoolId = 2, Name = "清华tom" }).ExecuteCommand();
 
             //先用Mapper导航映射查出第二层
-            var list = db.Queryable<StudentA>().Mapper(x => x.SchoolA, x => x.SchoolId).ToList();
+            var list = db.Queryable<StudentA>().Mapper(x => x.SchoolA, x => x.SchoolId).ToSugarList();
 
             //参数1 ：将第二层对象合并成一个集合  参数2：委托
             //说明：如果2级对象是集合用SelectMany

@@ -73,26 +73,26 @@ namespace OrmTest
 			db.Insertable(new OptRole() { id=2, operId = "2", roleId = id2 }).ExecuteCommand();
 			db.Queryable<OperatorInfo>()
 				.Includes(x => x.Roles).Where(x => x.Roles.Any(z=>z.id==1))
-				.ToList();
+				.ToSugarList();
 			var list = db.Queryable<OperatorInfo>()
-				.Includes(x => x.Roles).Where(x=>x.Roles.Any()).ToList();
+				.Includes(x => x.Roles).Where(x=>x.Roles.Any()).ToSugarList();
             if (list.Count != 2) 
 			{
 				throw new Exception("unit error");
 			}
 			var list3 = db.Queryable<OperatorInfo>()
-			.Includes(x => x.Roles).Where(x => x.Roles.Count()==0).ToList();
+			.Includes(x => x.Roles).Where(x => x.Roles.Count()==0).ToSugarList();
 			if (list3.Count != 1)
 			{
 				throw new Exception("unit error");
 			}
 			var list2=db.Queryable<OperatorInfo>()
                 .Includes(x => x.Roles.MappingField(z=>z.name,()=>x.username).ToList())
-                .ToList();
+                .ToSugarList();
 
 			var list4 = db.Queryable<OperatorInfo>()
 			.Includes(x => x.Roles.Skip(10).Take(1).ToList())
-			.ToList();
+			.ToSugarList();
 		}
 
 			/// <summary>

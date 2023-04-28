@@ -1151,7 +1151,7 @@ namespace SqlSugar
         }
         public DeleteNavTaskInit<T, T> DeleteNav<T>(Expression<Func<T, bool>> whereExpression) where T : class, new() 
         {
-            return DeleteNav(this.Queryable<T>().Where(whereExpression).ToList());
+            return DeleteNav(this.Queryable<T>().Where(whereExpression).ToSugarList());
         }
         public UpdateNavTaskInit<T, T> UpdateNav<T>(T data) where T : class, new()
         {

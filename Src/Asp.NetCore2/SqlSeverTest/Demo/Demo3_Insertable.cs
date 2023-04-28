@@ -65,7 +65,7 @@ namespace OrmTest
             db.DbMaintenance.TruncateTable("TwoItem3");
             db.DbMaintenance.TruncateTable("ThreeItem2");
 
-            object getAll = db.Queryable<Order>().Take(2).ToList();
+            object getAll = db.Queryable<Order>().Take(2).ToSugarList();
             db.InsertableByObject(getAll).ExecuteCommand();
             object o = db.Queryable<Order>().First();
             db.InsertableByObject(o).ExecuteCommand();

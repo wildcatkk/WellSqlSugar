@@ -15,18 +15,18 @@ namespace OrmTest
             var x=Db.Queryable<Unit00Z11C12>().Select(it=>new {
                 x=it.type,
                 x2=it.type2
-            }).ToList();
+            }).ToSugarList();
 
-            var x2 = Db.Queryable<Unit00Z11C12>().ToList();
+            var x2 = Db.Queryable<Unit00Z11C12>().ToSugarList();
             Db.Updateable<Unit00Z11C12>().SetColumns(it => it.type2 == UnitType.b)
                 .Where(it=>true).ExecuteCommand();
-            var x3 = Db.Queryable<Unit00Z11C12>().ToList();
+            var x3 = Db.Queryable<Unit00Z11C12>().ToSugarList();
             foreach (var item in x3)
             {
                 item.type2 = null;
             }
             Db.Updateable<Unit00Z11C12>(x3).WhereColumns(it=>it.type).ExecuteCommand();
-            var x4 = Db.Queryable<Unit00Z11C12>().ToList();
+            var x4 = Db.Queryable<Unit00Z11C12>().ToSugarList();
         }
         public class Unit00Z11C12
         {

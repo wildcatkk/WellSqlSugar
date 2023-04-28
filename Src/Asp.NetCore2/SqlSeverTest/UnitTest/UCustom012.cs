@@ -57,15 +57,15 @@ namespace OrmTest
            .Includes(x => x.Books)
            .Where(x=>x.Books.Any(z=>z.BookId==1))
            .Where(x => x.SchoolA.SchoolName == "北大")
-           .ToList();
+           .ToSugarList();
 
 
             var list22 = db.Queryable<StudentA>()
             .Includes(x => x.SchoolA.ToList(it=>new SchoolA() {  SchoolId=it.SchoolId}), x => x.RoomList.ToList(it=>new RoomA() { RoomId=it.RoomId})) 
-            .ToList();
+            .ToSugarList();
 
             //先用Mapper导航映射查出第二层
-            var list = db.Queryable<StudentA>().Mapper(x => x.SchoolA, x => x.SchoolId).ToList();
+            var list = db.Queryable<StudentA>().Mapper(x => x.SchoolA, x => x.SchoolId).ToSugarList();
 
             //参数1 ：将第二层对象合并成一个集合  参数2：委托
             //说明：如果2级对象是集合用SelectMany
@@ -94,9 +94,9 @@ namespace OrmTest
 
             var list3= db.Queryable<A1>()
                 .Includes(x => x.BList.Where(it=>it.Id==1).ToList())
-                .Where(x=>x.BList.Any()).ToList();
+                .Where(x=>x.BList.Any()).ToSugarList();
 
-            var list31 = db.Queryable<A1>().Includes(x => x.BList,x=>x.AList).ToList();
+            var list31 = db.Queryable<A1>().Includes(x => x.BList,x=>x.AList).ToSugarList();
 
             db.CodeFirst.InitTables(typeof(Tree1));
             db.DbMaintenance.TruncateTable("Tree1");
@@ -113,7 +113,7 @@ namespace OrmTest
                 .Includes(it => it.Child)
                 .Includes(it => it.Parent)
                 .Where(it=>it.Child.Any())
-                .ToList();
+                .ToSugarList();
 
             db.ThenMapper(xxx, it =>
             {
@@ -127,7 +127,7 @@ namespace OrmTest
 
             db.Insertable(new UnitA001() { id = 1, name1 = "a", orgid = "1" }).ExecuteCommand();
             db.Insertable(new UnitA002() { id = 1, name2= "a2", orgid = "1" }).ExecuteCommand();
-            var list5=db.Queryable<UnitA001>().ToList();
+            var list5=db.Queryable<UnitA001>().ToSugarList();
             db.ThenMapper(list5, it =>
             {
                 it.UnitA002 = db.Queryable<UnitA002>().SetContext(x => x.orgid, () => it.id, it).First();
@@ -146,7 +146,7 @@ namespace OrmTest
                 .MergeTable()
                 .Select(it=>new UnitView01() {
                  Name="a"
-                },true).ToList();
+                },true).ToSugarList();
 
 
             db.Queryable<SchoolA>()
@@ -155,7 +155,7 @@ namespace OrmTest
              .Select((x,y,z) => new UnitView01()
              {
                  Name = "a"
-             },true).ToList();
+             },true).ToSugarList();
 
 
             var list6 = db.Queryable<SchoolA>()
@@ -176,7 +176,7 @@ namespace OrmTest
             .Select(x => new UnitView01()
             {
                 Name = "a"
-            }, true).ToList();
+            }, true).ToSugarList();
 
             var list7 = db.Queryable<SchoolA>()
                .Select(x => new UnitView01()
@@ -195,7 +195,7 @@ namespace OrmTest
             .Select((x, y) => new UnitView01()
             {
                 Name = "a"
-            }, true).ToList();
+            }, true).ToSugarList();
 
 
             var list8 = db.Queryable<SchoolA>()

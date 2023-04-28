@@ -55,7 +55,7 @@ namespace OrmTest
             /// <returns></returns>
             public List<T> CommQuery()
             {
-                return base.Context.Queryable<T>().ToList();
+                return base.Context.Queryable<T>().ToSugarList();
             }
 
         }

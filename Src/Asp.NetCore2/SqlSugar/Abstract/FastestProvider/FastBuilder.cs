@@ -43,7 +43,7 @@ namespace SqlSugar
         {
             await this.Context.UnionAll(
                 this.Context.Queryable<T>().Filter(null,true).Select("*").Where(it => false).AS(dt.TableName),
-                this.Context.Queryable<T>().Filter(null, true).Select("*").Where(it => false).AS(dt.TableName)).Select("top 1 * into #temp").ToListAsync();
+                this.Context.Queryable<T>().Filter(null, true).Select("*").Where(it => false).AS(dt.TableName)).Select("top 1 * into #temp").ToSugarListAsync();
             dt.TableName = "#temp";
         }
     }

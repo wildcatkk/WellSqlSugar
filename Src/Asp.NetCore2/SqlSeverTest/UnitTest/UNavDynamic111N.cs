@@ -34,13 +34,13 @@ namespace OrmTest
             db.Insertable(new UnitaBookA() { BookId = 6, Names = "北大jack", studenId = 1 }).ExecuteCommand();
 
             var list =db.Queryable<UnitaStudentA>()
-                .Includes(x => x.SchoolA).Where(x=>x.SchoolA.School_Name!=null).ToList();
+                .Includes(x => x.SchoolA).Where(x=>x.SchoolA.School_Name!=null).ToSugarList();
 
             var list2 = db.Queryable<UnitaStudentA>()
-                .Includes(x => x.Books).Where(x=>x.Books.Any()).ToList();
+                .Includes(x => x.Books).Where(x=>x.Books.Any()).ToSugarList();
 
             var list3 = db.Queryable<UnitaStudentA>()
-              .IncludesAllFirstLayer().ToList();
+              .IncludesAllFirstLayer().ToSugarList();
 
             if (list3.First().Books.Count() == 0||list3.First().SchoolA==null) 
             {

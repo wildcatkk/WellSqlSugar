@@ -28,7 +28,7 @@ namespace OrmTest
             conModels.Add(new ConditionalModel() { FieldName = "id", ConditionalType = ConditionalType.IsNot, FieldValue = null });
             var json = db.Context.Utilities.SerializeObject(conModels);
             var conditionalModels = db.Context.Utilities.JsonToConditionalModels(json);
-            var list6 = db.Queryable<Order>().Where(conditionalModels).ToList();
+            var list6 = db.Queryable<Order>().Where(conditionalModels).ToSugarList();
             var json2 = db.Context.Utilities.SerializeObject(conditionalModels);
             if (json != json2)
             {
@@ -61,7 +61,7 @@ namespace OrmTest
             });
             var json = db.Context.Utilities.SerializeObject(conModels);
             var conditionalModels = db.Context.Utilities.JsonToConditionalModels(json);
-            var list6 = db.Queryable<Order>().Where(conditionalModels).ToList();
+            var list6 = db.Queryable<Order>().Where(conditionalModels).ToSugarList();
             var json2 = db.Context.Utilities.SerializeObject(conditionalModels);
             if (json != json2)
             {
@@ -94,7 +94,7 @@ namespace OrmTest
             
             var json = db.Context.Utilities.SerializeObject(conModels);
             var conditionalModels = db.Context.Utilities.JsonToConditionalModels(json);
-            var list6 = db.Queryable<Order>().Where(conditionalModels).ToList();
+            var list6 = db.Queryable<Order>().Where(conditionalModels).ToSugarList();
             var json2 = db.Context.Utilities.SerializeObject(conditionalModels);
             if (json != json2)
             {
@@ -130,7 +130,7 @@ namespace OrmTest
             }); 
             var json = db.Context.Utilities.SerializeObject(conModels);
             var conditionalModels = db.Context.Utilities.JsonToConditionalModels(json);
-            var list6 = db.Queryable<Order>().Where(conditionalModels).ToList();
+            var list6 = db.Queryable<Order>().Where(conditionalModels).ToSugarList();
             var json2 = db.Context.Utilities.SerializeObject(conditionalModels);
             if (json != json2)
             {
@@ -168,7 +168,7 @@ namespace OrmTest
             var json = db.Context.Utilities.SerializeObject(conModels);
 
             var conditionalModels = db.Context.Utilities.JsonToConditionalModels(json);
-            var list6 = db.Queryable<Order>().Where(conditionalModels).ToList();
+            var list6 = db.Queryable<Order>().Where(conditionalModels).ToSugarList();
 
             var json2 = db.Context.Utilities.SerializeObject(conditionalModels);
 
@@ -207,7 +207,7 @@ namespace OrmTest
             var json = db.Context.Utilities.SerializeObject(conModels);
 
             var conditionalModels = db.Context.Utilities.JsonToConditionalModels(json);
-            var list6 = db.Queryable<Order>().Where(it=>it.Id==1).Where(conditionalModels).ToList();
+            var list6 = db.Queryable<Order>().Where(it=>it.Id==1).Where(conditionalModels).ToSugarList();
 
             var json2 = db.Context.Utilities.SerializeObject(conditionalModels);
 
@@ -255,7 +255,7 @@ namespace OrmTest
             });
             var json = db.Context.Utilities.SerializeObject(conModels);
             var conditionalModels = db.Context.Utilities.JsonToConditionalModels(json);
-            var list6 = db.Queryable<Order>().Where(conditionalModels).ToList();
+            var list6 = db.Queryable<Order>().Where(conditionalModels).ToSugarList();
             var json2 = db.Context.Utilities.SerializeObject(conditionalModels);
             if (json != json2)
             {
@@ -301,7 +301,7 @@ namespace OrmTest
             });
             var json = db.Context.Utilities.SerializeObject(conModels);
             var conditionalModels = db.Context.Utilities.JsonToConditionalModels(json);
-            var list6 = db.Queryable<Order>().Where(conditionalModels).ToList();
+            var list6 = db.Queryable<Order>().Where(conditionalModels).ToSugarList();
             var json2 = db.Context.Utilities.SerializeObject(conditionalModels);
             if (json != json2)
             {

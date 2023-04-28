@@ -413,7 +413,7 @@ namespace SqlSugar
                                                    FieldValue=string.Join(",",oldList.Select(z=>UtilMethods.GetPropertyValue(z,aPropertyName)).Distinct())
                                                   }
                    };
-                   var mappingList = this.Context.Queryable<MappingType>().Where(cons).ToList();
+                   var mappingList = this.Context.Queryable<MappingType>().Where(cons).ToSugarList();
                    var bids = mappingList.Select(z => UtilMethods.GetPropertyValue(z, m_bPropertyName)).Distinct().ToList();
 
                    //queryable b by mapping
@@ -427,7 +427,7 @@ namespace SqlSugar
                    List<BType> bList = new List<BType>();
                    if (mappingList.Any())
                    {
-                       bList=this.Context.Queryable<BType>().Where(cons).ToList();
+                       bList=this.Context.Queryable<BType>().Where(cons).ToSugarList();
                    }
 
                    //get result
@@ -879,7 +879,7 @@ namespace SqlSugar
                 pkValue = -1;
             }
             Check.Exception(this.QueryBuilder.SelectValue.HasValue(), "'InSingle' and' Select' can't be used together,You can use .Select(it=>...).Single(it.id==1)");
-            var list = In(pkValue).ToList();
+            var list = In(pkValue).ToSugarList();
             if (list == null) return default(T);
             else return list.SingleOrDefault();
         }

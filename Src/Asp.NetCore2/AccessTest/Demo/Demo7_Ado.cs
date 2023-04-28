@@ -49,7 +49,7 @@ namespace OrmTest
             db.Ado.ExecuteCommand("delete from [order] where id>1000");
 
             db.SqlQueryable<Custom>(@"select * 
-from custom").ToList();
+from custom").ToSugarList();
             //db.Ado.xxx
             Console.WriteLine("#### Ado End ####");
         }

@@ -90,16 +90,16 @@ namespace OrmTest
             };
             var list=db.Queryable<Country111>()
                 .Includes(x => x.Provinces.OrderByDescending(x111=>x111.Id).ToList())
-                .ToList();
+                .ToSugarList();
 
             var list2 = db.Queryable<Country111>()
               .Includes(x => x.Provinces)
               .Where(x=>x.Provinces.Count()>2)
-              .ToList();
+              .ToSugarList();
 
             var list3 = db.Queryable<Country111>()
                 .Includes(x => x.Provinces,x=>x.citys)
-                .ToList();
+                .ToSugarList();
         }
 
         [SugarTable("Country_111")]

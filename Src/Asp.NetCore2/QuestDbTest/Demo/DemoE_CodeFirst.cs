@@ -26,7 +26,7 @@ namespace OrmTest
             db.DbMaintenance.CreateDatabase();
             db.CodeFirst.InitTables(typeof(CodeFirstTable1));//Create CodeFirstTable1 
             db.Insertable(new CodeFirstTable1() { Name = "a", Text = "a" }).ExecuteCommand();
-            var list = db.Queryable<CodeFirstTable1>().ToList();
+            var list = db.Queryable<CodeFirstTable1>().ToSugarList();
             db.CodeFirst.InitTables<IndexClass>();
             db.CodeFirst.InitTables<SplitTableEntity>();
             TestBool(db);

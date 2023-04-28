@@ -36,7 +36,7 @@ namespace OrmTest
 
             var list = db.Queryable<Student_002>()
                          .Includes(x => x.school_001, x => x.rooms, x => x.desk)
-                .Where(x => x.school_001.rooms.Any(z => z.desk.Any())).ToList();
+                .Where(x => x.school_001.rooms.Any(z => z.desk.Any())).ToSugarList();
 
             if (list.Count() != 2)
             {
@@ -47,7 +47,7 @@ namespace OrmTest
                          .Includes(x => x.school_001, x => x.rooms)
             .Where(x => x.school_001.rooms.Any(z =>
             z.roomName == "北大01室" &&
-            z.desk.Any())).ToList();
+            z.desk.Any())).ToSugarList();
 
 
             if (list2.Count() != 1)
@@ -59,7 +59,7 @@ namespace OrmTest
                 .Includes(x => x.school_001, x => x.rooms)
          .Where(x => x.school_001.rooms.Any(z =>
          z.roomName == "青华03室" &&
-         z.desk.Any(c => c.deskName == "青华03室_01"))).ToList();
+         z.desk.Any(c => c.deskName == "青华03室_01"))).ToSugarList();
 
             if (list3.Count != 1)
             {
@@ -69,7 +69,7 @@ namespace OrmTest
             var list4 = db.Queryable<Student_002>()
         .Where(x => x.school_001.rooms.Any(z =>
         z.roomName == "青华03室" &&
-        z.desk.Any(c => c.deskName == "青华04室_01"))).ToList();
+        z.desk.Any(c => c.deskName == "青华04室_01"))).ToSugarList();
 
 
             if (list4.Count != 0)

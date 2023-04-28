@@ -27,7 +27,7 @@ namespace OrmTest
 
             for (int i = 0; i < 100; i++)
             {
-                await simpleDb.Queryable<Order>().Take(10).ToListAsync();
+                await simpleDb.Queryable<Order>().Take(10).ToSugarListAsync();
             }
 
             for (int i = 0; i < 100; i++)
@@ -38,7 +38,7 @@ namespace OrmTest
             List<Order> orders = new List<Order>();
             for (int i = 0; i < 100; i++)
             {
-                orders = await simpleDb.Queryable<Order>().Take(10).ToListAsync();
+                orders = await simpleDb.Queryable<Order>().Take(10).ToSugarListAsync();
             }
             if (orders.Count > 0)
             {
@@ -50,7 +50,7 @@ namespace OrmTest
         {
             for (int i = 0; i < 100; i++)
             {
-                await singleAndSsDb.Queryable<Order>().Take(10).ToListAsync();
+                await singleAndSsDb.Queryable<Order>().Take(10).ToSugarListAsync();
             }
 
             for (int i = 0; i < 100; i++)
@@ -60,7 +60,7 @@ namespace OrmTest
             List<Order> orders = new List<Order>();
             for (int i = 0; i < 100; i++)
             {
-                orders = await singleAndSsDb.Queryable<Order>().Take(10).ToListAsync();
+                orders = await singleAndSsDb.Queryable<Order>().Take(10).ToSugarListAsync();
             }
             if (orders.Count > 0)
             {
@@ -72,7 +72,7 @@ namespace OrmTest
         {
             for (int i = 0; i < 100; i++)
             {
-                await singleDb.Queryable<Order>().Take(10).ToListAsync();
+                await singleDb.Queryable<Order>().Take(10).ToSugarListAsync();
             }
 
             for (int i = 0; i < 100; i++)
@@ -83,7 +83,7 @@ namespace OrmTest
             List<Order> orders = new List<Order>();
             for (int i = 0; i < 100; i++)
             {
-                orders = await singleDb.Queryable<Order>().Take(10).ToListAsync();
+                orders = await singleDb.Queryable<Order>().Take(10).ToSugarListAsync();
             }
             if (orders.Count > 0)
             {
@@ -95,7 +95,7 @@ namespace OrmTest
         {
             for (int i = 0; i < 100; i++)
             {
-                await ssDb.Queryable<Order>().Take(10).ToListAsync();
+                await ssDb.Queryable<Order>().Take(10).ToSugarListAsync();
             }
 
             for (int i = 0; i < 100; i++)
@@ -106,7 +106,7 @@ namespace OrmTest
             List<Order> orders = new List<Order>();
             for (int i = 0; i < 100; i++)
             {
-                orders = await ssDb.Queryable<Order>().Take(10).ToListAsync();
+                orders = await ssDb.Queryable<Order>().Take(10).ToSugarListAsync();
             }
             if (orders.Count > 0)
             {

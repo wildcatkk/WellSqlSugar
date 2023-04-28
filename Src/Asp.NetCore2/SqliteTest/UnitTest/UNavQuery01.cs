@@ -85,7 +85,7 @@ namespace OrmTest
                         ).ToList(),
                         s => s.CustomerInfo)
                     .Where(s => s.TranslatorID == strTranslatorID)
-                    .ToList()
+                    .ToSugarList()
                     ;
             }
             #endregion
@@ -94,7 +94,7 @@ namespace OrmTest
             {
                 var list = db.Queryable<CustomerTranslatorBindingRelationship>()
        .Where(x => x.CustomerInfo.CustomerNo == "")
-       .ToList();
+       .ToSugarList();
 
 
                 var vTranslatoreList =
@@ -104,7 +104,7 @@ namespace OrmTest
                         ).ToList(),
                         s => s.CustomerInfo)
                     .Where(s => s.TranslatorID == strTranslatorID)
-                    .ToList()
+                    .ToSugarList()
                     ;
             }
             #endregion

@@ -56,7 +56,7 @@ namespace OrmTest
             for (int i = 0; i < 2; i++)
             {
                 db.Fastest<TestFAST11>().BulkCopy(new List<TestFAST11> { new TestFAST11() { Date = DateTime.Now, Id = Guid.NewGuid() + "", Sex = 1 } });
-                var x = db.Queryable<TestFAST11>().ToList();
+                var x = db.Queryable<TestFAST11>().ToSugarList();
                 var updaterows = db.Fastest<TestFAST11>().BulkUpdate(x); 
             }
         }

@@ -16,7 +16,7 @@ namespace OrmTest
             Db.CodeFirst.InitTables<Test00111>();
             Db.DbMaintenance.TruncateTable<Test00111>();
             Db.Insertable(new Test00111()).ExecuteCommand();
-            var list = Db.Queryable<Test00111>().ToList();
+            var list = Db.Queryable<Test00111>().ToSugarList();
             Db.CodeFirst.InitTables<Test00111121>();
             Db.CodeFirst.InitTables<UnitByteArray1>();
             Db.Insertable(new UnitByteArray1()

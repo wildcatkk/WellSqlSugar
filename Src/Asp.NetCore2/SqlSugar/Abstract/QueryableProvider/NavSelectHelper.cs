@@ -21,12 +21,12 @@ namespace SqlSugar
                 sqlfuncQueryable.QueryBuilder.Includes = null;
                 result = sqlfuncQueryable
                     .Select(expression)
-                    .ToList();
+                    .ToSugarList();
                 var includeQueryable = queryableProvider.Clone();
                 includeQueryable.Select(GetGroupSelect(typeof(T), queryableProvider.Context, queryableProvider.QueryBuilder));
                 includeQueryable.QueryBuilder.NoCheckInclude = true;
                 var mappingColumn = GetMappingColumn(expression);
-                MegerList(result, includeQueryable.ToList(), sqlfuncQueryable.Context, mappingColumn);
+                MegerList(result, includeQueryable.ToSugarList(), sqlfuncQueryable.Context, mappingColumn);
             }
             else if (isSqlFunc)
             {
@@ -71,7 +71,7 @@ namespace SqlSugar
         {
             List<TResult> result;
             var entity = queryableProvider.Context.EntityMaintenance.GetEntityInfo<TResult>();
-            var list = queryableProvider.Clone().ToList();
+            var list = queryableProvider.Clone().ToSugarList();
             var dt=queryableProvider.Context.Utilities.ListToDataTable(list);
             foreach (System.Data.DataRow item in dt.Rows)
             {
@@ -107,11 +107,11 @@ namespace SqlSugar
             result = sqlfuncQueryable
                 .IgnoreColumns(ignoreColumns)
                 .Select(expression)
-                .ToList();
+                .ToSugarList();
             var selector = GetDefaultSelector(queryableProvider.Context.EntityMaintenance.GetEntityInfo<T>(), queryableProvider.QueryBuilder);
             var queryable = queryableProvider.Select(selector).Clone();
             queryable.QueryBuilder.NoCheckInclude = true;
-            var includeList = queryable.ToList();
+            var includeList = queryable.ToSugarList();
             MegerList(result, includeList, sqlfuncQueryable.Context,mappingColumn);
             return result;
         }

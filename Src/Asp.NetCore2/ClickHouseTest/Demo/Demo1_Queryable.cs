@@ -30,27 +30,27 @@ namespace OrmTest
             Console.WriteLine("#### Examples Start ####");
             var db = GetInstance();
             var dbTime = db.GetDate();
-            var getAll = db.Queryable<Order>().ToList();
-            var getAll2 = db.Queryable<Order>().Select(x => x.CreateTime.Date).ToList();
-            var getAll3 = db.Queryable<Order>().Select(x =>Convert.ToDateTime(x.CreateTime)).ToList();
-            var getAll4 = db.Queryable<Order>().Select(x=>x.CreateTime.AddDays(1)).ToList();
-            var getAll5 = db.Queryable<Order>().Select(x => x.CreateTime.AddMonths(1)).ToList();
-            var getAll6 = db.Queryable<Order>().Select(x => SqlFunc.DateAdd(x.CreateTime, 1)).ToList();
-            var getAll7 = db.Queryable<Order>().Select(x => x.Name.ToString()).ToList();
-            var getAll8 = db.Queryable<Order>().Select(x => x.CreateTime.ToString("yyyy-MM-dd")).ToList();
-            var getAll9 = db.Queryable<Order>().Select(x => x.CreateTime.ToString("yyyy-MM-dd HH:mm:ss")).ToList();
-            var getAl20 = db.Queryable<Order>().Select(x => x.CreateTime.Year).ToList();
-            var getOrderBy = db.Queryable<Order>().OrderBy(it => it.Name,OrderByType.Desc).ToList();
-            var getOrderBy2 = db.Queryable<Order>().OrderBy(it => it.Id).OrderBy(it => it.Name, OrderByType.Desc).ToList();
-            var getOrderBy3 = db.Queryable<Order>().OrderBy(it =>new { it.Name,it.Id}).ToList();
+            var getAll = db.Queryable<Order>().ToSugarList();
+            var getAll2 = db.Queryable<Order>().Select(x => x.CreateTime.Date).ToSugarList();
+            var getAll3 = db.Queryable<Order>().Select(x =>Convert.ToDateTime(x.CreateTime)).ToSugarList();
+            var getAll4 = db.Queryable<Order>().Select(x=>x.CreateTime.AddDays(1)).ToSugarList();
+            var getAll5 = db.Queryable<Order>().Select(x => x.CreateTime.AddMonths(1)).ToSugarList();
+            var getAll6 = db.Queryable<Order>().Select(x => SqlFunc.DateAdd(x.CreateTime, 1)).ToSugarList();
+            var getAll7 = db.Queryable<Order>().Select(x => x.Name.ToString()).ToSugarList();
+            var getAll8 = db.Queryable<Order>().Select(x => x.CreateTime.ToString("yyyy-MM-dd")).ToSugarList();
+            var getAll9 = db.Queryable<Order>().Select(x => x.CreateTime.ToString("yyyy-MM-dd HH:mm:ss")).ToSugarList();
+            var getAl20 = db.Queryable<Order>().Select(x => x.CreateTime.Year).ToSugarList();
+            var getOrderBy = db.Queryable<Order>().OrderBy(it => it.Name,OrderByType.Desc).ToSugarList();
+            var getOrderBy2 = db.Queryable<Order>().OrderBy(it => it.Id).OrderBy(it => it.Name, OrderByType.Desc).ToSugarList();
+            var getOrderBy3 = db.Queryable<Order>().OrderBy(it =>new { it.Name,it.Id}).ToSugarList();
             var getRandom = db.Queryable<Order>().OrderBy(it => SqlFunc.GetRandom()).First();
             var getByPrimaryKey = db.Queryable<Order>().InSingle(2);
             var getSingleOrDefault = db.Queryable<Order>().Where(it => it.Id == 1).Single();
             var getFirstOrDefault = db.Queryable<Order>().First();
-            var getByWhere = db.Queryable<Order>().Where(it => it.Id == 1 || it.Name == "a").ToList();
-            var getByWhere2 = db.Queryable<Order>().Where(it => it.Id == DateTime.Now.Year).ToList();
-            var getByFuns = db.Queryable<Order>().Where(it => SqlFunc.IsNullOrEmpty(it.Name)).ToList();
-            var getByFuns2 = db.Queryable<Order>().GroupBy(it => it.Name).Select(it => SqlFunc.AggregateDistinctCount(it.Price)).ToList();
+            var getByWhere = db.Queryable<Order>().Where(it => it.Id == 1 || it.Name == "a").ToSugarList();
+            var getByWhere2 = db.Queryable<Order>().Where(it => it.Id == DateTime.Now.Year).ToSugarList();
+            var getByFuns = db.Queryable<Order>().Where(it => SqlFunc.IsNullOrEmpty(it.Name)).ToSugarList();
+            var getByFuns2 = db.Queryable<Order>().GroupBy(it => it.Name).Select(it => SqlFunc.AggregateDistinctCount(it.Price)).ToSugarList();
             Console.WriteLine("#### Examples End ####");
         }
 
@@ -59,7 +59,7 @@ namespace OrmTest
             Console.WriteLine("");
             Console.WriteLine("#### ReturnType Start ####");
             var db = GetInstance();
-            List<Order> list = db.Queryable<Order>().ToList();
+            List<Order> list = db.Queryable<Order>().ToSugarList();
 
             Order item = db.Queryable<Order>().First(it => it.Id == 1);
 
@@ -67,46 +67,46 @@ namespace OrmTest
 
             var json = db.Queryable<Order>().ToJson();
 
-            List<long> listInt = db.Queryable<Order>().Select(it => it.Id).ToList();
+            List<long> listInt = db.Queryable<Order>().Select(it => it.Id).ToSugarList();
 
-            var dynamic = db.Queryable<Order>().Select<dynamic>().ToList();
+            var dynamic = db.Queryable<Order>().Select<dynamic>().ToSugarList();
 
             var viewModel = db.Queryable<Order, OrderItem, Custom>((o, i, c) => new JoinQueryInfos(
                     JoinType.Left, o.Id == i.OrderId  ,
                     JoinType.Left, o.CustomId == c.Id 
                 ))
-                .Select<ViewOrder>().ToList();
+                .Select<ViewOrder>().ToSugarList();
 
             var newDynamic = db.Queryable<Order, OrderItem, Custom>((o, i, c) => new JoinQueryInfos(
                    JoinType.Left, o.Id == i.OrderId,
                    JoinType.Left, o.CustomId == c.Id
                ))
-                .Select((o, i, c) => new { orderName = o.Name, cusName=c.Name }).ToList();
+                .Select((o, i, c) => new { orderName = o.Name, cusName=c.Name }).ToSugarList();
 
             var newClass = db.Queryable<Order, OrderItem, Custom>((o, i, c) => new JoinQueryInfos(
                    JoinType.Left, o.Id == i.OrderId,
                    JoinType.Left, o.CustomId == c.Id
                ))
-                .Select((o, i, c) => new ViewOrder {  Name=o.Name,  CustomName=c.Name }).ToList();
+                .Select((o, i, c) => new ViewOrder {  Name=o.Name,  CustomName=c.Name }).ToSugarList();
 
 
             var oneClass = db.Queryable<Order, OrderItem, Custom>((o, i, c) => new JoinQueryInfos(
               JoinType.Left, o.Id == i.OrderId,
               JoinType.Left, o.CustomId == c.Id
             ))
-           .Select((o, i, c) => c).ToList();
+           .Select((o, i, c) => c).ToSugarList();
 
             var twoClass = db.Queryable<Order, OrderItem, Custom>((o, i, c) => new JoinQueryInfos(
             JoinType.Left, o.Id == i.OrderId,
             JoinType.Left, o.CustomId == c.Id
             ))
-           .Select((o, i, c) => new { o,i}).ToList();
+           .Select((o, i, c) => new { o,i}).ToSugarList();
 
             List<Dictionary<string, object>> ListDic = db.Queryable<Order, OrderItem, Custom>((o, i, c) => new JoinQueryInfos(
                   JoinType.Left, o.Id == i.OrderId,
                   JoinType.Left, o.CustomId == c.Id
                 ))
-                .Select<ExpandoObject>().ToList().Select(it => it.ToDictionary(x => x.Key, x => x.Value)).ToList();
+                .Select<ExpandoObject>().ToSugarList().Select(it => it.ToDictionary(x => x.Key, x => x.Value)).ToList();
             Console.WriteLine("#### ReturnType End ####");
         }
 
@@ -152,7 +152,7 @@ namespace OrmTest
             db.Insertable(new Tree() { Id = 22, Name = "child3", ParentId = 2 }).ExecuteCommand();
 
             // Same property name mapping,Both entities have parentId
-            var list = db.Queryable<Tree>().Mapper(it => it.Parent, it => it.ParentId).ToList();
+            var list = db.Queryable<Tree>().Mapper(it => it.Parent, it => it.ParentId).ToSugarList();
 
 
             //If both entities have parentId, I don't want to associate with parentId.
@@ -161,12 +161,12 @@ namespace OrmTest
                                      .Mapper(it=>it.Parent,it=>it.ParentId, it=>it.Parent.Id)
                                      //Child=(select * from parent where ParentId=it.id)
                                      .Mapper(it => it.Child, it => it.Id, it => it.Parent.ParentId)
-                                     .ToList();
+                                     .ToSugarList();
             //one to one
-            var list2 = db.Queryable<OrderItemInfo>().Mapper(it => it.Order, it => it.OrderId).ToList();
+            var list2 = db.Queryable<OrderItemInfo>().Mapper(it => it.Order, it => it.OrderId).ToSugarList();
 
             //one to many
-            var list3 = db.Queryable<Order>().Mapper(it => it.Items, it => it.Items.First().OrderId).ToList();
+            var list3 = db.Queryable<Order>().Mapper(it => it.Items, it => it.Items.First().OrderId).ToSugarList();
 
             //many to many
             db.CodeFirst.InitTables<A, B, ABMapping>();
@@ -185,10 +185,10 @@ namespace OrmTest
             {
                 var allItems = cache.Get(orderList => {
                     var allIds = orderList.Select(it => it.Id).ToList();
-                    return db.Queryable<OrderItem>().Where(it => allIds.Contains(it.OrderId)).ToList();//Execute only once
+                    return db.Queryable<OrderItem>().Where(it => allIds.Contains(it.OrderId)).ToSugarList();//Execute only once
                 });
                 itemModel.Items = allItems.Where(it => it.OrderId==itemModel.Id).ToList();//Every time it's executed
-            }).ToList();
+            }).ToSugarList();
 
             Console.WriteLine("#### End Start ####");
         }
@@ -199,9 +199,9 @@ namespace OrmTest
             Console.WriteLine("#### No Entity Start ####");
             var db = GetInstance();
 
-            var list = db.Queryable<dynamic>().AS("Order").Where("Id=Id", new { id = 1 }).ToList();
+            var list = db.Queryable<dynamic>().AS("Order").Where("Id=Id", new { id = 1 }).ToSugarList();
 
-            var list2 = db.Queryable<dynamic>("o").AS("Order").AddJoinInfo("OrderDetail", "i", "o.Id=i.OrderId").Where("Id=Id", new { id = 1 }).Select("o.*").ToList();
+            var list2 = db.Queryable<dynamic>("o").AS("Order").AddJoinInfo("OrderDetail", "i", "o.Id=i.OrderId").Where("Id=Id", new { id = 1 }).Select("o.*").ToSugarList();
             Console.WriteLine("#### No Entity End ####");
         }
 
@@ -214,14 +214,14 @@ namespace OrmTest
             //Simple join
             var list = db.Queryable<Order, OrderItem, Custom>((o, i, c) => o.Id == i.OrderId&&c.Id == o.CustomId)
                          .Select<ViewOrder>()
-                         .ToList();
+                         .ToSugarList();
 
             //Join table
             var list2 = db.Queryable<Order, OrderItem, Custom>((o, i, c) => new JoinQueryInfos(
              JoinType.Left, o.Id == i.OrderId,
              JoinType.Left, c.Id == o.CustomId
             ))
-           .Select<ViewOrder>().ToList();
+           .Select<ViewOrder>().ToSugarList();
 
             //Join queryable
             var query1 = db.Queryable<Order, OrderItem>((o, i) => new JoinQueryInfos(
@@ -230,7 +230,7 @@ namespace OrmTest
             .Where(o => o.Name == "jack");
 
             var query2 = db.Queryable<Custom>();
-            var list3=db.Queryable(query1, query2,JoinType.Left, (p1, p2) => p1.CustomId == p2.Id).Select<ViewOrder>().ToList();
+            var list3=db.Queryable(query1, query2,JoinType.Left, (p1, p2) => p1.CustomId == p2.Id).Select<ViewOrder>().ToSugarList();
 
             Console.WriteLine("#### Join Table End ####");
         }
@@ -245,24 +245,24 @@ namespace OrmTest
             /*** By expression***/
 
             //id=@id
-            var list = db.Queryable<Order>().Where(it => it.Id == 1).ToList();
+            var list = db.Queryable<Order>().Where(it => it.Id == 1).ToSugarList();
             //id=@id or name like '%'+@name+'%'
-            var list2 = db.Queryable<Order>().Where(it => it.Id == 1 || it.Name.Contains("jack")).ToList();
+            var list2 = db.Queryable<Order>().Where(it => it.Id == 1 || it.Name.Contains("jack")).ToSugarList();
 
 
             //Create expression 
             var exp = Expressionable.Create<Order>()
                             .And(it => it.Id == 1)
                             .Or(it => it.Name.Contains("jack")).ToExpression();
-            var list3 = db.Queryable<Order>().Where(exp).ToList();
+            var list3 = db.Queryable<Order>().Where(exp).ToSugarList();
 
 
             /*** By sql***/
 
             //id=@id
-            var list4 = db.Queryable<Order>().Where("Id=@id", new { id = 1 }).ToList();
+            var list4 = db.Queryable<Order>().Where("Id=@id", new { id = 1 }).ToSugarList();
             //id=@id or name like '%'+@name+'%'
-            var list5 = db.Queryable<Order>().Where("Id=@id or Name like @name  ", new { id = 1, name = "%jack%" }).ToList();
+            var list5 = db.Queryable<Order>().Where("Id=@id or Name like @name  ", new { id = 1, name = "%jack%" }).ToSugarList();
 
 
 
@@ -271,7 +271,7 @@ namespace OrmTest
             //id=1
             var conModels = new List<IConditionalModel>();
             conModels.Add(new ConditionalModel() { FieldName = "Id", ConditionalType = ConditionalType.Equal, FieldValue = "1" , FieldValueConvertFunc=it=>Convert.ToInt32(it) });//id=1
-            var student = db.Queryable<Order>().Where(conModels).ToList();
+            var student = db.Queryable<Order>().Where(conModels).ToSugarList();
 
             //Complex use case
             List<IConditionalModel> Order = new List<IConditionalModel>();
@@ -292,7 +292,7 @@ namespace OrmTest
                 new  KeyValuePair<WhereType, ConditionalModel> ( WhereType.And,new ConditionalModel() { FieldName = "Id", ConditionalType = ConditionalType.Equal, FieldValue = "2" ,FieldValueConvertFunc = it => Convert.ToInt32(it)})
             }
             });
-            var list6 = db.Queryable<Order>().Where(conModels).ToList();
+            var list6 = db.Queryable<Order>().Where(conModels).ToSugarList();
 
             /*** Conditional builder ***/
 
@@ -301,11 +301,11 @@ namespace OrmTest
             int id = 1;
             var query = db.Queryable<Order>()
                             .WhereIF(!string.IsNullOrEmpty(name), it => it.Name.Contains(name))
-                            .WhereIF(id > 0, it => it.Id == id).ToList();
+                            .WhereIF(id > 0, it => it.Id == id).ToSugarList();
             //clone new Queryable
             var query2 = db.Queryable<Order>().Where(it => it.Id == 1);
-            var list7 = query2.Clone().Where(it => it.Name == "jack").ToList();//id=1 and name = jack
-            var list8 = query2.Clone().Where(it => it.Name == "tom").ToList();//id=1 and name = tom
+            var list7 = query2.Clone().Where(it => it.Name == "jack").ToSugarList();//id=1 and name = jack
+            var list8 = query2.Clone().Where(it => it.Name == "tom").ToSugarList();//id=1 and name = tom
 
             Console.WriteLine("#### Condition Screening End ####");
 
@@ -321,7 +321,7 @@ namespace OrmTest
             SqlSugarClient db = GetInstance();
             var task1 = db.Queryable<Order>().FirstAsync();
             task1.Wait();
-            var task2 = db.Queryable<Order>().Where(it => it.Id == 1).ToListAsync();
+            var task2 = db.Queryable<Order>().Where(it => it.Id == 1).ToSugarListAsync();
 
         
             task2.Wait();

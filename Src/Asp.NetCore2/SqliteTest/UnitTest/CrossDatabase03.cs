@@ -27,13 +27,13 @@ namespace OrmTest
             var list=db.QueryableWithAttr<OrderItem>()
                // .CrossQueryWithAttr()
                 .Includes(z => z.Order)
-                .ToList();
+                .ToSugarList();
 
 
             var list2 = db.QueryableWithAttr<Order>()
                //     .CrossQueryWithAttr()
                     .Includes(z => z.Items)
-                    .ToList();
+                    .ToSugarList();
 
 
             if (list.First().Order == null) 

@@ -149,7 +149,7 @@ namespace SqlSugar
             else
             {
                 var ids = _list.Select(action).ToList().Distinct().ToList();
-                var result = _context.Queryable<Result>().In(ids).ToList();
+                var result = _context.Queryable<Result>().In(ids).ToSugarList();
                 caches.Add(key, result);
                 return result;
             }

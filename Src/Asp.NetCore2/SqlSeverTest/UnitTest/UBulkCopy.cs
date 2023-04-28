@@ -18,7 +18,7 @@ namespace OrmTest
             Db.Fastest<UnitIdentity1>().BulkCopy(new List<UnitIdentity1>() {
               data
             });
-            var list=Db.Queryable<UnitIdentity1>().ToList();
+            var list=Db.Queryable<UnitIdentity1>().ToSugarList();
             if (list.Count != 1 || data.Name != list.First().Name) 
             {
                 throw new Exception("unit Bulk");
@@ -28,7 +28,7 @@ namespace OrmTest
               data,
               data
             });
-            list = Db.Queryable<UnitIdentity1>().ToList();
+            list = Db.Queryable<UnitIdentity1>().ToSugarList();
             if (list.Count != 3 || !list.Any(it=>it.Name=="2"))
             {
                 throw new Exception("unit Bulk");
@@ -43,7 +43,7 @@ namespace OrmTest
                  Name="111"
                }
             });
-            list = Db.Queryable<UnitIdentity1>().ToList();
+            list = Db.Queryable<UnitIdentity1>().ToSugarList();
             if (list.First(it=>it.Id==1).Name!="222")
             {
                 throw new Exception("unit Bulk");
@@ -83,7 +83,7 @@ namespace OrmTest
             new  UnitTestoffset11 { },
              new  UnitTestoffset11 {  DateTimeOffset= DateTimeOffset.Now}
             });
-            var list2 = db.Queryable<UnitTable001>().ToList();
+            var list2 = db.Queryable<UnitTable001>().ToSugarList();
             db.QueryFilter.Add(new SqlSugar.TableFilterItem<UnitTable001>(z => z.Id == 0));
             db.Fastest<UnitTable001>().BulkUpdate(new List<UnitTable001>() {
             new UnitTable001() {  Id=1, table="a"}

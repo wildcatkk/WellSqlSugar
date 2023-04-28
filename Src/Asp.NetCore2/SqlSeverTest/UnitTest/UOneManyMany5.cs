@@ -44,7 +44,7 @@ namespace OrmTest
             var list = db.Queryable<Student_004>()
                          .Includes(x => x.school_001 )
                          .Includes(x=>x.books)
-                .ToList();
+                .ToSugarList();
 
            
             db.DbMaintenance.TruncateTable<Student_004, School_004, Room_004, Desk_004,Book_004>();
