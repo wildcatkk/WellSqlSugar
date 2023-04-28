@@ -176,10 +176,6 @@ namespace SqlSugar
         Task<List<TResult>> ToListAsync<TResult>(Expression<Func<T, TResult>> expression);
         List<T> ToSugarList();
 
-        List<T> ToList(long factoryId, bool isDeleted = false);
-
-        Task<List<T>> ToListAsync(long factoryId, bool isDeleted = false);
-
         int IntoTable<TableEntityType>();
         int IntoTable(Type TableEntityType);
         int IntoTable<TableEntityType>(string tableName);

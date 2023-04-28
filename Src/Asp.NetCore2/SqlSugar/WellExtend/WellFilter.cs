@@ -18,7 +18,7 @@ namespace SqlSugar
                 conditions.Add(nameof(ILogicalDelete.IsDeleted), isDeleted);
             }
 
-            if (factoryId > 0 && type.GetInterface(nameof(IFactory)) != null)
+            if (typeof(T).GetInterface(nameof(IGroupCo)) is null && factoryId > 0 && type.GetInterface(nameof(IFactory)) != null)
             {
                 conditions.Add(nameof(IFactory.FactoryId), factoryId);
             }
@@ -33,5 +33,11 @@ namespace SqlSugar
             }
         }
 
+    }
+
+
+    public partial interface ISugarQueryable<T>
+    {
+        ISugarQueryable<T> WellFilter(long factoryId, bool isDeleted = false);
     }
 }

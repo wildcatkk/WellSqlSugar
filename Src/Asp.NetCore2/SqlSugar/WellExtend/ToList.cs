@@ -17,4 +17,11 @@ namespace SqlSugar
             return ToWellListAsync(ToSugarListAsync());
         }
     }
+
+    public partial interface ISugarQueryable<T>
+    {
+        List<T> ToList(long factoryId, bool isDeleted = false);
+
+        Task<List<T>> ToListAsync(long factoryId, bool isDeleted = false);
+    }
 }

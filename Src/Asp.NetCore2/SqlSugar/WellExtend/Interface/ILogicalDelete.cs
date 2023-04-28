@@ -4,8 +4,8 @@ using System.Text;
 
 namespace SqlSugar
 {
-    public interface IFactory
+    public interface ILogicalDelete
     {
-        public long FactoryId { get; set; }
+        bool IsDeleted { get; set; }
     }
 }
