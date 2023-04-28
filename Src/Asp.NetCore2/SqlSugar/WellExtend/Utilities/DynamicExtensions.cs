@@ -116,10 +116,9 @@ namespace SqlSugar
         /// </returns>
         public static bool TryGetAtrribute<T>(this Type type, out T t) where T : Attribute
         {
-            t = null;
             // 读取自定义特性
-            var customAttributes = type.GetCustomAttribute<T>();
-            return customAttributes != null;
+            t = type.GetCustomAttribute<T>();
+            return t != null;
         }
 
         /// <summary>
@@ -133,10 +132,9 @@ namespace SqlSugar
         /// </returns>
         public static bool TryGetAtrribute<T>(this PropertyInfo pi, out T t) where T : Attribute
         {
-            t = null;
             // 读取自定义特性
-            var customAttributes = pi.GetCustomAttribute<T>();
-            return customAttributes != null;
+            t = pi.GetCustomAttribute<T>();
+            return t != null;
         }
     }
 }

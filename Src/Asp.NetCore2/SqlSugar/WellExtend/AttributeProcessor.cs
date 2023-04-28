@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Dynamic;
 using System.Linq;
 using System.Reflection;
 using NetTaste;
@@ -15,6 +16,11 @@ namespace SqlSugar
         private List<T> AttributeProcess<T>(List<T> t)
         {
             var type = typeof(T);
+            if (!type.IsDefined(typeof(SugarTable)))
+            {
+                return t;
+            }
+
             var typeCons = new List<KeyValuePair<WhereType, ConditionalModel>>();
 
             // [DictTypeValue] 处理
@@ -25,38 +31,40 @@ namespace SqlSugar
 
             typeCons = typeCons.Distinct().ToList();
 
-            var typeModels = new List<IConditionalModel> { new ConditionalCollections { ConditionalList = typeCons } };
-
-            var typeList = Context.Queryable("SysDictType", "SysDictType").Where(typeModels).ToList();
-
-            foreach (var item in t)
+            if (typeCons.Count > 0)
             {
-                // 获取具有[DictTypeValue]的属性
-                var dictTypeProps = type.GetProperties().Where(u => u.IsDefined(typeof(DictTypeValue), false)).Select(
-                    x => new ValueInfo
-                    {
-                        Prop = x,
-                        TypeValue = x.TryGetAtrribute(out DictTypeValue typeValue) ? typeValue : null,
-                    }).ToList();
-                foreach (var prop in dictTypeProps)
+                var typeModels = new List<IConditionalModel> { new ConditionalCollections { ConditionalList = typeCons } };
+
+                var typeList = Context.Queryable<dynamic>().AS("SysDictType").Where(typeModels).ToSugarList();
+
+                foreach (var item in t)
                 {
-                    if (prop.TypeValue != null)
+                    // 获取具有[DictTypeValue]的属性
+                    var dictTypeProps = type.GetProperties().Where(u => u.IsDefined(typeof(DictTypeValue), false)).Select(
+                        x => new ValueInfo
+                        {
+                            Prop = x,
+                            TypeValue = x.TryGetAtrribute(out DictTypeValue typeValue) ? typeValue : null,
+                        }).ToList();
+                    foreach (var prop in dictTypeProps)
                     {
-                        var infoValue = item.GetType().GetProperty(prop.TypeValue.Code)?.GetValue(item)?.ToString();
+                        if (prop.TypeValue != null)
+                        {
+                            var infoValue = item.GetType().GetProperty(prop.TypeValue.Code)?.GetValue(item)?.ToString();
 
 
-                        var firstObj = typeList.FirstOrDefault(x =>
-                            x.TryGetDynamicValue("Code", out string code) && code == infoValue);
+                            var firstObj = typeList.FirstOrDefault(x =>
+                                x.TryGetDynamicValue("Code", out string code) && code == infoValue);
 
-                        // 获取当前数据指定列的值
-                        var val = firstObj?.GetType().GetProperty(prop.TypeValue.ValueProp)?.GetValue(firstObj)
-                            ?.ToString();
-                        // 给当前属性赋值
-                        prop.Prop?.SetValue(item, val ?? "");
+                            // 获取当前数据指定列的值
+                            var val = firstObj?.GetType().GetProperty(prop.TypeValue.ValueProp)?.GetValue(firstObj)
+                                ?.ToString();
+                            // 给当前属性赋值
+                            prop.Prop?.SetValue(item, val ?? "");
+                        }
                     }
                 }
             }
-
 
             var itemCons = new List<KeyValuePair<WhereType, ConditionalModel>>();
 
@@ -67,39 +75,41 @@ namespace SqlSugar
             }
 
             itemCons = itemCons.Distinct().ToList();
-            var itemModels = new List<IConditionalModel> { new ConditionalCollections { ConditionalList = itemCons } };
 
-            //var itemList = DbContext.SugarScope.Queryable<SysDictItem>().Where(itemModels).ToList();
-            var itemList = Context.Queryable("SysDictItem", "SysDictItem").Where(typeModels).ToList();
-
-            foreach (var item in t)
+            if (itemCons.Count > 0)
             {
-                // 获取具有[DictItemValue]的属性
-                var dictItemProps = type.GetProperties().Where(u => u.IsDefined(typeof(DictItemValue), false)).Select(
-                    x =>
-                        new ValueInfo
-                        {
-                            Prop = x,
-                            ItemValue = x.TryGetAtrribute(out DictItemValue itemValue) ? itemValue : null
-                        }).ToList();
-                foreach (var prop in dictItemProps)
-                {
-                    if (prop.ItemValue == null) continue;
-                    var infoValue = item.GetType().GetProperty(prop.ItemValue.Code)?.GetValue(item)?.ToString(); 
-                    
-                    //var firstObj = itemList.FirstOrDefault(x => x.Code == infoValue);
-                    
-                    var firstObj = itemList.FirstOrDefault(x =>
-                        x.TryGetDynamicValue("Code", out string code) && code == infoValue);
+                var itemModels = new List<IConditionalModel> { new ConditionalCollections { ConditionalList = itemCons } };
 
-                    // 获取当前数据指定列的值
-                    var val = firstObj?.GetType().GetProperty(prop.ItemValue.ValueProp)?.GetValue(firstObj)
-                        ?.ToString();
-                    // 给当前属性赋值
-                    prop.Prop?.SetValue(item, val ?? "");
+                var itemList = Context.Queryable("SysDictItem", "SysDictItem").Where(itemModels).ToSugarList();
+
+                foreach (var item in t)
+                {
+                    // 获取具有[DictItemValue]的属性
+                    var dictItemProps = type.GetProperties().Where(u => u.IsDefined(typeof(DictItemValue), false)).Select(
+                        x =>
+                            new ValueInfo
+                            {
+                                Prop = x,
+                                ItemValue = x.TryGetAtrribute(out DictItemValue itemValue) ? itemValue : null
+                            }).ToList();
+                    foreach (var prop in dictItemProps)
+                    {
+                        if (prop.ItemValue == null) continue;
+                        var infoValue = item.GetType().GetProperty(prop.ItemValue.Code)?.GetValue(item)?.ToString();
+
+                        //var firstObj = itemList.FirstOrDefault(x => x.Code == infoValue);
+
+                        var firstObj = itemList.FirstOrDefault(x =>
+                            x.TryGetDynamicValue("Code", out string code) && code == infoValue);
+
+                        // 获取当前数据指定列的值
+                        var val = firstObj?.GetType().GetProperty(prop.ItemValue.ValueProp)?.GetValue(firstObj)
+                            ?.ToString();
+                        // 给当前属性赋值
+                        prop.Prop?.SetValue(item, val ?? "");
+                    }
                 }
             }
-
 
             // [ForeignName] 处理
             // 获取所有表名
@@ -126,10 +136,8 @@ namespace SqlSugar
                     ConditionalModels = new List<IConditionalModel>()
                 });
 
-                newInfo.TableList = Context.Queryable<dynamic>().AS(tbName).Where(newInfo.ConditionalModels).ToList();
+                newInfo.TableList = Context.Queryable<dynamic>().AS(tbName).Where(newInfo.ConditionalModels).ToSugarList();
                 
-                //var itemList = Context.Queryable("SysDictItem", "SysDictItem").Where(typeModels).ToSugarList();
-
                 tableInfo.Add(newInfo);
             }
 
