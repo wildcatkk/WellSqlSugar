@@ -35,27 +35,10 @@ namespace SqlSugar
     {
         public static List<IConditionalModel> Create(string fieldName, object fieldValue, ConditionalType conditionalType = ConditionalType.Equal)
         {
-            List<IConditionalModel> conditions = new List<IConditionalModel>();
-
-            if (fieldValue is bool)
+            List<IConditionalModel> conditions = new List<IConditionalModel>
             {
-                conditions.Add(new ConditionalModel()
-                {
-                    FieldName = fieldName,
-                    FieldValue = fieldValue.ToString()?.ToLower(),
-                    CSharpTypeName = "bool",
-                    ConditionalType = conditionalType
-                });
-            }
-            else
-            {
-                conditions.Add(new ConditionalModel()
-                {
-                    FieldName = fieldName,
-                    FieldValue = fieldValue.ToString(),
-                    ConditionalType = conditionalType
-                });
-            }
+                { fieldName, fieldValue, conditionalType }
+            };
 
             return conditions;
         }
