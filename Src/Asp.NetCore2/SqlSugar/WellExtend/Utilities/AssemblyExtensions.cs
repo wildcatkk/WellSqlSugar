@@ -6,9 +6,9 @@ using System.Reflection;
 
 namespace SqlSugar
 {
-    public static class AssemblyExtensions
+    public static class DynamicExtensions
     {
-        public static bool TryGetType(string typeName, out Type? type)
+        public static bool TryGetType(this string typeName, out Type? type)
         {
             if (string.IsNullOrEmpty(typeName))
             {
@@ -45,7 +45,7 @@ namespace SqlSugar
             return false;
         }
 
-        public static bool TryGetDbType(string typeName, out Type? type)
+        public static bool TryGetDbType(this string typeName, out Type? type)
         {
             if (string.IsNullOrEmpty(typeName))
             {
