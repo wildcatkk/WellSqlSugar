@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace SqlSugar
@@ -9,20 +7,14 @@ namespace SqlSugar
     {
         public List<T> ToList(long factoryId, bool isDeleted = false)
         {
-            WellFilter(factoryId, isDeleted);
-
-            //TODO 处理自定义特性
-
-            return this.ToSugarList();
+            // WellFilter(factoryId, isDeleted);
+            return ToWellList(ToSugarList());
         }
 
         public Task<List<T>> ToListAsync(long factoryId, bool isDeleted = false)
         {
-            WellFilter(factoryId, isDeleted);
-
-            //TODO 处理自定义特性
-
-            return this.ToSugarListAsync();
+            //WellFilter(factoryId, isDeleted);
+            return ToWellListAsync(ToSugarListAsync());
         }
     }
 }
