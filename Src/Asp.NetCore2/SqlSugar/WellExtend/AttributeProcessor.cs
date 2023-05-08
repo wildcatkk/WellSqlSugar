@@ -13,18 +13,70 @@ namespace SqlSugar
     /// </summary>
     public partial class QueryableProvider<T>
     {
-        private List<T> AttributeProcess<T>(List<T> t)
+        private List<T> AttributeProcess<T>(List<T> list)
         {
-            var type = typeof(T);
+            Type type = typeof(T);
             if (!type.IsDefined(typeof(SugarTable)))
             {
-                return t;
+                return list;
             }
 
-            var typeCons = new List<KeyValuePair<WhereType, ConditionalModel>>();
+            PropertyInfo[] props = type.GetProperties();
+            List<PropertyInfo> enumProps = new List<PropertyInfo>();
+            foreach (PropertyInfo prop in props)
+            {
+                if (prop.TryGetAtrribute(out EnumName enumAttr))
+                {
+                    enumProps.Add(prop);
+                }
+                else if (prop.IsDefined(typeof(ForeignName), false))
+                {
+
+                }
+                else if (prop.IsDefined(typeof(DictItemValue), false))
+                {
+
+                }
+                else if (prop.IsDefined(typeof(DictTypeValue), false))
+                {
+
+                }
+            }
+
+            // [EnumName] 处理
+            foreach (var prop in enumProps)
+            {
+                if (prop.TryGetAtrribute(out EnumName enumName))
+                {
+                    var enumProp = type.GetProperty(enumName.Property);
+                    if (enumProp != null)
+                    {
+                        foreach (var item in list)
+                        {
+                            var enumValue = enumProp.GetValue(item);
+
+                            if (enumValue != null)
+                            {
+                                var enumType = enumProp.PropertyType;
+                                string enumStr;
+                                //先尝试获取Description
+                                if (enumType.TryGetAtrribute(out DescriptionAttribute description) &&
+                                    !string.IsNullOrWhiteSpace(description.Description))
+                                    enumStr = description.Description;
+                                else
+                                    enumStr = Enum.GetName(enumType, enumValue) ?? "";
+
+                                prop.SetValue(item, enumStr);
+                            }
+                        }
+                    }
+                }
+            }
 
             // [DictTypeValue] 处理
-            foreach (var cons in t.Select(GetDictTypeCondModel))
+            var typeCons = new List<KeyValuePair<WhereType, ConditionalModel>>();
+
+            foreach (var cons in list.Select(GetDictTypeCondModel))
             {
                 typeCons.AddRange(cons);
             }
@@ -37,7 +89,7 @@ namespace SqlSugar
 
                 var typeList = Context.Queryable<dynamic>().AS("SysDictType").Where(typeModels).ToSugarList();
 
-                foreach (var item in t)
+                foreach (var item in list)
                 {
                     // 获取具有[DictTypeValue]的属性
                     var dictTypeProps = type.GetProperties().Where(u => u.IsDefined(typeof(DictTypeValue), false)).Select(
@@ -69,7 +121,7 @@ namespace SqlSugar
             var itemCons = new List<KeyValuePair<WhereType, ConditionalModel>>();
 
             // [DictItemValue] 处理
-            foreach (var cons in t.Select(GetDictItemCondModel))
+            foreach (var cons in list.Select(GetDictItemCondModel))
             {
                 itemCons.AddRange(cons);
             }
@@ -82,7 +134,7 @@ namespace SqlSugar
 
                 var itemList = Context.Queryable("SysDictItem", "SysDictItem").Where(itemModels).ToSugarList();
 
-                foreach (var item in t)
+                foreach (var item in list)
                 {
                     // 获取具有[DictItemValue]的属性
                     var dictItemProps = type.GetProperties().Where(u => u.IsDefined(typeof(DictItemValue), false)).Select(
@@ -129,7 +181,7 @@ namespace SqlSugar
             foreach (var tbName in tableList)
             {
                 if (string.IsNullOrEmpty(tbName)) continue;
-                var newInfo = GetDictForeignCondModel(t, new EntityTableInfo
+                var newInfo = GetDictForeignCondModel(list, new EntityTableInfo
                 {
                     TableName = tbName,
                     Prop = null,
@@ -142,12 +194,12 @@ namespace SqlSugar
             }
 
             // 设置对象的属性值
-            foreach (var item in t)
+            foreach (var item in list)
             {
                 foreach (var prop in foreignProps)
                 {
                     if (prop.ForeignName == null) continue;
-                    var infoValue = item.GetType().GetProperty(prop.ForeignName.PropName)?.GetValue(item)?.ToString();
+                    var infoValue = type.GetProperty(prop.ForeignName.PropName)?.GetValue(item)?.ToString();
 
                     var dataSet = tableInfo.FirstOrDefault(x => x.TableName == prop.ForeignName.TableName)?.TableList;
 
@@ -161,38 +213,7 @@ namespace SqlSugar
                 }
             }
 
-            // [EnumName] 处理
-            var enumProps = type.GetProperties().Where(u => u.IsDefined(typeof(EnumName), false));
-            foreach (var tModel in t)
-            {
-                foreach (var prop in enumProps)
-                {
-                    if (prop.TryGetAtrribute(out EnumName refEnum))
-                    {
-                        var enumProp = type.GetProperty(refEnum.Property);
-                        if (enumProp != null)
-                        {
-                            var enumValue = enumProp.GetValue(tModel);
-
-                            if (enumValue != null)
-                            {
-                                var enumType = enumProp.PropertyType;
-                                string enumName;
-                                //先尝试获取Description
-                                if (enumType.TryGetAtrribute(out DescriptionAttribute description) &&
-                                    !string.IsNullOrWhiteSpace(description.Description))
-                                    enumName = description.Description;
-                                else
-                                    enumName = Enum.GetName(enumType, enumValue) ?? "";
-
-                                prop.SetValue(tModel, enumName);
-                            }
-                        }
-                    }
-                }
-            }
-
-            return t;
+            return list;
         }
 
         /// <summary>
