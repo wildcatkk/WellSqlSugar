@@ -8,6 +8,11 @@ namespace SqlSugar
         {
             if (fieldValue is bool)
             {
+                if (fieldValue is null)
+                {
+                    fieldValue = false;
+                }
+
                 conditions.Add(new ConditionalModel()
                 {
                     FieldName = fieldName,
@@ -18,6 +23,11 @@ namespace SqlSugar
             }
             else
             {
+                if (fieldValue is null)
+                {
+                    fieldValue = "";
+                }
+
                 conditions.Add(new ConditionalModel()
                 {
                     FieldName = fieldName,
