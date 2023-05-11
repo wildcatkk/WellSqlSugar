@@ -6,15 +6,57 @@ namespace SqlSugar
     /// 自定义特性，用于标记外键的Name
     /// </summary>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-    public class ForeignName : Attribute
+    public class ForeignValue : Attribute
     {
         public readonly string TableName;
-        public readonly string PropName;
+        public readonly string TableColumn;
+        public readonly string TargetColumn;
+        public readonly string Property;
+        public readonly bool IsId;
 
-        public ForeignName(string tableName, string propName)
+        /// <summary>
+        /// "Id" => "Name"
+        /// </summary>
+        /// <param name="tableName">外表名称</param>
+        /// <param name="property">当前表查询值字段</param>
+        public ForeignValue(string tableName, string property)
         {
             TableName = tableName;
-            PropName = propName;
+            TableColumn = "Id";
+            TargetColumn = "Name";
+            IsId = true;
+            Property = property;
+        }
+
+        /// <summary>
+        /// tableColumn => "Name"
+        /// </summary>
+        /// <param name="tableName">外表名称</param>
+        /// <param name="tableColumn">外键表查询列</param>
+        /// <param name="property">当前表查询值字段</param>
+        public ForeignValue(string tableName, string tableColumn, string property)
+        {
+            TableName = tableName;
+            TableColumn = tableColumn;
+            IsId = "Id".Equals(tableColumn);
+            TargetColumn = "Name";
+            Property = property;
+        }
+
+        /// <summary>
+        /// tableColumn => targetColumn
+        /// </summary>
+        /// <param name="tableName">外表名称</param>
+        /// <param name="tableColumn">外键表查询列</param>
+        /// <param name="property">当前表查询值字段</param>
+        /// <param name="targetColumn">外键表目标字段</param>
+        public ForeignValue(string tableName, string tableColumn, string property, string targetColumn)
+        {
+            TableName = tableName;
+            TableColumn = tableColumn;
+            IsId = "Id".Equals(tableColumn);
+            TargetColumn = targetColumn;
+            Property = property;
         }
     }
 }
