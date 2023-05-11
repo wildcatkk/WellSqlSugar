@@ -6,9 +6,9 @@ using System.Text;
 
 namespace SqlSugar
 {
-    public partial class QueryableProvider<T> : QueryableAccessory, ISugarQueryable<T>
+    public static class WellFilterExtend
     {
-        public ISugarQueryable<T> WellFilter(long factoryId, bool isDeleted = false)
+        public static ISugarQueryable<T> WellFilter<T>(this ISugarQueryable<T> queryable, long factoryId, bool isDeleted = false)
         {
             List<IConditionalModel> conditions = new List<IConditionalModel>();
 
@@ -25,15 +25,15 @@ namespace SqlSugar
 
             if (conditions.Count > 0)
             {
-                return this.Where(conditions);
+                return queryable.Where(conditions);
             }
             else
             {
-                return this;
+                return queryable;
             }
         }
 
-        public ISugarQueryable<T> WellFilter(bool isDeleted = false)
+        public static ISugarQueryable<T> WellFilter<T>(this ISugarQueryable<T> queryable, bool isDeleted = false)
         {
             List<IConditionalModel> conditions = new List<IConditionalModel>();
 
@@ -42,21 +42,57 @@ namespace SqlSugar
             {
                 conditions.Add(nameof(ILogicalDelete.IsDeleted), isDeleted);
             
-                return this.Where(conditions);
+                return queryable.Where(conditions);
             }
             else
             {
-                return this;
+                return queryable;
+            }
+        }
+
+
+        public static IUpdateable<T> WellFilter<T>(this IUpdateable<T> updateable, long factoryId, bool isDeleted = false) where T: class, new()
+        {
+            List<IConditionalModel> conditions = new List<IConditionalModel>();
+
+            Type type = typeof(T);
+            if (type.GetInterface(nameof(ILogicalDelete)) != null)
+            {
+                conditions.Add(nameof(ILogicalDelete.IsDeleted), isDeleted);
+            }
+
+            if (typeof(T).GetInterface(nameof(IGroupCo)) is null && factoryId > 0 && type.GetInterface(nameof(IFactory)) != null)
+            {
+                conditions.Add(nameof(IFactory.FactoryId), factoryId);
+            }
+
+            if (conditions.Count > 0)
+            {
+                return updateable.Where(conditions);
+            }
+            else
+            {
+                return updateable;
+            }
+        }
+
+        public static IUpdateable<T> WellFilter<T>(this IUpdateable<T> updateable, bool isDeleted = false) where T : class, new()
+        {
+            List<IConditionalModel> conditions = new List<IConditionalModel>();
+
+            Type type = typeof(T);
+            if (type.GetInterface(nameof(ILogicalDelete)) != null)
+            {
+                conditions.Add(nameof(ILogicalDelete.IsDeleted), isDeleted);
+
+                return updateable.Where(conditions);
+            }
+            else
+            {
+                return updateable;
             }
         }
 
     }
 
-
-    public partial interface ISugarQueryable<T>
-    {
-        ISugarQueryable<T> WellFilter(long factoryId, bool isDeleted = false);
-
-        ISugarQueryable<T> WellFilter(bool isDeleted = false);
-    }
 }
