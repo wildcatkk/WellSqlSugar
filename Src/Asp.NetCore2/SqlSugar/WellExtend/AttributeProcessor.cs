@@ -30,29 +30,38 @@ namespace SqlSugar
             //1、反射收集特性
             PropertyInfo[] props = type.GetProperties();
             List<EnumNameInfo> enumInfoes = new List<EnumNameInfo>();
-            List<DictTypeInfo> dictTypeInfoes = new List<DictTypeInfo>();
-            List<DictItemInfo> dictItemInfoes = new List<DictItemInfo>();
             List<ForeignValueInfo> foreignInfoes = new List<ForeignValueInfo>();
+            List<SubForeignValueInfo> subForeignInfoes = new List<SubForeignValueInfo>();
             foreach (PropertyInfo prop in props)
             {
+                //枚举特性
                 if (prop.TryGetAtrribute(out EnumName enumAttr))
                 {
                     if (prop.PropertyType != typeof(string))
                     {
                         throw new Exception($"特性EnumName({type.Name}.{prop.Name})仅支持string类型的属性。");
                     }
-                    EnumNameInfo enumNameInfo = new EnumNameInfo(prop, enumAttr, type);
+                    EnumNameInfo enumInfo = new EnumNameInfo(prop, enumAttr, type);
 
-                    if (enumNameInfo.TargetPropInfo != null) enumInfoes.Add(enumNameInfo);
+                    if (enumInfo.KeyPropInfo != null) enumInfoes.Add(enumInfo);
                 }
+                //字典类型特性（转换为ForeignValue处理）
                 else if (prop.TryGetAtrribute(out DictTypeValue dictTypeAttr))
                 {
-                    dictTypeInfoes.Add(new DictTypeInfo(prop, dictTypeAttr));
+                    ForeignValue foreignAttr = new ForeignValue("SysDictType", "Code", dictTypeAttr.CodeProperty, dictTypeAttr.TargetColumn);
+                    var foreignInfo = new ForeignValueInfo(prop, foreignAttr, type);
+
+                    if (foreignInfo.KeyPropInfo != null) foreignInfoes.Add(foreignInfo);
                 }
+                //字典项特性（转换为SubForeignValue处理）
                 else if (prop.TryGetAtrribute(out DictItemValue dictItemAttr))
                 {
-                    dictItemInfoes.Add(new DictItemInfo(prop, dictItemAttr));
+                    SubForeignValue foreignAttr = new SubForeignValue("SysDictItem", "ParentId", dictItemAttr.ParentCode, "Code", dictItemAttr.CodeProperty, dictItemAttr.TargetColumn);
+                    var subForeignInfo = new SubForeignValueInfo(prop, foreignAttr, type);
+
+                    if (subForeignInfo.KeyPropInfo != null) subForeignInfoes.Add(subForeignInfo);
                 }
+                //外键表特性（单主键）
                 else if (prop.TryGetAtrribute(out ForeignValue foreignAttr))
                 {
                     if (foreignAttr.IsId && prop.PropertyType != typeof(string))
@@ -60,9 +69,16 @@ namespace SqlSugar
                         throw new Exception($"特性ForeignValue({type.Name}.{prop.Name})仅支持string类型的属性。");
                     }
 
-                    var foreignNameInfo = new ForeignValueInfo(prop, foreignAttr, type);
+                    var foreignInfo = new ForeignValueInfo(prop, foreignAttr, type);
 
-                    if (foreignNameInfo.TargetPropInfo != null) foreignInfoes.Add(foreignNameInfo);
+                    if (foreignInfo.KeyPropInfo != null) foreignInfoes.Add(foreignInfo);
+                }
+                //外键表特性（复合主键）
+                else if (prop.TryGetAtrribute(out SubForeignValue subForeignAttr))
+                {
+                    var subForeignInfo = new SubForeignValueInfo(prop, subForeignAttr, type);
+
+                    if (subForeignInfo.KeyPropInfo != null) subForeignInfoes.Add(subForeignInfo);
                 }
             }
 
@@ -72,22 +88,16 @@ namespace SqlSugar
                 EnumNameProcess(list, type, enumInfoes);
             }
 
-            // 3、[DictTypeValue] 处理
-            if (dictTypeInfoes.Count > 0)
-            {
-                DictTypeProcess(list, type, dictTypeInfoes);
-            }
-
-            // 4、[DictItemValue] 处理
-            if (dictItemInfoes.Count > 0)
-            {
-                DictItemProcess(list, type, dictItemInfoes);
-            }
-
-            // 5、[ForeignValue] 处理
+            // 3、[ForeignValue] 处理
             if (foreignInfoes.Count > 0)
             {
                 ForeignValueProcess(list, type, foreignInfoes);
+            }
+
+            // 4、[SubForeignValue] 处理
+            if (subForeignInfoes.Count > 0)
+            {
+                SubForeignValueProcess(list, type, subForeignInfoes);
             }
 
             return list;
@@ -100,7 +110,7 @@ namespace SqlSugar
             {
                 foreach (var t in list)
                 {
-                    var enumValue = info.TargetPropInfo.GetValue(t);
+                    var enumValue = info.KeyPropInfo.GetValue(t);
 
                     if (enumValue is null) continue;
                         
@@ -113,14 +123,14 @@ namespace SqlSugar
                     else
                     {
                         //先尝试获取Description
-                        if (info.TargetPropInfo.PropertyType.TryGetAtrribute(out DescriptionAttribute descrip)
+                        if (info.KeyPropInfo.PropertyType.TryGetAtrribute(out DescriptionAttribute descrip)
                             && !string.IsNullOrWhiteSpace(descrip.Description))
                         {
                             enumStr = descrip.Description;
                         }
                         else
                         {
-                            enumStr = Enum.GetName(info.TargetPropInfo.PropertyType, enumValue) ?? "";
+                            enumStr = Enum.GetName(info.KeyPropInfo.PropertyType, enumValue) ?? "";
                         }
 
                         enumCache.Add(enumValue, enumStr);
@@ -133,107 +143,26 @@ namespace SqlSugar
             }
         }
 
-        private void DictTypeProcess<T>(List<T> list, Type type, List<DictTypeInfo> dictTypeInfoes)
-        {
-            var typeCons = new List<KeyValuePair<WhereType, ConditionalModel>>();
-
-            
-            foreach (var cons in list.Select(t=> GetDictTypeCondModel(t, dictTypeInfoes)))
-            {
-                typeCons.AddRange(cons);
-            }
-
-            typeCons = typeCons.Distinct().ToList();
-
-            if (typeCons.Count > 0)
-            {
-                var typeModels = new List<IConditionalModel> { new ConditionalCollections { ConditionalList = typeCons } };
-
-                var typeList = Context.Queryable<dynamic>().AS("SysDictType").Where(typeModels).ToSugarList();
-
-                foreach (var item in list)
-                {
-                    foreach (var prop in dictTypeInfoes)
-                    {
-                        if (prop.DictType != null)
-                        {
-                            var infoValue = item.GetType().GetProperty(prop.DictType.Code)?.GetValue(item)?.ToString();
-
-                            var firstObj = typeList.FirstOrDefault(x =>
-                                x.TryGetDynamicValue("Code", out string code) && code == infoValue);
-
-                            // 获取当前数据指定列的值
-                            var val = firstObj?.GetType().GetProperty(prop.DictType.ValueProp)?.GetValue(firstObj)?.ToString();
-
-                            // 给当前属性赋值
-                            prop.PropInfo?.SetValue(item, val ?? "");
-                        }
-                    }
-                }
-            }
-
-            var itemCons = new List<KeyValuePair<WhereType, ConditionalModel>>();
-        }
-
-        private void DictItemProcess<T>(List<T> list, Type type, List<DictItemInfo> dictItemInfoes)
-        {
-            List<KeyValuePair<WhereType, ConditionalModel>> itemCons = new List<KeyValuePair<WhereType, ConditionalModel>>();
-            foreach (List<KeyValuePair<WhereType, ConditionalModel>> cons in list.Select(t=>GetDictItemCondModel(t, dictItemInfoes)))
-            {
-                itemCons.AddRange(cons);
-            }
-
-            itemCons = itemCons.Distinct().ToList();
-
-            if (itemCons.Count > 0)
-            {
-                var itemModels = new List<IConditionalModel> { new ConditionalCollections { ConditionalList = itemCons } };
-
-                var itemList = Context.Queryable("SysDictItem", "SysDictItem").Where(itemModels).ToSugarList();
-
-                foreach (var item in list)
-                {
-                    foreach (var prop in dictItemInfoes)
-                    {
-                        var infoValue = item.GetType().GetProperty(prop.DictItem.Code)?.GetValue(item)?.ToString();
-
-                        //var firstObj = itemList.FirstOrDefault(x => x.Code == infoValue);
-
-                        var firstObj = itemList.FirstOrDefault(x =>
-                            x.TryGetDynamicValue("Code", out string code) && code == infoValue);
-
-                        // 获取当前数据指定列的值
-                        var val = firstObj?.GetType().GetProperty(prop.DictItem.ValueProp)?.GetValue(firstObj)
-                            ?.ToString();
-                        // 给当前属性赋值
-                        prop.PropInfo?.SetValue(item, val ?? "");
-                    }
-                }
-            }
-        }
-
         private void ForeignValueProcess<T>(List<T> list, Type type, List<ForeignValueInfo> foreignInfoes)
         {
-            // 获取所有表数据
+            // 获取所有表名
             var tableNames = new List<string>();
-            var tableInfoes = new List<EntityTableInfo>();
             foreach (ForeignValueInfo info in foreignInfoes)
             {
                 if (string.IsNullOrEmpty(info.ForeignValue.TableName) || tableNames.Contains(info.ForeignValue.TableName)) continue;
                 
                 tableNames.Add(info.ForeignValue.TableName);
+            }
 
+            // 根据表名分组查询
+            var tableInfoes = new List<EntityTableInfo>();
+            foreach (var tableName in tableNames)
+            {
                 //根据数据集组装id条件
-                var tableInfo = GetForeignCondModel(list, type, info.ForeignValue.TableName, foreignInfoes);
-
-                var select = new List<SelectModel>()
-                {
-                    new SelectModel(){ FiledName = info.ForeignValue.TableColumn, AsName = info.ForeignValue.TableColumn },
-                    new SelectModel(){ FiledName = info.ForeignValue.TargetColumn, AsName = info.ForeignValue.TargetColumn },
-                };
+                var tableInfo = GetForeignCondModel(list, type, tableName, foreignInfoes);
 
                 //查询数据库获取结果
-                tableInfo.TableList = Context.Queryable<dynamic>().AS(info.ForeignValue.TableName).Where(tableInfo.ConditionalModels).Select(select).ToSugarList();
+                tableInfo.TableList = Context.Queryable<dynamic>().AS(tableName).Where(tableInfo.ConditionalModels).Select(tableInfo.SelectModels).ToSugarList();
 
                 tableInfoes.Add(tableInfo);
             }
@@ -248,7 +177,7 @@ namespace SqlSugar
                     if (dataSet is null || dataSet.Count == 0) continue;
 
                     //当前行数据
-                    var infoValue = item.TargetPropInfo.GetValue(t);
+                    var infoValue = item.KeyPropInfo.GetValue(t);
                     if (infoValue is null) continue;
 
                     dynamic firstObj = null;
@@ -276,46 +205,7 @@ namespace SqlSugar
         }
 
         /// <summary>
-        /// 获取DictType查询条件
-        /// </summary>
-        /// <param name="t"></param>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        private  List<KeyValuePair<WhereType, ConditionalModel>> GetDictTypeCondModel<T>(T t, List<DictTypeInfo> dictTypeInfoes)
-        {
-            // 生成条件表达式
-            var conditionalList = (from item in dictTypeInfoes
-                                   where item.DictType.Code != null
-                                   select t.GetType().GetProperty(item.DictType.Code)?.GetValue(t)?.ToString()
-                    into infoValue
-                                   select new KeyValuePair<WhereType, ConditionalModel>(WhereType.Or,
-                                       new ConditionalModel { FieldName = "Code", FieldValue = infoValue }))
-                .Distinct().ToList();
-
-            return conditionalList;
-        }
-
-        /// <summary>
-        /// 获取DictItem查询条件
-        /// </summary>
-        /// <param name="t"></param>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        private  List<KeyValuePair<WhereType, ConditionalModel>> GetDictItemCondModel<T>(T t, List<DictItemInfo> dictItemInfoes)
-        {
-            // 生成条件表达式
-            var conditionalList = (from item in dictItemInfoes
-                                   where item.DictItem.Code != null
-                    select t.GetType().GetProperty(item.DictItem.Code)?.GetValue(t)?.ToString()
-                    into infoValue
-                    select new KeyValuePair<WhereType, ConditionalModel>(WhereType.Or,
-                        new ConditionalModel { FieldName = "Code", FieldValue = infoValue }))
-                .Distinct().ToList();
-            return conditionalList;
-        }
-
-        /// <summary>
-        /// 获取外键查询条件
+        /// 分组获取外键查询条件
         /// </summary>
         /// <param name="list"></param>
         /// <param name="tableInfo"></param>
@@ -325,37 +215,192 @@ namespace SqlSugar
         {
             EntityTableInfo tableInfo = new EntityTableInfo(tableName);
 
-            var propValues = new List<object>();
+            var propValues = new List<SingleKey>();
             List<KeyValuePair<WhereType, ConditionalModel>> condiModels = new List<KeyValuePair<WhereType, ConditionalModel>>();
-            foreach (var item in foreignInfoes)
+            List<string> fieldNames = new List<string>();
+            //对于非bool类型条件，可以将多个Or合并为一个In
+            List<ConditionMerge> merges = new List<ConditionMerge>();
+            foreach (var info in foreignInfoes)
             {
-                if (item.ForeignValue.TableName == tableName)
+                // 分组条件
+                if (info.ForeignValue.TableName == tableName)
                 {
                     foreach (var t in list)
                     {
-                        object propValue = item.TargetPropInfo.GetValue(t);
-                        if (propValue is null || propValues.Contains(propValue)) continue;
+                        // 查询条件去重
+                        object propValue = info.KeyPropInfo.GetValue(t);
+                        if (propValue is null || propValues.Exists(p=> p.KeyColumn == info.ForeignValue.TableColumn && p.Key.ToString() == propValue.ToString())) continue;
 
-                        if (item.ForeignValue.IsId)
+                        //对于Id，需要做额外的判断
+                        if (info.ForeignValue.IsId)
                         {
                             string idStr = propValue.ToString();
                             if (string.IsNullOrEmpty(idStr) || Convert.ToInt64(idStr) <= 0) continue;
                         }
 
-                        propValues.Add(propValue);
+                        propValues.Add(new SingleKey(info.ForeignValue.TableColumn, propValue));
 
-                        condiModels.Add(WhereType.Or, item.ForeignValue.TableColumn, propValue);
+                        // 组装查询条件
+                        //对于非bool类型条件，可以将多个Or合并为一个In
+                        if (info.KeyPropInfo.PropertyType != typeof(bool))
+                        {
+                            ConditionMerge merge = merges.FirstOrDefault(p => p.Column == info.ForeignValue.TableColumn);
+                            if (merge != null)
+                            {
+                                //二次匹配，表示有多个，从Equal=>In
+                                string columnValue = merge.Value;
+
+                                merge.Value += "," + propValue.ToString();
+                                merge.CondiType = ConditionalType.In;
+                            }
+                            else
+                            {
+                                merges.Add(new ConditionMerge(ConditionalType.Equal, info.ForeignValue.TableColumn, propValue.ToString()));
+                            }
+                        }
+                        else
+                        {
+                            condiModels.Add(WhereType.Or, info.ForeignValue.TableColumn, propValue);
+                        }
+
+                        // 组装Select条件
+                        if (!fieldNames.Contains(info.ForeignValue.TableColumn))
+                        {
+                            fieldNames.Add(info.ForeignValue.TableColumn);
+                            tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.ForeignValue.TableColumn, AsName = info.ForeignValue.TableColumn });
+                        }
+                        if (!fieldNames.Contains(info.ForeignValue.TargetColumn))
+                        {
+                            fieldNames.Add(info.ForeignValue.TargetColumn);
+                            tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.ForeignValue.TargetColumn, AsName = info.ForeignValue.TargetColumn });
+                        }
                     }
                 }
             }
 
-            tableInfo.ConditionalModels = new List<IConditionalModel>
+            foreach (var merge in merges)
             {
-                new ConditionalCollections
+                condiModels.Add(WhereType.Or, merge.Column, merge.Value, merge.CondiType);
+            }
+
+            tableInfo.ConditionalModels = SugarConditional.CreateList(condiModels);
+
+            return tableInfo;
+        }
+        
+        private void SubForeignValueProcess<T>(List<T> list, Type type, List<SubForeignValueInfo> subForeignInfoes)
+        {
+            // 获取所有表名
+            var tableNames = new List<string>();
+            foreach (var info in subForeignInfoes)
+            {
+                if (string.IsNullOrEmpty(info.SubForeignValue.TableName) || tableNames.Contains(info.SubForeignValue.TableName)) continue;
+                
+                tableNames.Add(info.SubForeignValue.TableName);
+            }
+
+            // 根据表名分组查询
+            var tableInfoes = new List<EntityTableInfo>();
+            foreach (var tableName in tableNames)
+            {
+                //根据数据集组装id条件
+                var tableInfo = GetSubForeignCondModel(list, type, tableName, subForeignInfoes);
+
+                //查询数据库获取结果
+                tableInfo.TableList = Context.Queryable<dynamic>().AS(tableName).Where(tableInfo.ConditionalModels).Select(tableInfo.SelectModels).ToSugarList();
+
+                tableInfoes.Add(tableInfo);
+            }
+
+            // 设置对象的属性值
+            foreach (var t in list)
+            {
+                foreach (var info in subForeignInfoes)
                 {
-                    ConditionalList = condiModels
+                    //数据库数据集
+                    var dataSet = tableInfoes.FirstOrDefault(x => x.TableName == info.SubForeignValue.TableName)?.TableList;
+                    if (dataSet is null || dataSet.Count == 0) continue;
+
+                    //当前行数据
+                    var infoValue = info.KeyPropInfo.GetValue(t);
+                    if (infoValue is null) continue;
+
+                    dynamic firstObj = null;
+                    foreach (var data in dataSet)
+                    {
+                        //比较复合主键以查找返回的数据，这里仅匹配第一个
+                        if (DynamicExtensions.TryGetDynamicValue(data, info.SubForeignValue.TableColumn, out object columnValue)
+                            && columnValue != null
+                            && columnValue.ToString() == infoValue.ToString()
+                         )
+                        {
+                            if (DynamicExtensions.TryGetDynamicValue(data, info.SubForeignValue.ParentColumn, out object parentValue)
+                                && parentValue != null
+                                && parentValue.ToString() == info.SubForeignValue.ParentKey
+                             )
+                            {
+                                firstObj = data;
+                                break;
+                            }
+                        }
+                    }
+                    if (firstObj is null) continue;
+
+                    // 给当前属性赋值
+                    if (DynamicExtensions.TryGetDynamicValue(firstObj, info.SubForeignValue.TargetColumn, out object targetValue)
+                        && targetValue != null)
+                    {
+                        info.PropInfo.SetValue(t, targetValue);
+                    }
                 }
-            };
+            }
+        }
+
+        private static EntityTableInfo GetSubForeignCondModel<T>(List<T> list, Type type, string tableName, List<SubForeignValueInfo> subForeignInfoes)
+        {
+            EntityTableInfo tableInfo = new EntityTableInfo(tableName);
+
+            List<DoubleKey> propValues = new List<DoubleKey>();
+            List<string> fieldNames = new List<string>();
+            foreach (var info in subForeignInfoes)
+            {
+                // 分组条件
+                if (info.SubForeignValue.TableName == tableName)
+                {
+                    foreach (var t in list)
+                    {
+                        // 查询条件去重
+                        object propValue = info.KeyPropInfo.GetValue(t);
+                        if (propValue is null || propValues.Exists(p=>p.ParentColumn == info.SubForeignValue.ParentColumn && p.ParentKey == info.SubForeignValue.ParentKey && p.KeyColumn == info.SubForeignValue.TableColumn && p.Key.ToString() == propValue.ToString())) continue;
+
+                        propValues.Add(new DoubleKey(info.SubForeignValue.ParentColumn, info.SubForeignValue.ParentKey, info.SubForeignValue.TableColumn, propValue));
+
+                        // 组装复合查询条件
+                        var condiModels = new List<KeyValuePair<WhereType, ConditionalModel>>();
+                        condiModels.Add(WhereType.Or, info.SubForeignValue.ParentColumn, info.SubForeignValue.ParentKey);
+                        condiModels.Add(WhereType.And, info.SubForeignValue.TableColumn, propValue);
+
+                        tableInfo.ConditionalModels.Add(SugarConditional.CreateWhere(condiModels));
+
+                        // 组装复合Select条件
+                        if (!fieldNames.Contains(info.SubForeignValue.ParentColumn))
+                        {
+                            fieldNames.Add(info.SubForeignValue.ParentColumn);
+                            tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.SubForeignValue.ParentColumn, AsName = info.SubForeignValue.ParentColumn });
+                        }
+                        if (!fieldNames.Contains(info.SubForeignValue.TableColumn))
+                        {
+                            fieldNames.Add(info.SubForeignValue.TableColumn);
+                            tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.SubForeignValue.TableColumn, AsName = info.SubForeignValue.TableColumn });
+                        }
+                        if (!fieldNames.Contains(info.SubForeignValue.TargetColumn))
+                        {
+                            fieldNames.Add(info.SubForeignValue.TargetColumn);
+                            tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.SubForeignValue.TargetColumn, AsName = info.SubForeignValue.TargetColumn });
+                        }
+                    }
+                }
+            }
 
             return tableInfo;
         }
@@ -367,42 +412,14 @@ namespace SqlSugar
         {
             PropInfo = propInfo;
             EnumName = enumName;
-            TargetPropInfo = type.GetProperty(enumName.Property);
+            KeyPropInfo = type.GetProperty(enumName.Property);
         }
 
         public PropertyInfo PropInfo { get; set; }
 
-        public PropertyInfo TargetPropInfo { get; set; }
+        public PropertyInfo KeyPropInfo { get; set; }
 
         public EnumName EnumName { get; set; }
-    }
-
-    internal class DictTypeInfo
-    {
-        public DictTypeInfo(PropertyInfo propInfo, DictTypeValue dictType)
-        {
-            PropInfo = propInfo;
-            DictType = dictType;
-        }
-
-        public PropertyInfo PropInfo { get; set; }
-
-        public DictTypeValue DictType { get; set; }
-
-    }
-
-    internal class DictItemInfo
-    {
-        public DictItemInfo(PropertyInfo propInfo, DictItemValue dictItem)
-        {
-            PropInfo = propInfo;
-            DictItem = dictItem;
-        }
-
-        public PropertyInfo PropInfo { get; set; }
-
-        public DictItemValue DictItem { get; set; }
-
     }
 
     internal class ForeignValueInfo
@@ -411,14 +428,78 @@ namespace SqlSugar
         {
             PropInfo = propInfo;
             ForeignValue = foreign;
-            TargetPropInfo = type.GetProperty(foreign.Property);
+            KeyPropInfo = type.GetProperty(foreign.Property);
         }
 
         public PropertyInfo PropInfo { get; set; }
 
-        public PropertyInfo TargetPropInfo { get; set; }
+        public PropertyInfo KeyPropInfo { get; set; }
 
         public ForeignValue ForeignValue { get; set; }
+    }
+
+    internal class ConditionMerge
+    {
+        public ConditionMerge(ConditionalType condiType, string column, string value)
+        {
+            CondiType = condiType;
+            Column = column;
+            Value = value;
+        }
+
+        public ConditionalType CondiType { get; set; }
+
+        public string Column { get; set; }
+
+        public string Value { get; set; }
+    }
+
+    internal class SubForeignValueInfo
+    {
+        public SubForeignValueInfo(PropertyInfo propInfo, SubForeignValue foreign, Type type)
+        {
+            PropInfo = propInfo;
+            SubForeignValue = foreign;
+            KeyPropInfo = type.GetProperty(foreign.Property);
+        }
+
+        public PropertyInfo PropInfo { get; set; }
+
+        public PropertyInfo KeyPropInfo { get; set; }
+
+        public SubForeignValue SubForeignValue { get; set; }
+    }
+
+    internal class SingleKey
+    {
+        public SingleKey(string keyColumn, object key)
+        {
+            KeyColumn = keyColumn;
+            Key = key;
+        }
+
+        public string KeyColumn { get; set; }
+
+        public object Key { get; set; }
+    }
+
+    internal class DoubleKey
+    {
+        public DoubleKey(string parentColumn, string parentKey, string keyColumn, object key)
+        {
+            ParentColumn = parentColumn;
+            ParentKey = parentKey;
+            KeyColumn = keyColumn;
+            Key = key;
+        }
+
+        public string ParentColumn { get; set; }
+
+        public string ParentKey { get; set; }
+
+        public string KeyColumn { get; set; }
+
+        public object Key { get; set; }
     }
 
     /// <summary>
@@ -431,6 +512,7 @@ namespace SqlSugar
             TableName = tableName;
             TableList = new List<dynamic>();
             ConditionalModels = new List<IConditionalModel>();
+            SelectModels = new List<SelectModel>();
         }
 
         public string TableName { get; set; }
@@ -438,5 +520,7 @@ namespace SqlSugar
         public List<dynamic> TableList { get; set; }
 
         public List<IConditionalModel> ConditionalModels { get; set; }
+
+        public List<SelectModel> SelectModels { get; set; }
     }
 }

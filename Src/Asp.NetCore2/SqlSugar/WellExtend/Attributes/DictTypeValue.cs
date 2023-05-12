@@ -8,13 +8,28 @@ namespace SqlSugar
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
     public class DictTypeValue : Attribute
     {
-        public readonly string Code;
-        public readonly string ValueProp;
+        public readonly string CodeProperty;
+        public readonly string TargetColumn;
 
-        public DictTypeValue(string code, string valueProp)
+        /// <summary>
+        /// SysDictType.Code => SysDictType.Name
+        /// </summary>
+        /// <param name="codeProperty">当前表存储Code的字段</param>
+        public DictTypeValue(string codeProperty)
         {
-            Code = code;
-            ValueProp = valueProp;
+            CodeProperty = codeProperty;
+            TargetColumn = "Name";
+        }
+
+        /// <summary>
+        /// SysDictType.Code => SysDictType.targetColumn
+        /// </summary>
+        /// <param name="codeProperty">当前表存储Code的字段</param>
+        /// <param name="targetColumn">字典类型表目标字段</param>
+        public DictTypeValue(string codeProperty, string targetColumn)
+        {
+            CodeProperty = codeProperty;
+            TargetColumn = targetColumn;
         }
     }
 }

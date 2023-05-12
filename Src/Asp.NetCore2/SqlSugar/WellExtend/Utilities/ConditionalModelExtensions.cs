@@ -84,5 +84,11 @@ namespace SqlSugar
         public static KeyValuePair<WhereType, ConditionalModel> CreateOne(WhereType whereType, string fieldName, object fieldValue, ConditionalType conditionalType = ConditionalType.Equal)
             => new KeyValuePair<WhereType, ConditionalModel>(whereType, CreateOne(fieldName, fieldValue, conditionalType));
 
+        public static ConditionalCollections CreateWhere(List<KeyValuePair<WhereType, ConditionalModel>> list)
+            => new ConditionalCollections { ConditionalList = list } ;
+
+        public static List<IConditionalModel> CreateList(List<KeyValuePair<WhereType, ConditionalModel>> list)
+            => new List<IConditionalModel> { new ConditionalCollections { ConditionalList = list } };
+
     }
 }

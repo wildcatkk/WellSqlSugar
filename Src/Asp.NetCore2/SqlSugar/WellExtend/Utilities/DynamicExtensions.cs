@@ -83,7 +83,7 @@ namespace SqlSugar
             return false;
         }
 
-        public static bool TryGetDynamicValue<T>(this ExpandoObject obj, string propName, out T propValue) 
+        public static bool TryGetDynamicValue<T>(ExpandoObject obj, string propName, out T propValue) 
         {
             propValue = default;
             bool re = false;
