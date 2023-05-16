@@ -56,7 +56,7 @@ namespace SqlSugar
                 //字典项特性（转换为SubForeignValue处理）
                 else if (prop.TryGetAtrribute(out DictItemValue dictItemAttr))
                 {
-                    SubForeignValue foreignAttr = new SubForeignValue("SysDictItem", "ParentId", dictItemAttr.ParentCode, "Code", dictItemAttr.CodeProperty, dictItemAttr.TargetColumn);
+                    SubForeignValue foreignAttr = new SubForeignValue("SysDictItem", "ParentCode", dictItemAttr.ParentCode, "Code", dictItemAttr.CodeProperty, dictItemAttr.TargetColumn);
                     var subForeignInfo = new SubForeignValueInfo(prop, foreignAttr, type);
 
                     if (subForeignInfo.KeyPropInfo != null) subForeignInfoes.Add(subForeignInfo);
