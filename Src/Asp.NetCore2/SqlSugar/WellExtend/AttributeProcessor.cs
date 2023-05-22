@@ -262,18 +262,18 @@ namespace SqlSugar
                         {
                             condiModels.Add(WhereType.Or, info.ForeignValue.TableColumn, propValue);
                         }
+                    }
 
-                        // 组装Select条件
-                        if (!fieldNames.Contains(info.ForeignValue.TableColumn))
-                        {
-                            fieldNames.Add(info.ForeignValue.TableColumn);
-                            tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.ForeignValue.TableColumn, AsName = info.ForeignValue.TableColumn });
-                        }
-                        if (!fieldNames.Contains(info.ForeignValue.TargetColumn))
-                        {
-                            fieldNames.Add(info.ForeignValue.TargetColumn);
-                            tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.ForeignValue.TargetColumn, AsName = info.ForeignValue.TargetColumn });
-                        }
+                    // 组装Select条件
+                    if (!fieldNames.Contains(info.ForeignValue.TableColumn))
+                    {
+                        fieldNames.Add(info.ForeignValue.TableColumn);
+                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.ForeignValue.TableColumn, AsName = info.ForeignValue.TableColumn });
+                    }
+                    if (!fieldNames.Contains(info.ForeignValue.TargetColumn))
+                    {
+                        fieldNames.Add(info.ForeignValue.TargetColumn);
+                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.ForeignValue.TargetColumn, AsName = info.ForeignValue.TargetColumn });
                     }
                 }
             }
