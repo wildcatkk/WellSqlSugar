@@ -13,7 +13,7 @@ namespace SqlSugar
             List<IConditionalModel> conditions = new List<IConditionalModel>();
 
             Type type = typeof(T);
-            if (type.GetInterface(nameof(ILogicalDelete)) != null)
+            if (type.GetInterface(nameof(ILogicalDelete)) != null && !isDeleted)
             {
                 conditions.Add(nameof(ILogicalDelete.IsDeleted), isDeleted);
             }
@@ -38,7 +38,7 @@ namespace SqlSugar
             List<IConditionalModel> conditions = new List<IConditionalModel>();
 
             Type type = typeof(T);
-            if (type.GetInterface(nameof(ILogicalDelete)) != null)
+            if (type.GetInterface(nameof(ILogicalDelete)) != null && !isDeleted)
             {
                 conditions.Add(nameof(ILogicalDelete.IsDeleted), isDeleted);
             
@@ -56,7 +56,7 @@ namespace SqlSugar
             List<IConditionalModel> conditions = new List<IConditionalModel>();
 
             Type type = typeof(T);
-            if (type.GetInterface(nameof(ILogicalDelete)) != null)
+            if (type.GetInterface(nameof(ILogicalDelete)) != null && !isDeleted)
             {
                 conditions.Add(nameof(ILogicalDelete.IsDeleted), isDeleted);
             }
@@ -81,7 +81,7 @@ namespace SqlSugar
             List<IConditionalModel> conditions = new List<IConditionalModel>();
 
             Type type = typeof(T);
-            if (type.GetInterface(nameof(ILogicalDelete)) != null)
+            if (type.GetInterface(nameof(ILogicalDelete)) != null && !isDeleted)
             {
                 conditions.Add(nameof(ILogicalDelete.IsDeleted), isDeleted);
 
