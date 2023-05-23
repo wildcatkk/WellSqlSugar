@@ -14,6 +14,16 @@ namespace SqlSugar
             conditions.Add(SugarConditional.CreateOne(fieldName, fieldValue, conditionalType));
         }
 
+        public static void Add(this List<ConditionalModel> conditions, string fieldName, object fieldValue, ConditionalType conditionalType = ConditionalType.Equal)
+        {
+            if (conditions is null)
+            {
+                conditions = new List<ConditionalModel>();
+            }
+
+            conditions.Add(SugarConditional.CreateOne(fieldName, fieldValue, conditionalType));
+        }
+
         public static void Add(this List<KeyValuePair<WhereType, ConditionalModel>> conditions, WhereType whereType, string fieldName, object fieldValue, ConditionalType conditionalType = ConditionalType.Equal)
         {
             if (conditions is null)
