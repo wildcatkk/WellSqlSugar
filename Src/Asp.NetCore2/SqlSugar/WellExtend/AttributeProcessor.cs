@@ -123,7 +123,7 @@ namespace SqlSugar
                     else
                     {
                         //先尝试获取Description
-                        if (info.KeyPropInfo.PropertyType.TryGetAtrribute(out DescriptionAttribute descrip)
+                        if (info.KeyPropInfo.PropertyType.GetField(enumValue.ToString()).TryGetAtrribute(out DescriptionAttribute descrip)
                             && !string.IsNullOrWhiteSpace(descrip.Description))
                         {
                             enumStr = descrip.Description;

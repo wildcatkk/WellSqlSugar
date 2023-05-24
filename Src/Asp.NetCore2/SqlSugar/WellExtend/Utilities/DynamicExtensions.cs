@@ -136,5 +136,21 @@ namespace SqlSugar
             t = pi.GetCustomAttribute<T>();
             return t != null;
         }
+
+        /// <summary>
+        /// 判断并返回属性的指定自定义特性
+        /// </summary>
+        /// <param name="fi"></param>
+        /// <param name="t"></param>
+        /// <returns>
+        /// true：特性存在
+        /// false：特性不存在
+        /// </returns>
+        public static bool TryGetAtrribute<T>(this FieldInfo fi, out T t) where T : Attribute
+        {
+            // 读取自定义特性
+            t = fi.GetCustomAttribute<T>();
+            return t != null;
+        }
     }
 }
