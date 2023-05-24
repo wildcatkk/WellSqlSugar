@@ -259,7 +259,7 @@ namespace SqlSugar
             InitMapping();
             var list = await _ToListAsync<T>();
             
-            return list is null ? null : AttributeProcess(list);
+            return AttributeProvider.Process(Context, list);
         }
 
         public Task<List<T>> ToListAsync(CancellationToken token) 

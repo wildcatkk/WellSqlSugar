@@ -12,9 +12,9 @@ namespace SqlSugar
     /// <summary>
     /// 自定义特性处理
     /// </summary>
-    public partial class QueryableProvider<T>
+    public class AttributeProvider
     {
-        private List<T> AttributeProcess<T>(List<T> list)
+        public static List<T> Process<T>(ISqlSugarClient db, List<T> list)
         {
             if (list is null || list.Count == 0)
             {
@@ -22,10 +22,10 @@ namespace SqlSugar
             }
 
             Type type = typeof(T);
-            if (!type.IsDefined(typeof(SugarTable)))
-            {
-                return list;
-            }
+            //if (!type.IsDefined(typeof(SugarTable)))
+            //{
+            //    return list;
+            //}
 
             //1、反射收集特性
             PropertyInfo[] props = type.GetProperties();
@@ -85,25 +85,25 @@ namespace SqlSugar
             // 2、[EnumName] 处理
             if (enumInfoes.Count > 0)
             {
-                EnumNameProcess(list, type, enumInfoes);
+                EnumNameProcess(list, enumInfoes);
             }
 
             // 3、[ForeignValue] 处理
             if (foreignInfoes.Count > 0)
             {
-                ForeignValueProcess(list, type, foreignInfoes);
+                ForeignValueProcess(db, list, type, foreignInfoes);
             }
 
             // 4、[SubForeignValue] 处理
             if (subForeignInfoes.Count > 0)
             {
-                SubForeignValueProcess(list, type, subForeignInfoes);
+                SubForeignValueProcess(db, list, type, subForeignInfoes);
             }
 
             return list;
         }
 
-        private void EnumNameProcess<T>(List<T> list, Type type, List<EnumNameInfo> enumInfoes)
+        private static void EnumNameProcess<T>(List<T> list, List<EnumNameInfo> enumInfoes)
         {
             Dictionary<object, string> enumCache = new Dictionary<object, string>();
             foreach (var info in enumInfoes)
@@ -113,7 +113,7 @@ namespace SqlSugar
                     var enumValue = info.KeyPropInfo.GetValue(t);
 
                     if (enumValue is null) continue;
-                        
+
                     string enumStr;
                     //增加缓存，以减少反复解析枚举
                     if (enumCache.ContainsKey(enumValue))
@@ -137,20 +137,20 @@ namespace SqlSugar
                     }
 
                     info.PropInfo.SetValue(t, enumStr);
-                        
+
                 }
-                
+
             }
         }
 
-        private void ForeignValueProcess<T>(List<T> list, Type type, List<ForeignValueInfo> foreignInfoes)
+        private static void ForeignValueProcess<T>(ISqlSugarClient db, List<T> list, Type type, List<ForeignValueInfo> foreignInfoes)
         {
             // 获取所有表名
             var tableNames = new List<string>();
             foreach (ForeignValueInfo info in foreignInfoes)
             {
                 if (string.IsNullOrEmpty(info.ForeignValue.TableName) || tableNames.Contains(info.ForeignValue.TableName)) continue;
-                
+
                 tableNames.Add(info.ForeignValue.TableName);
             }
 
@@ -162,7 +162,7 @@ namespace SqlSugar
                 var tableInfo = GetForeignCondModel(list, type, tableName, foreignInfoes);
 
                 //查询数据库获取结果
-                tableInfo.TableList = Context.Queryable<dynamic>().AS(tableName).Where(tableInfo.ConditionalModels).Select(tableInfo.SelectModels).ToSugarList();
+                tableInfo.TableList = db.Queryable<dynamic>().AS(tableName).Where(tableInfo.ConditionalModels).Select(tableInfo.SelectModels).ToSugarList();
 
                 tableInfoes.Add(tableInfo);
             }
@@ -229,7 +229,7 @@ namespace SqlSugar
                     {
                         // 查询条件去重
                         object propValue = info.KeyPropInfo.GetValue(t);
-                        if (propValue is null || propValues.Exists(p=> p.KeyColumn == info.ForeignValue.TableColumn && p.Key.ToString() == propValue.ToString())) continue;
+                        if (propValue is null || propValues.Exists(p => p.KeyColumn == info.ForeignValue.TableColumn && p.Key.ToString() == propValue.ToString())) continue;
 
                         //对于Id，需要做额外的判断
                         if (info.ForeignValue.IsId)
@@ -287,15 +287,15 @@ namespace SqlSugar
 
             return tableInfo;
         }
-        
-        private void SubForeignValueProcess<T>(List<T> list, Type type, List<SubForeignValueInfo> subForeignInfoes)
+
+        private static void SubForeignValueProcess<T>(ISqlSugarClient db, List<T> list, Type type, List<SubForeignValueInfo> subForeignInfoes)
         {
             // 获取所有表名
             var tableNames = new List<string>();
             foreach (var info in subForeignInfoes)
             {
                 if (string.IsNullOrEmpty(info.SubForeignValue.TableName) || tableNames.Contains(info.SubForeignValue.TableName)) continue;
-                
+
                 tableNames.Add(info.SubForeignValue.TableName);
             }
 
@@ -307,7 +307,7 @@ namespace SqlSugar
                 var tableInfo = GetSubForeignCondModel(list, type, tableName, subForeignInfoes);
 
                 //查询数据库获取结果
-                tableInfo.TableList = Context.Queryable<dynamic>().AS(tableName).Where(tableInfo.ConditionalModels).Select(tableInfo.SelectModels).ToSugarList();
+                tableInfo.TableList = db.Queryable<dynamic>().AS(tableName).Where(tableInfo.ConditionalModels).Select(tableInfo.SelectModels).ToSugarList();
 
                 tableInfoes.Add(tableInfo);
             }
@@ -371,7 +371,7 @@ namespace SqlSugar
                     {
                         // 查询条件去重
                         object propValue = info.KeyPropInfo.GetValue(t);
-                        if (propValue is null || propValues.Exists(p=>p.ParentColumn == info.SubForeignValue.ParentColumn && p.ParentKey == info.SubForeignValue.ParentKey && p.KeyColumn == info.SubForeignValue.TableColumn && p.Key.ToString() == propValue.ToString())) continue;
+                        if (propValue is null || propValues.Exists(p => p.ParentColumn == info.SubForeignValue.ParentColumn && p.ParentKey == info.SubForeignValue.ParentKey && p.KeyColumn == info.SubForeignValue.TableColumn && p.Key.ToString() == propValue.ToString())) continue;
 
                         propValues.Add(new DoubleKey(info.SubForeignValue.ParentColumn, info.SubForeignValue.ParentKey, info.SubForeignValue.TableColumn, propValue));
 

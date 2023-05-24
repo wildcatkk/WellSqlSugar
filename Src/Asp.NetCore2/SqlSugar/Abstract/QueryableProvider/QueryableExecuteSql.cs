@@ -435,7 +435,7 @@ namespace SqlSugar
         {
             InitMapping();
             var list = _ToList<T>();
-            return list is null ? null : AttributeProcess<T>(list);
+            return AttributeProvider.Process(Context, list);
         }
         public List<T> SetContext<ParameterT>(Expression<Func<T, bool>> whereExpression, ParameterT parameter) 
         {
