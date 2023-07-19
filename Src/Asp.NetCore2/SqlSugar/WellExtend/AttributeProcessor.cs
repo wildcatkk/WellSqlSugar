@@ -5,7 +5,6 @@ using System.Dynamic;
 using System.Linq;
 using System.Reflection;
 using System.Xml.Linq;
-using NetTaste;
 
 namespace SqlSugar
 {
@@ -32,6 +31,7 @@ namespace SqlSugar
             List<EnumNameInfo> enumInfoes = new List<EnumNameInfo>();
             List<ForeignValueInfo> foreignInfoes = new List<ForeignValueInfo>();
             List<SubForeignValueInfo> subForeignInfoes = new List<SubForeignValueInfo>();
+            List<ForeignListValueInfo> foreignListInfoes = new List<ForeignListValueInfo>();
             foreach (PropertyInfo prop in props)
             {
                 //枚举特性
@@ -80,6 +80,18 @@ namespace SqlSugar
 
                     if (subForeignInfo.KeyPropInfo != null) subForeignInfoes.Add(subForeignInfo);
                 }
+                //外键表特性（单主键）
+                else if (prop.TryGetAtrribute(out ForeignListValue foreignListAttr))
+                {
+                    if (foreignListAttr.IsId && prop.PropertyType != typeof(string))
+                    {
+                        throw new Exception($"特性ForeignListValue({type.Name}.{prop.Name})仅支持string类型的属性。");
+                    }
+
+                    var foreignInfo = new ForeignListValueInfo(prop, foreignListAttr, type);
+
+                    if (foreignInfo.KeyPropInfo != null) foreignListInfoes.Add(foreignInfo);
+                }
             }
 
             // 2、[EnumName] 处理
@@ -98,6 +110,12 @@ namespace SqlSugar
             if (subForeignInfoes.Count > 0)
             {
                 SubForeignValueProcess(db, list, type, subForeignInfoes);
+            }
+
+            // 5、[ForeignListValue] 处理
+            if (foreignListInfoes.Count > 0)
+            {
+                ForeignListValueProcess(db, list, type, foreignListInfoes);
             }
 
             return list;
@@ -404,6 +422,176 @@ namespace SqlSugar
 
             return tableInfo;
         }
+
+        private static void ForeignListValueProcess<T>(ISqlSugarClient db, List<T> list, Type type, List<ForeignListValueInfo> foreignInfoes)
+        {
+            // 获取所有表名
+            var tableNames = new List<string>();
+            foreach (ForeignListValueInfo info in foreignInfoes)
+            {
+                if (string.IsNullOrEmpty(info.ForeignListValue.TableName) || tableNames.Contains(info.ForeignListValue.TableName)) continue;
+
+                tableNames.Add(info.ForeignListValue.TableName);
+            }
+
+            // 根据表名分组查询
+            var tableInfoes = new List<EntityTableInfo>();
+            foreach (var tableName in tableNames)
+            {
+                //根据数据集组装id条件
+                var tableInfo = GetForeignListCondModel(list, type, tableName, foreignInfoes);
+
+                //查询数据库获取结果
+                tableInfo.TableList = db.Queryable<dynamic>().AS(tableName).Where(tableInfo.ConditionalModels).Select(tableInfo.SelectModels).ToSugarList();
+
+                tableInfoes.Add(tableInfo);
+            }
+
+            // 设置对象的属性值
+            foreach (var t in list)
+            {
+                foreach (var info in foreignInfoes)
+                {
+                    //数据库数据集
+                    var dataSet = tableInfoes.FirstOrDefault(x => x.TableName == info.ForeignListValue.TableName)?.TableList;
+                    if (dataSet is null || dataSet.Count == 0) continue;
+
+                    //当前行数据
+                    //原始条件将被拆分为多个单独的条件
+                    object rowPropValue = info.KeyPropInfo.GetValue(t);
+                    if (rowPropValue is null) continue;
+
+                    string? rowPropValueStr = rowPropValue.ToString();
+                    if (string.IsNullOrEmpty(rowPropValueStr)) continue;
+
+                    var keyPropValues = rowPropValueStr.Trim().Split(',').ToList();
+                    if (keyPropValues is null || keyPropValues.Count == 0) continue;
+
+                    string targetValues = "";
+                    foreach (var propValue in keyPropValues)
+                    {
+                        dynamic firstObj = null;
+                        foreach (var data in dataSet)
+                        {
+                            if (DynamicExtensions.TryGetDynamicValue(data, info.ForeignListValue.TableColumn, out object columnValue)
+                                && columnValue != null
+                                && columnValue.ToString() == propValue
+                             )
+                            {
+                                firstObj = data;
+                                break;
+                            }
+                        }
+                        if (firstObj is null) continue;
+
+                        // 给当前属性赋值
+                        if (DynamicExtensions.TryGetDynamicValue(firstObj, info.ForeignListValue.TargetColumn, out object targetValue)
+                            && targetValue != null)
+                        {
+                            var targetValueStr = targetValue.ToString();
+                            if (string.IsNullOrEmpty(targetValueStr)) continue;
+
+                            targetValues += targetValueStr + ",";
+                        }
+                    }
+
+                    if (!string.IsNullOrEmpty(targetValues))
+                    {
+                        targetValues = targetValues.TrimEnd(',');
+                        info.PropInfo.SetValue(t, targetValues);
+                    }
+                }
+            }
+        }
+
+        private static EntityTableInfo GetForeignListCondModel<T>(List<T> list, Type type, string tableName, List<ForeignListValueInfo> foreignInfoes)
+        {
+            EntityTableInfo tableInfo = new EntityTableInfo(tableName);
+
+            var propValues = new List<SingleKey>();
+            List<KeyValuePair<WhereType, ConditionalModel>> condiModels = new List<KeyValuePair<WhereType, ConditionalModel>>();
+            List<string> fieldNames = new List<string>();
+            //对于非bool类型条件，可以将多个Or合并为一个In
+            List<ConditionMerge> merges = new List<ConditionMerge>();
+            foreach (var info in foreignInfoes)
+            {
+                // 分组条件
+                if (info.ForeignListValue.TableName == tableName)
+                {
+                    foreach (var t in list)
+                    {
+                        //原始条件将被拆分为多个单独的条件
+                        object rowPropValue = info.KeyPropInfo.GetValue(t);
+                        if (rowPropValue is null) continue;
+
+                        string? rowPropValueStr = rowPropValue.ToString();
+                        if (string.IsNullOrEmpty(rowPropValueStr)) continue;
+
+                        var keyPropValues = rowPropValueStr.Trim().Split(',').ToList();
+                        if (keyPropValues is null || keyPropValues.Count == 0) continue;
+
+                        foreach (var propValue in keyPropValues)
+                        {
+                            // 查询条件去重
+                            if (string.IsNullOrEmpty(propValue) || propValues.Exists(p => p.KeyColumn == info.ForeignListValue.TableColumn && p.Key.ToString() == propValue)) continue;
+
+                            //对于Id，需要做额外的判断
+                            if (info.ForeignListValue.IsId)
+                            {
+                                if (Convert.ToInt64(propValue) <= 0) continue;
+                            }
+
+                            propValues.Add(new SingleKey(info.ForeignListValue.TableColumn, propValue));
+
+                            // 组装查询条件
+                            //对于非bool类型条件，可以将多个Or合并为一个In
+                            if (info.KeyPropInfo.PropertyType != typeof(bool))
+                            {
+                                ConditionMerge merge = merges.FirstOrDefault(p => p.Column == info.ForeignListValue.TableColumn);
+                                if (merge != null)
+                                {
+                                    //二次匹配，表示有多个，从Equal=>In
+                                    string columnValue = merge.Value;
+
+                                    merge.Value += "," + propValue;
+                                    merge.CondiType = ConditionalType.In;
+                                }
+                                else
+                                {
+                                    merges.Add(new ConditionMerge(ConditionalType.Equal, info.ForeignListValue.TableColumn, propValue));
+                                }
+                            }
+                            else
+                            {
+                                condiModels.Add(WhereType.Or, info.ForeignListValue.TableColumn, propValue);
+                            }
+                        }
+                    }
+
+                    // 组装Select条件
+                    if (!fieldNames.Contains(info.ForeignListValue.TableColumn))
+                    {
+                        fieldNames.Add(info.ForeignListValue.TableColumn);
+                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.ForeignListValue.TableColumn, AsName = info.ForeignListValue.TableColumn });
+                    }
+                    if (!fieldNames.Contains(info.ForeignListValue.TargetColumn))
+                    {
+                        fieldNames.Add(info.ForeignListValue.TargetColumn);
+                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.ForeignListValue.TargetColumn, AsName = info.ForeignListValue.TargetColumn });
+                    }
+                }
+            }
+
+            foreach (var merge in merges)
+            {
+                condiModels.Add(WhereType.Or, merge.Column, merge.Value, merge.CondiType);
+            }
+
+            tableInfo.ConditionalModels = SugarConditional.CreateList(condiModels);
+
+            return tableInfo;
+        }
+
     }
 
     internal class EnumNameInfo
@@ -436,6 +624,22 @@ namespace SqlSugar
         public PropertyInfo KeyPropInfo { get; set; }
 
         public ForeignValue ForeignValue { get; set; }
+    }
+
+    internal class ForeignListValueInfo
+    {
+        public ForeignListValueInfo(PropertyInfo propInfo, ForeignListValue foreign, Type type)
+        {
+            PropInfo = propInfo;
+            ForeignListValue = foreign;
+            KeyPropInfo = type.GetProperty(foreign.Property);
+        }
+
+        public PropertyInfo PropInfo { get; set; }
+
+        public PropertyInfo KeyPropInfo { get; set; }
+
+        public ForeignListValue ForeignListValue { get; set; }
     }
 
     internal class ConditionMerge

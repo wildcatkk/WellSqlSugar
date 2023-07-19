@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0"?>
 <package >
   <metadata>
-    <id>SqlSugarCore</id>
+    <id>WellSqlSugar</id>
     <version>5.1.4.67</version>
     <authors>sunkaixuan</authors>
     <owners>果糖大数据科技</owners>
@@ -28,6 +28,6 @@
     </dependencies>
   </metadata>
   <files>
-    <file src="G:\Git\SqlSugar\Src\Asp.NetCore2\SqlSugar\bin\Debug\netstandard2.1\SqlSugar.dll" target="lib\netstandard2.1"></file>
+    <file src="C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar\bin\Debug\netstandard2.1\SqlSugar.dll" target="lib\netstandard2.1"></file>
   </files>
 </package>
