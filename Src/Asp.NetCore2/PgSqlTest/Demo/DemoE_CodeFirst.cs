@@ -19,15 +19,57 @@ namespace OrmTest
                 InitKeyType = InitKeyType.Attribute,
                 IsAutoCloseConnection = true
             });
-            db.DbMaintenance.CreateDatabase(); 
+            db.DbMaintenance.CreateDatabase();
+            db.CodeFirst.InitTables<CodeFirstunitea>();
+            db.Insertable(new CodeFirstunitea()
+            {
+                id2 = null
+            }).ExecuteCommand();
+            db.Insertable(new CodeFirstunitea()
+            {
+                id2 = 1
+            }).ExecuteCommand();
+            db.Updateable<CodeFirstunitea>().SetColumns(it => new CodeFirstunitea()
+            {
+                id2 = 1
+            }).Where(it=>it.id>0).ExecuteCommand();
+            db.Updateable<CodeFirstunitea>().SetColumns(it => new CodeFirstunitea()
+            {
+                id2 = null
+            }).Where(it => it.id > 0).ExecuteCommand();
             db.CodeFirst.InitTables(typeof(CodeFirstTable1));//Create CodeFirstTable1 
             db.Insertable(new CodeFirstTable1() { Name = "a", Text="a" }).ExecuteCommand();
             var list = db.Queryable<CodeFirstTable1>().ToList();
             db.CodeFirst.InitTables<CodeFirstChar2>();
             db.Insertable(new CodeFirstChar2() { CharTest = '1' }).ExecuteCommand();
             var list2=db.Queryable<CodeFirstChar2>().ToList();
+            db.Aop.OnLogExecuting = (s, p) => Console.WriteLine(UtilMethods.GetNativeSql(s, p));;
+            db.CodeFirst.InitTables<CODEFIRSTSAF>();
+            db.CodeFirst.InitTables<CodeFirstsaf>();
+            db.Insertable(new CodeFirstsaf() { Json = "a" })
+                .ExecuteCommand();
+            var list3=db.Queryable<CodeFirstsaf>().ToList();
             Console.WriteLine("#### CodeFirst end ####");
         }
+    }
+    public class CodeFirstunitea 
+    {
+        [SugarColumn(IsIdentity =true,IsPrimaryKey =true)]
+        public uint id { get; set; }
+        [SugarColumn(IsNullable =true)]
+        public uint? id2 { get; set; }
+    }
+    public class CodeFirstsaf 
+    {
+        [SugarColumn(DefaultValue ="")]
+        public string Json { get; set; }
+        [SugarColumn(DefaultValue = "1")]
+        public bool x { get; set; }
+    }
+    public class CODEFIRSTSAF
+    {
+        [SugarColumn(DefaultValue = "a")]
+        public string Json { get; set; }
     }
     public class CodeFirstChar2 
     {

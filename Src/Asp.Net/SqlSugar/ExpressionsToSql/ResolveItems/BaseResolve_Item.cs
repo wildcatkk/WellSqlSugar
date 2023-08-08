@@ -19,6 +19,11 @@ namespace SqlSugar
             {
                 parameter.Context.Result.Append(this.Context.GetAsString2(asName, parameter.CommonTempData.ObjToString()));
             }
+            else if (parameter.CommonTempData?.Equals(CommonTempDataType.Append) == true) 
+            {
+                parameter.Context.Result.TrimEnd();
+                parameter.Context.Result.Append(" AS " + this.Context.GetTranslationColumnName(asName));
+            }
             else
             {
                 parameter.Context.Result.Append(this.Context.GetAsString(asName, parameter.CommonTempData.ObjToString()));
@@ -43,7 +48,14 @@ namespace SqlSugar
         private void ResloveBoolMethod(ExpressionParameter parameter, Expression item, string asName)
         {
             this.Expression = item;
-            this.Start();
+            if (ExpressionTool.GetMethodName(item) == "Any"&&!ExpressionTool.GetTopLevelMethodCalls(item).Contains("Subqueryable"))
+            {
+                parameter.CommonTempData = GetNewExpressionValue(item);
+            }
+            else
+            {
+                this.Start();
+            }
             var sql = this.Context.DbMehtods.IIF(new MethodCallExpressionModel()
             {
                 Args = new List<MethodCallExpressionArgs>() {
@@ -92,7 +104,7 @@ namespace SqlSugar
                               this.Context.SqlTranslationLeft + asName + "." + newExpressionInfo.LeftNameName + this.Context.SqlTranslationRight
 
                           );
-                    }
+                    } 
                     else
                     {
                         parameter.Context.Result.Append(this.Context.GetAsString(

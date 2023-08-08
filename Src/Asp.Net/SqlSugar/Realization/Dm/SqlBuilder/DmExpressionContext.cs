@@ -54,6 +54,12 @@ namespace SqlSugar
     }
     public partial class DmMethod : DefaultDbMethod, IDbMethods
     {
+        public override string WeekOfYear(MethodCallExpressionModel mode)
+        {
+            var parameterNameA = mode.Args[0].MemberName;
+            return $"TO_NUMBER(TO_CHAR({parameterNameA}, 'WW')) ";
+        }
+        public override string ParameterKeyWord { get; set; } = ":";
         public override string GetStringJoinSelector(string result, string separator)
         {
             return $"listagg(to_char({result}),'{separator}') within group(order by {result}) ";
@@ -219,6 +225,39 @@ namespace SqlSugar
         {
             var parameter = model.Args[0];
             return string.Format(" CAST({0} AS decimal(18,4))", parameter.MemberName);
+        }
+
+        public override string TrimEnd(MethodCallExpressionModel mode)
+        {
+            var parameterNameA = mode.Args[0].MemberName;
+            var parameterNameB = mode.Args[1].MemberName;
+            return $" RTRIM({parameterNameA}, {parameterNameB}) ";
+        }
+        public override string TrimStart(MethodCallExpressionModel mode)
+        {
+
+            var parameterNameA = mode.Args[0].MemberName;
+            var parameterNameB = mode.Args[1].MemberName;
+            return $" LTRIM({parameterNameA}, {parameterNameB}) ";
+        }
+
+        public override string Left(MethodCallExpressionModel mode)
+        {
+            var parameterNameA = mode.Args[0].MemberName;
+            var parameterNameB = mode.Args[1].MemberName;
+            return $" SUBSTR({parameterNameA}, 1, {parameterNameB})  ";
+        }
+        public override string Right(MethodCallExpressionModel mode)
+        {
+            var parameterNameA = mode.Args[0].MemberName;
+            var parameterNameB = mode.Args[1].MemberName;
+            return $" SUBSTR({parameterNameA}, -2, {parameterNameB})  ";
+        }
+
+        public override string Ceil(MethodCallExpressionModel mode)
+        {
+            var parameterNameA = mode.Args[0].MemberName;
+            return $" CEIL({parameterNameA}) ";
         }
     }
 }

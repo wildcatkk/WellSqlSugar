@@ -39,13 +39,17 @@ namespace SqlSugar
                   attributeType.GetProperty(nameof(SugarTable.TableName)),
                   attributeType.GetProperty(nameof(SugarTable.TableDescription)) ,
                   attributeType.GetProperty(nameof(SugarTable.IsDisabledUpdateAll)) ,
-                  attributeType.GetProperty(nameof(SugarTable.IsDisabledDelete))
+                  attributeType.GetProperty(nameof(SugarTable.IsDisabledDelete)),
+                  attributeType.GetProperty(nameof(SugarTable.IsCreateTableFiledSort)),
+                  attributeType.GetProperty(nameof(SugarTable.Discrimator))
             }
             , new object[] {
                     sugarTable.TableName,
                     sugarTable.TableDescription ,
                     sugarTable.IsDisabledUpdateAll,
-                    sugarTable.IsDisabledDelete
+                    sugarTable.IsDisabledDelete,
+                    sugarTable.IsCreateTableFiledSort,
+                    sugarTable.Discrimator
              });
             return attributeBuilder;
         }
@@ -71,7 +75,8 @@ namespace SqlSugar
                   attributeType.GetProperty(nameof(SugarColumn.OldColumnName)),
                   attributeType.GetProperty(nameof(SugarColumn.SqlParameterDbType)),
                   attributeType.GetProperty(nameof(SugarColumn.SqlParameterSize)),
-                  attributeType.GetProperty(nameof(SugarColumn.IsArray))
+                  attributeType.GetProperty(nameof(SugarColumn.IsArray)),
+                  attributeType.GetProperty(nameof(SugarColumn.ColumnName))
             }
             , new object[] {
                     sugarTable.IsPrimaryKey,
@@ -90,7 +95,8 @@ namespace SqlSugar
                     sugarTable.OldColumnName,
                     sugarTable.SqlParameterDbType,
                     sugarTable.SqlParameterSize,
-                    sugarTable.IsArray
+                    sugarTable.IsArray,
+                    sugarTable.ColumnName
              });
             return attributeBuilder;
         }

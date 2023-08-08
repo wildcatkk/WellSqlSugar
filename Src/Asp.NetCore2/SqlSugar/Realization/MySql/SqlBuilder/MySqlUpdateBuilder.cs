@@ -26,6 +26,16 @@ namespace SqlSugar
                  ";
             }
         }
+        protected override string GetJoinUpdate(string columnsString, ref string whereString)
+        {
+            var joinString = $"  {Builder.GetTranslationColumnName(this.TableName)}  {Builder.GetTranslationColumnName(this.ShortName)} ";
+            foreach (var item in this.JoinInfos)
+            {
+                joinString += $"\r\n JOIN {Builder.GetTranslationColumnName(item.TableName)}  {Builder.GetTranslationColumnName(item.ShortName)} ON {item.JoinWhere} ";
+            }
+            var tableName =   joinString+ "\r\n ";
+            return string.Format(SqlTemplate, tableName, columnsString, whereString);
+        }
         protected override string TomultipleSqlString(List<IGrouping<int, DbColumnInfo>> groupList)
         {
             Check.Exception(PrimaryKeys == null || PrimaryKeys.Count == 0, " Update List<T> need Primary key");
@@ -87,7 +97,31 @@ namespace SqlSugar
                 batchUpdateSql.Replace("${0}",format);
                 batchUpdateSql.Append(";");
             }
+            batchUpdateSql = GetBatchUpdateSql(batchUpdateSql);
             return batchUpdateSql.ToString();
+        }
+
+        private StringBuilder GetBatchUpdateSql(StringBuilder batchUpdateSql)
+        {
+            if (ReSetValueBySqlExpListType == null && ReSetValueBySqlExpList != null)
+            {
+                var result = batchUpdateSql.ToString();
+                foreach (var item in ReSetValueBySqlExpList)
+                {
+                    var dbColumnName = item.Value.DbColumnName;
+                    if (item.Value.Type == ReSetValueBySqlExpListModelType.List)
+                    {
+                        result = result.Replace($"T.{dbColumnName}",   "S." + dbColumnName+item.Value.Sql+ "T." + dbColumnName);
+                    }
+                    else
+                    {
+                        result = result.Replace($"T.{dbColumnName}", item.Value.Sql.Replace(dbColumnName, "S." + dbColumnName));
+                    }
+                    batchUpdateSql = new StringBuilder(result);
+                }
+            }
+
+            return batchUpdateSql;
         }
         int i = 0;
         public  object FormatValue(object value,string name)

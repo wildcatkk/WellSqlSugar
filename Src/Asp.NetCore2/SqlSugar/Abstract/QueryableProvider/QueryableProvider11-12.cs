@@ -15,9 +15,32 @@ namespace SqlSugar
     #region T11
     public partial class QueryableProvider<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> : QueryableProvider<T>, ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>
     {
+        public new ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8, T9,T10,T11> OrderByPropertyName(string orderPropertyName, OrderByType? orderByType = null)
+        {
+            base.OrderByPropertyName(orderPropertyName, orderByType);
+            return this;
+        }
         public virtual ISugarQueryable<TResult> SelectMergeTable<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10,T11, TResult>> expression)
         {
             return this.Select(expression).MergeTable();
+        }
+       public ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> LeftJoinIF<T12>(bool isLeftJoin, Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, bool>> joinExpression) 
+        {
+            var result = LeftJoin(joinExpression);
+            if (isLeftJoin == false)
+            {
+                result.QueryBuilder.JoinQueryInfos.Remove(result.QueryBuilder.JoinQueryInfos.Last());
+            }
+            return result;
+        }
+        public ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> InnerJoinIF<T12>(bool isJoin, Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, bool>> joinExpression)
+        {
+            var result = InnerJoin(joinExpression);
+            if (isJoin == false)
+            {
+                result.QueryBuilder.JoinQueryInfos.Remove(result.QueryBuilder.JoinQueryInfos.Last());
+            }
+            return result;
         }
         public ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> LeftJoin<T12>(ISugarQueryable<T12> joinQueryable, Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, bool>> joinExpression)
         {
@@ -288,7 +311,7 @@ namespace SqlSugar
             var sql = clone.QueryBuilder.GetSelectValue;
             if (this.QueryBuilder.IsSingle() || string.IsNullOrEmpty(sql) || sql.Trim() == "*")
             {
-                return this.Select<TResult>(expression);
+                sql = " ";
             }
             this.QueryBuilder.Parameters = clone.QueryBuilder.Parameters;
             this.QueryBuilder.SubToListParameters = clone.QueryBuilder.SubToListParameters;
@@ -306,6 +329,10 @@ namespace SqlSugar
             sql = AppendSelect<T9>(sql, parameters, columnsResult, 8);
             sql = AppendSelect<T10>(sql, parameters, columnsResult, 9);
             sql = AppendSelect<T11>(sql, parameters, columnsResult, 10);
+            if (sql.Trim().First() == ',')
+            {
+                sql = sql.TrimStart(' ').TrimStart(',');
+            }
             return this.Select<TResult>(sql);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, TResult>> expression)
@@ -705,6 +732,11 @@ namespace SqlSugar
     #region T12
     public partial class QueryableProvider<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> : QueryableProvider<T>, ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>
     {
+        public new ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11,T12> OrderByPropertyName(string orderPropertyName, OrderByType? orderByType = null)
+        {
+            base.OrderByPropertyName(orderPropertyName, orderByType);
+            return this;
+        }
         public virtual ISugarQueryable<TResult> SelectMergeTable<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11,T12, TResult>> expression)
         {
             return this.Select(expression).MergeTable();
@@ -877,7 +909,7 @@ namespace SqlSugar
             var sql = clone.QueryBuilder.GetSelectValue;
             if (this.QueryBuilder.IsSingle() || string.IsNullOrEmpty(sql) || sql.Trim() == "*")
             {
-                return this.Select<TResult>(expression);
+                sql = " ";
             }
             this.QueryBuilder.Parameters = clone.QueryBuilder.Parameters;
             this.QueryBuilder.SubToListParameters = clone.QueryBuilder.SubToListParameters;
@@ -896,6 +928,10 @@ namespace SqlSugar
             sql = AppendSelect<T10>(sql, parameters, columnsResult, 9);
             sql = AppendSelect <T11>(sql, parameters, columnsResult, 10);
             sql = AppendSelect<T12>(sql, parameters, columnsResult, 11);
+            if (sql.Trim().First() == ',')
+            {
+                sql = sql.TrimStart(' ').TrimStart(',');
+            }
             return this.Select<TResult>(sql);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, TResult>> expression)

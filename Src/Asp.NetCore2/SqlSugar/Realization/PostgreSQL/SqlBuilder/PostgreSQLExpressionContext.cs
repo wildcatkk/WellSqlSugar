@@ -133,6 +133,10 @@ namespace SqlSugar
     }
     public class PostgreSQLMethod : DefaultDbMethod, IDbMethods
     {
+        public override string CharIndex(MethodCallExpressionModel model)
+        {
+            return string.Format(" (strpos ({1},{0})-1)", model.Args[0].MemberName, model.Args[1].MemberName);
+        }
         public override string TrueValue()
         {
             return "true";
@@ -159,7 +163,7 @@ namespace SqlSugar
                 case DateType.Minute:
                     return $" ( ( ( DATE_PART('day', {end} - {begin}) ) * 24 + DATE_PART('hour', {end} - {begin} ) ) * 60 + DATE_PART('minute', {end} - {begin} ) )";
                 case DateType.Second:
-                    return $" ( ( ( DATE_PART('day', {end} - {begin}) ) * 24 + DATE_PART('hour', {end} - {begin} ) ) * 60 + DATE_PART('minute', {end} - {begin} ) ) * 60 + DATE_PART('minute', {end} - {begin} )";
+                    return $" ( ( ( DATE_PART('day', {end} - {begin}) ) * 24 + DATE_PART('hour', {end} - {begin} ) ) * 60 + DATE_PART('minute', {end} - {begin} ) ) * 60 + DATE_PART('second', {end} - {begin} )";
                 case DateType.Millisecond:
                     break;
                 default:
@@ -199,7 +203,7 @@ namespace SqlSugar
             }
             if (parameter2.MemberValue.ObjToString() == DateType.Hour.ToString())
             {
-                format = "hh";
+                format = "hh24";
             }
             if (parameter2.MemberValue.ObjToString() == DateType.Minute.ToString())
             {

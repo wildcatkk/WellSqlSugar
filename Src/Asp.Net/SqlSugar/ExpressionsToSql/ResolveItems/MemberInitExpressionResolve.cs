@@ -53,7 +53,7 @@ namespace SqlSugar
                 var type = expression.Type;
                 var memberName = this.Context.GetDbColumnName(type.Name, memberAssignment.Member.Name);
                 var item = memberAssignment.Expression;
-
+                item = ExpressionTool.RemoveConvert(item);
                 //Column IsJson Handler
                 if (memberAssignment.Member.CustomAttributes != null)
                 {
@@ -235,7 +235,7 @@ namespace SqlSugar
             {
                 addItem.DbType = System.Data.DbType.Date;
             }
-            if (addItem.Value == null && dataType.IsIn(UtilConstants.FloatType, UtilConstants.IntType, UtilConstants.LongType, UtilConstants.DecType, UtilConstants.DobType))
+            if (addItem.Value == null && dataType.IsIn(UtilConstants.ULongType,UtilConstants.UIntType,UtilConstants.FloatType, UtilConstants.IntType, UtilConstants.LongType, UtilConstants.DecType, UtilConstants.DobType))
             {
                 addItem.DbType = System.Data.DbType.Int32;
             }
@@ -311,6 +311,10 @@ namespace SqlSugar
                 }
                 MemberAssignment memberAssignment = (MemberAssignment)binding;
                 var memberName = memberAssignment.Member.Name;
+                if (this.Context?.SugarContext?.QueryBuilder?.AppendNavInfo?.MappingNavProperties?.ContainsKey(memberName) == true) 
+                {
+                    continue;
+                }
                 var item = memberAssignment.Expression;
                 if (item.Type.IsClass()&& item is MemberExpression &&(item as MemberExpression).Expression is ParameterExpression) 
                 {

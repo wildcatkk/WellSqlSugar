@@ -6,7 +6,7 @@ using System.Data;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
+using System.Xml.Linq; 
 
 namespace SqlSugar
 {
@@ -104,7 +104,7 @@ namespace SqlSugar
                                  null, Type.EmptyTypes, null));
             generator.Emit(OpCodes.Stloc, result);
             this.Context.InitMappingInfo(type);
-            var columnInfos = this.Context.EntityMaintenance.GetEntityInfo(type).Columns;
+            var columnInfos = this.Context.EntityMaintenance.GetEntityInfoWithAttr(type).Columns;
             foreach (var columnInfo in columnInfos)
             {
                 string fileName = columnInfo.DbColumnName ?? columnInfo.PropertyName;
@@ -171,11 +171,11 @@ namespace SqlSugar
             Type type = (columnInfo.SqlParameterDbType as Type);
             //ConstructorInfo info = type.GetConstructor(Type.EmptyTypes);
             //il.Emit(OpCodes.Newobj, info);
-            generator.Emit(OpCodes.Ldtoken, type);
+            generator.Emit(OpCodes.Newobj, type.GetConstructor(Type.EmptyTypes));
             generator.Emit(OpCodes.Ldarg_0);
             generator.Emit(OpCodes.Ldc_I4, i);
-            method = (columnInfo.SqlParameterDbType as Type).GetMethod("QueryConverter");
-            method = method.MakeGenericMethod(new Type[] { columnInfo.PropertyInfo.PropertyType });
+            //method = (columnInfo.SqlParameterDbType as Type).GetMethod("QueryConverter");
+            //method = method.MakeGenericMethod(new Type[] { columnInfo.PropertyInfo.PropertyType });
             if (method.IsVirtual)
                 generator.Emit(OpCodes.Callvirt, method);
             else
@@ -314,6 +314,10 @@ namespace SqlSugar
                     method = isNullableType ? getOtherNull.MakeGenericMethod(bindPropertyType) : getOther.MakeGenericMethod(bindPropertyType);
                 }
                 else if (dbTypeName.EqualCase("STRING"))
+                {
+                    method = isNullableType ? getOtherNull.MakeGenericMethod(bindPropertyType) : getOther.MakeGenericMethod(bindPropertyType);
+                }
+                else if (bindPropertyType == UtilConstants.StringType&&validPropertyName == "int") 
                 {
                     method = isNullableType ? getOtherNull.MakeGenericMethod(bindPropertyType) : getOther.MakeGenericMethod(bindPropertyType);
                 }

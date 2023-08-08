@@ -95,7 +95,8 @@ namespace SqlSugar
                 if (parameter.Value == null) parameter.Value = DBNull.Value;
                 var sqlParameter = new SqlParameter();
                 sqlParameter.ParameterName = parameter.ParameterName;
-                sqlParameter.UdtTypeName = parameter.UdtTypeName;
+                if(parameter.UdtTypeName!=null)
+                  sqlParameter.UdtTypeName = parameter.UdtTypeName;
                 sqlParameter.Size = parameter.Size;
                 sqlParameter.Value = parameter.Value;
                 sqlParameter.DbType = parameter.DbType;
@@ -136,7 +137,10 @@ namespace SqlSugar
                 if (isTime)
                 {
                     sqlParameter.SqlDbType = SqlDbType.Time;
-                    sqlParameter.Value = DateTime.Parse(parameter.Value?.ToString()).TimeOfDay;
+                    if (sqlParameter.Value != DBNull.Value)
+                    {
+                        sqlParameter.Value = DateTime.Parse(parameter.Value?.ToString()).TimeOfDay;
+                    }
                 }
                 else if (parameter.Value != null && parameter.Value is XElement)
                 {

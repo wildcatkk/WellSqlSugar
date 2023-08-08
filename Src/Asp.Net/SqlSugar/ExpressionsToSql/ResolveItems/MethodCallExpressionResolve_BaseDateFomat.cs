@@ -20,6 +20,7 @@ namespace SqlSugar
             }
             else if (IsOracle() || IsPg())
             {
+                formatString = formatString.Replace("HH", "hh24");
                 if (formatString.HasValue() && formatString.Contains("hh:mm"))
                 {
                     formatString = formatString.Replace("hh:mm", "hh:mi");
@@ -130,6 +131,36 @@ namespace SqlSugar
             {
                 return string.Format("FORMAT({0},'{1}','en-US')", value, formatString);
             }
+            else if (IsMySql()&& !formatString.Contains("%"))
+            {
+                var newFormt = formatString
+                    .Replace("yyyy", "%Y")
+                    .Replace("yy", "%Y")
+                    .Replace("MM", "%m")
+                    .Replace("M", "%m")
+                    .Replace("dd", "%d")
+                    .Replace("HH", "%H")
+                    .Replace("hh", "%h")
+                    .Replace("mm", "%i") 
+                    .Replace("ss", "%s") 
+                    .Replace("fff", "%f");
+                return $"DATE_FORMAT({value}, '{newFormt}')";
+            }
+            else if (IsSqlite() && !formatString.Contains("%"))
+            {
+                var newFormt = formatString
+                    .Replace("yyyy", "%Y")
+                    .Replace("yy", "%Y")
+                    .Replace("MM", "%m")
+                    .Replace("M", "%m")
+                    .Replace("dd", "%d")
+                    .Replace("HH", "%H")
+                    .Replace("hh", "%h")
+                    .Replace("mm", "%M")
+                    .Replace("ss", "%S")
+                    .Replace("fff", "%f");
+                return $"strftime('{newFormt}',{value})";
+            }
             var parameter = new MethodCallExpressionArgs() { IsMember = true, MemberValue = DateType.Year };
             var parameter2 = new MethodCallExpressionArgs() { IsMember = true, MemberName = value };
             var parameters = new MethodCallExpressionModel() { Args = new List<MethodCallExpressionArgs>() { parameter2, parameter } };
@@ -234,7 +265,8 @@ namespace SqlSugar
         }
         private bool IsPg()
         {
-            return this.Context is PostgreSQLExpressionContext;
+            return this.Context is PostgreSQLExpressionContext
+                   ||this.Context is KdbndpExpressionContext;
         }
         private bool IsOracle()
         {

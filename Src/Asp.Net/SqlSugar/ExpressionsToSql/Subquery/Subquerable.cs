@@ -26,6 +26,10 @@ namespace SqlSugar
         {
             return this;
         }
+        public Subqueryable<T> Where(List<IConditionalModel> conditionals)
+        {
+            return this;
+        }
         public Subqueryable<T> Where(Expression exp)
         {
             return this;
@@ -175,17 +179,31 @@ namespace SqlSugar
         {
             return new List<T>();
         }
-
-        public List<TResult> ToList<TResult>(Func<T, TResult> selector) 
+        public List<TResult> ToList<TResult>(Func<T, TResult> selector)
         {
             return null;
         }
-
+        public List<TResult> ToList<TResult>()
+        {
+            return null;
+        }
+        public List<TResult> ToList<TResult>(Func<T, TResult> selector,bool isAutoDto)where TResult : class, new()
+        {
+            return null;
+        }
         public T First()
         {
             return default(T);
         }
         public TResult First<TResult>(Func<T, TResult> selector) where TResult : class, new()
+        {
+            return default(TResult);
+        }
+        public TResult First<TResult>(Func<T, TResult> selector, bool isAutoDto) where TResult : class, new()
+        {
+            return default(TResult);
+        }
+        public TResult First<TResult>() where TResult : class, new()
         {
             return default(TResult);
         }

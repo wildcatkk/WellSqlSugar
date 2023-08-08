@@ -18,6 +18,8 @@ namespace SqlSugar
                 csharpTypeName = "long";
             if (csharpTypeName.ToLower().IsIn("boolean", "bool"))
                 csharpTypeName = "bool";
+            if (csharpTypeName == "Guid")
+                csharpTypeName = "string";
             if (csharpTypeName == "DateTimeOffset")
                 csharpTypeName = "DateTime";
             var mappings = this.MappingTypes.Where(it => it.Value.ToString().Equals(csharpTypeName, StringComparison.CurrentCultureIgnoreCase));
@@ -104,6 +106,7 @@ namespace SqlSugar
                   new KeyValuePair<string, CSharpDataType>("boolean",CSharpDataType.@bool),
                   new KeyValuePair<string, CSharpDataType>("bit",CSharpDataType.@bool),
                   new KeyValuePair<string, CSharpDataType>("number",CSharpDataType.@decimal),
+                  new KeyValuePair<string, CSharpDataType>("numeric",CSharpDataType.@decimal),
                   new KeyValuePair<string, CSharpDataType>("number",CSharpDataType.Single),
                   new KeyValuePair<string, CSharpDataType>("decimal",CSharpDataType.@decimal),
                   new KeyValuePair<string, CSharpDataType>("decimal",CSharpDataType.Single),
@@ -127,8 +130,9 @@ namespace SqlSugar
                   new KeyValuePair<string, CSharpDataType>("nclob",CSharpDataType.@string),
                   new KeyValuePair<string, CSharpDataType>("rowid",CSharpDataType.@string),
 
-                  new KeyValuePair<string, CSharpDataType>("date",CSharpDataType.DateTime),
                   new KeyValuePair<string, CSharpDataType>("timestamp",CSharpDataType.DateTime),
+                  new KeyValuePair<string, CSharpDataType>("date",CSharpDataType.DateTime),
+                 
                   new KeyValuePair<string, CSharpDataType>("timestamp with local time zone",CSharpDataType.DateTime),
                   new KeyValuePair<string, CSharpDataType>("timestamp with time zone",CSharpDataType.DateTime),
                   new KeyValuePair<string, CSharpDataType>("timestamp with time zone",CSharpDataType.DateTime),
@@ -137,6 +141,7 @@ namespace SqlSugar
                   new KeyValuePair<string, CSharpDataType>("float",CSharpDataType.@decimal),
 
                   new KeyValuePair<string, CSharpDataType>("blob",CSharpDataType.byteArray),
+                  new KeyValuePair<string, CSharpDataType>("image",CSharpDataType.byteArray),
                   new KeyValuePair<string, CSharpDataType>("long raw",CSharpDataType.byteArray),
                   new KeyValuePair<string, CSharpDataType>("raw",CSharpDataType.byteArray),
                   new KeyValuePair<string, CSharpDataType>("bfile",CSharpDataType.byteArray),

@@ -15,6 +15,7 @@ namespace SqlSugar
         bool UpdateParameterIsNull { get; set; }
 
         int ExecuteCommandWithOptLock(bool isThrowError = false);
+        int ExecuteCommandWithOptLockIF(bool? IsVersionValidation, bool? IsOptLock = null);
         Task<int> ExecuteCommandWithOptLockAsync(bool isThrowError = false);
         int ExecuteCommand();
         bool ExecuteCommandHasChange();
@@ -77,6 +78,7 @@ namespace SqlSugar
         IUpdateable<T> SetColumns(string fieldName,object fieldValue);
 
         IUpdateable<T> SetColumns(Expression<Func<T,object>> filedNameExpression, object fieldValue);
+        IUpdateable<T> SetColumns(Expression<Func<T, object>> filedNameExpression, Expression<Func<T, object>> valueExpression);
         IUpdateable<T> SetColumnsIF(bool isUpdateColumns, Expression<Func<T, object>> filedNameExpression, object fieldValue);
         IUpdateable<T> UpdateColumnsIF(bool isUpdateColumns,Expression<Func<T, object>> columns);
         IUpdateable<T> UpdateColumnsIF(bool isUpdateColumns, params string[] columns);
@@ -99,6 +101,8 @@ namespace SqlSugar
         IUpdateable<T> EnableDiffLogEvent(object businessData = null);
         IUpdateable<T> EnableDiffLogEventIF(bool isEnableDiffLog,object businessData = null);
         IUpdateable<T> ReSetValue(Action<T> setValueExpression);
+        IUpdateable<T> PublicSetColumns(Expression<Func<T, object>> filedNameExpression,string computationalSymbol);
+        IUpdateable<T> PublicSetColumns (Expression<Func<T,object>> filedNameExpression, Expression<Func<T, object>> ValueExpExpression);
         IUpdateable<T> RemoveDataCache();
         IUpdateable<T> RemoveDataCache(string likeString);
         IUpdateable<T> CallEntityMethod(Expression<Action<T>> method);
@@ -109,5 +113,29 @@ namespace SqlSugar
         SplitTableUpdateByObjectProvider<T> SplitTable();
         IUpdateable<T> EnableQueryFilter();
         IUpdateable<T> Clone();
+        IUpdateable<T,T2> InnerJoin<T2>(Expression<Func<T,T2,bool>> joinExpress);
+    }
+    public interface IUpdateable<T, T2> 
+    {
+        int ExecuteCommand();
+        Task<int> ExecuteCommandAsync();
+        IUpdateable<T, T2,T3> InnerJoin<T3>(Expression<Func<T, T2,T3, bool>> joinExpress);
+        IUpdateable<T, T2> SetColumns(Expression<Func<T, T2,T>> columns);
+        IUpdateable<T, T2> Where(Expression<Func<T, T2,bool>> whereExpression);
+    }
+    public interface IUpdateable<T, T2,T3>
+    {
+        IUpdateable<T, T2, T3,T4> InnerJoin<T4>(Expression<Func<T, T2, T3,T4, bool>> joinExpress);
+        int ExecuteCommand();
+        Task<int> ExecuteCommandAsync();
+        IUpdateable<T, T2,T3> SetColumns(Expression<Func<T, T2,T3, T>> columns);
+        IUpdateable<T, T2,T3> Where(Expression<Func<T, T2,T3, bool>> whereExpression);
+    }
+    public interface IUpdateable<T, T2, T3,T4>
+    {
+        int ExecuteCommand();
+        Task<int> ExecuteCommandAsync();
+        IUpdateable<T, T2, T3,T4> SetColumns(Expression<Func<T, T2, T3,T4, T>> columns);
+        IUpdateable<T, T2, T3,T4> Where(Expression<Func<T, T2, T3,T4, bool>> whereExpression);
     }
 }

@@ -51,7 +51,7 @@ namespace SqlSugar
             {
                 JoinString(parameter, expression);
             }
-            else if (IsUpdateJson(parameter,expression, operatorValue))
+            else if (IsUpdateJson(parameter, expression, operatorValue))
             {
                 parameter.CommonTempData = "IsJson=true";
                 DefaultBinary(parameter, expression, operatorValue);
@@ -63,11 +63,39 @@ namespace SqlSugar
                 DefaultBinary(parameter, expression, operatorValue);
                 parameter.CommonTempData = null;
             }
+            else if (IsBinaryGroup(operatorValue,expression)) 
+            {
+                var isComparisonOperator = ExpressionTool.IsComparisonOperator(expression);
+                var getLeft=GetNewExpressionValue(expression.Left);
+                var getRight = GetNewExpressionValue(expression.Right);
+                base.Context.Result.Append($"( {getLeft} {operatorValue} {getRight} )");
+            }
             else
             {
                 DefaultBinary(parameter, expression, operatorValue);
             }
         }
+
+        private bool IsBinaryGroup(string operatorValue, BinaryExpression expression)
+        {
+            var left = ExpressionTool.RemoveConvert(expression.Left);
+            var right = ExpressionTool.RemoveConvert(expression.Right);
+            if (operatorValue?.IsIn("AND","OR")==true&&left is BinaryExpression&& right is BinaryExpression) 
+            {
+
+                var leftChild = ExpressionTool.RemoveConvert((left as BinaryExpression).Right);
+                var rightChild = ExpressionTool.RemoveConvert((right as BinaryExpression).Right);
+                if (ExpressionTool.GetMethodName(leftChild)=="Select"
+                    && ExpressionTool.GetMethodName(rightChild) == "Select"
+                    && ExpressionTool.ContainsMethodName(left as BinaryExpression, "Group")
+                    &&ExpressionTool.ContainsMethodName(right as BinaryExpression, "Group")) 
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private bool IsUpdateArray(ExpressionParameter parameter, BinaryExpression expression, string operatorValue)
         {
             var isOk = parameter.Context.ResolveType == ResolveExpressType.WhereSingle && operatorValue == "=" && (expression.Left is MemberExpression) && expression.Left.Type.IsClass();
@@ -250,7 +278,7 @@ namespace SqlSugar
         }
         private void InSubGroupBy(BinaryExpression expression,string not)
         {
-            var leftSql = GetNewExpressionValue(expression.Left);
+            var leftSql = GetNewExpressionValue(ExpressionTool.RemoveConvert(expression.Left));
             var rightExpression = expression.Right as MethodCallExpression;
             if (rightExpression.Arguments[0] is LambdaExpression) 
             {
@@ -266,9 +294,18 @@ namespace SqlSugar
                     }
                 }
             }
-            var selector = GetNewExpressionValue(rightExpression.Arguments[0]);
+            var selector = "";
+            bool hasMethodCallWithName = ExpressionTool.ContainsMethodName(expression, "Join");
+            if (hasMethodCallWithName)
+            {
+                selector = GetNewExpressionValue(rightExpression.Arguments[0], ResolveExpressType.WhereMultiple);
+            }
+            else
+            {
+                selector = GetNewExpressionValue(rightExpression.Arguments[0]);
+            }
             var selectorExp = rightExpression.Arguments[0];
-            if (selector.Contains(".") && selectorExp is LambdaExpression) 
+            if (hasMethodCallWithName==false&&selector.Contains(".") && selectorExp is LambdaExpression) 
             {
                 var selectorExpLam = (selectorExp as LambdaExpression);
                 var name=(selectorExpLam.Parameters[0] as ParameterExpression).Name;
@@ -318,15 +355,15 @@ namespace SqlSugar
             {
                 return false;
             }
-            var methodString = method.ToString();
-            if (methodString.IndexOf("GroupBy(")<=0) 
+            var topMethods =ExpressionTool.GetTopLevelMethodCalls(method);
+            if (!topMethods.Contains("Subqueryable")) 
             {
                 return false;
             }
-            if (Regex.Matches(methodString, @"Subqueryable\(").Count!=1)
+            if (!topMethods.Contains("GroupBy"))
             {
                 return false;
-            }
+            } 
             return true;
         }
         private static bool IsJoinString(BinaryExpression expression, string operatorValue)

@@ -36,6 +36,7 @@ namespace SqlSugar
 
         public virtual bool IsReturnPkList { get; set; }
         public string AsName { get; set; }
+        public bool IsOffIdentity { get;  set; }
         #endregion
 
         #region SqlTemplate
@@ -287,6 +288,14 @@ namespace SqlSugar
             {
                 return columnInfo.InsertSql;
             }
+            else if (columnInfo.SqlParameterDbType is Type && (Type)columnInfo.SqlParameterDbType == UtilConstants.SqlConvertType)
+            {
+                var type = columnInfo.SqlParameterDbType as Type;
+                var ParameterConverter = type.GetMethod("ParameterConverter").MakeGenericMethod(typeof(string));
+                var obj = Activator.CreateInstance(type);
+                var p = ParameterConverter.Invoke(obj, new object[] { columnInfo.Value, GetDbColumnIndex }) as SugarParameter;
+                return p.ParameterName;
+            }
             else if (columnInfo.SqlParameterDbType is Type)
             {
                 var type=columnInfo.SqlParameterDbType as Type;
@@ -295,6 +304,7 @@ namespace SqlSugar
                 var p = ParameterConverter.Invoke(obj,new object[] {columnInfo.Value, GetDbColumnIndex }) as SugarParameter;
                 GetDbColumnIndex++;
                 //this.Parameters.RemoveAll(it => it.ParameterName == it.ParameterName);
+                UtilMethods.ConvertParameter(p,this.Builder);
                 this.Parameters.Add(p);
                 return p.ParameterName;
             }

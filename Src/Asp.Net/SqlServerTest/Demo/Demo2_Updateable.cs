@@ -58,6 +58,26 @@ namespace OrmTest
             //Re set value
             var result66 = db.Updateable(new List<Order> { updateObj }).ReSetValue(it => it.Id = 112).IgnoreColumns(it => new { it.CreateTime, it.Price }).ExecuteCommand();
 
+            var result67 =
+              db.Updateable(updateObjs)
+              .PublicSetColumns(it => it.Price, it => it.Price + 1)
+              .ExecuteCommand();
+
+            var result68 =
+             db.Updateable(updateObjs.First())
+             .PublicSetColumns(it => it.Price, it => it.Price + 1)
+             .ExecuteCommand();
+
+            var list = db.Queryable<Order>().OrderBy(it=>it.Id).Take(2).ToList();
+            if (list.Count >= 2)
+            {
+                list[0].Price = 10;
+                list[1].Price = 2;
+                var result69 =
+                db.Updateable(list)
+                .PublicSetColumns(it => it.Price, "+")
+                .ExecuteCommand();
+            }
 
             //Update by track
             Console.WriteLine(" Tracking 1:");
@@ -83,7 +103,11 @@ namespace OrmTest
             var result81 = db.Updateable<Order>().SetColumns(it => it.Name == "Name" + "1").Where(it => it.Id == 1).ExecuteCommand();
             var array = new string[] { "1" };
             var result82 = db.Updateable<Order>().SetColumns(it => it.Name == array[0]).Where(it => it.Id == 1).ExecuteCommand();
- 
+            var result61 = db.Updateable<Order>()
+                      .InnerJoin<Custom>((x, y) => x.CustomId == y.Id)
+                      .SetColumns((x, y) => new Order() { Name = y.Name, Price = y.Id })
+                      .Where((x, y) => x.Id == 1)
+                      .ExecuteCommand();
 
             /*** 3.by Dictionary ***/
             var dt = new Dictionary<string, object>();
@@ -124,21 +148,50 @@ namespace OrmTest
 
             var dataTable = db.Queryable<Order>().Select("id,name,1 as price").Take(2).ToDataTable();
             db.Fastest<Order>().BulkUpdate("Order", dataTable,new string[] {"id" },new string[] {"name" });
+           
             db.Updateable<object>()
              .AS("[Order]")
              .SetColumns("name", 1)
              .Where("id=1").ExecuteCommand();
+
             db.Updateable<object>()
               .AS("[Order]")
               .SetColumns("name", 1)
-                 .SetColumns("price", 1)
+              .SetColumns("price", 1)
               .Where("id=1").ExecuteCommand();
 
+            db.Updateable<object>()
+            .AS("[Order]")
+            .SetColumns(it => SqlFunc.MappingColumn<string>("name"), it => SqlFunc.MappingColumn<string>("(case when id>0 then name else '' end) "))
+            .SetColumns("price", 1)
+            .Where("id=1").ExecuteCommand();
+
+            db.Updateable<object>()
+            .AS("[Order]")
+            .SetColumns(it => SqlFunc.MappingColumn<string>("name"), it => SqlFunc.MappingColumn<string>("(case when id>0 then name else '' end) "))
+            //.SetColumns("price", 1)
+            .Where("id=1").ExecuteCommand();
+
+            db.Updateable<Custom>()
+             .AS("order")
+             .SetColumns(it=>it.Name=="a")
+             .Where(it => SqlFunc.Subqueryable<Custom>().AS("order").Where(s => s.Id == it.Id).NotAny()).ExecuteCommand();
+
+
+            db.Updateable<Order>()
+             .AS("order")
+             .SetColumns(it => it.Price == 1+SqlFunc.Subqueryable<Custom>().AS("order").Where(s => s.Id == it.Id).Select(s=>s.Id))
+             .Where(it => 1==2).ExecuteCommand();
+
+            db.Updateable<Order>() 
+             .SetColumns(it => it.Price == 1 + SqlFunc.Subqueryable<Custom>().Where(s => s.Id == it.Id).Select(s => s.Id))
+             .Where(it => 1 == 2).ExecuteCommand();
 
             object o = db.Queryable<Order>().First();
             db.UpdateableByObject(o).ExecuteCommandAsync().GetAwaiter().GetResult();
             object os = db.Queryable<Order>().Take(2).ToList();
             db.UpdateableByObject(os).ExecuteCommand();
+            db.UpdateableByObject(os).IgnoreColumns("name","price").ExecuteCommand();
             Console.WriteLine("#### Updateable End ####");
         }
 

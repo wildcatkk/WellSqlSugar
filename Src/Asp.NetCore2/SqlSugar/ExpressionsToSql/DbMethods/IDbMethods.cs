@@ -90,6 +90,10 @@ namespace SqlSugar
         string Stuff(MethodCallExpressionModel model);
         string RowNumber(MethodCallExpressionModel model);
         string RowCount(MethodCallExpressionModel model);
+        string RowSum(MethodCallExpressionModel model);
+        string RowMin(MethodCallExpressionModel model);
+        string RowMax(MethodCallExpressionModel model);
+        string RowAvg(MethodCallExpressionModel model);
         string Exists(MethodCallExpressionModel model);
         string GetDateString(string dateValue,string format);
         string GetForXmlPath();
@@ -106,5 +110,16 @@ namespace SqlSugar
         string SplitIn(MethodCallExpressionModel model);
         string ListAny(MethodCallExpressionModel model);
         string GetTableWithDataBase(string databaseName,string tableName);
+        string Modulo(MethodCallExpressionModel mode);
+        string Like(MethodCallExpressionModel mode);
+        string ToSingle(MethodCallExpressionModel mode);
+        string WeekOfYear(MethodCallExpressionModel mode);
+        string TrimEnd(MethodCallExpressionModel mode);    
+        string TrimStart(MethodCallExpressionModel mode);
+        string Left(MethodCallExpressionModel mode);
+        string Right(MethodCallExpressionModel mode);
+        string PadLeft(MethodCallExpressionModel mode);
+        string Floor(MethodCallExpressionModel mode);
+        string Ceil(MethodCallExpressionModel mode);
     }
 }

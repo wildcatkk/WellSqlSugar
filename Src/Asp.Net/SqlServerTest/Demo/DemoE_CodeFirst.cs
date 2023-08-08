@@ -69,8 +69,38 @@ namespace OrmTest
             db.CodeFirst.InitTables<Unittest1011, Unittest22221>();
             db.Insertable(new Unittest1011() { name = "a" }).ExecuteCommand();
             db.Insertable(new Unittest22221() { name = "a" }).ExecuteCommand();
+            db.CodeFirst.InitTables<Unitrtqqqadfa>();
+            db.CodeFirst.InitTables<Unitrasdfafa>();
+            var id=db.Insertable(new Unitrasdfafa() { Name = "Unitrasdfafa" }).ExecuteReturnIdentity();
+            db.Updateable(new Unitrasdfafa() { Name = "Unitrasdfafa", id = id }).ExecuteCommand();
+            var xx=db.Queryable<Unitrasdfafa>().Select("*").ToDataTable();
+            db.CodeFirst.InitTables<UintEnumpk>();
+            db.Deleteable<UintEnumpk>().Where(it => true).ExecuteCommand();
+            db.Insertable(new UintEnumpk() { dbType = DbType.Sqlite }).ExecuteCommand();
+            db.Deleteable(new UintEnumpk() { dbType  = DbType.Sqlite }).ExecuteCommand();
             Console.WriteLine("#### CodeFirst end ####");
         }
+    }
+    public class UintEnumpk
+    {
+        [SugarColumn(IsPrimaryKey =true)]
+        public DbType dbType { get; set; }
+    }
+
+    [SugarTable("Unitrasdfafa",Discrimator ="Type:1,Type2:2")]
+    public class Unitrasdfafa
+    {
+
+        [SugarColumn(IsIdentity =true,IsPrimaryKey =true)]
+        public int id { get; set; }
+        public string Name { get; set; }
+    }
+
+    [SugarTable("dbo.Unitrtqqqadfa")]
+    public class Unitrtqqqadfa
+    {
+        [SugarColumn(ColumnDescription ="aa")]
+        public string Name { get; set; }
     }
     public class Unittest22221
     {

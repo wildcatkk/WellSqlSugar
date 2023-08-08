@@ -184,7 +184,7 @@ namespace SqlSugar
 
         public IInsertable<T> Insertable<T>(T insertObj) where T : class, new()
         {
-            Check.Exception(typeof(T).FullName.Contains("System.Collections.Generic.List`"), "  need  where T: class, new() ");
+            Check.ExceptionEasy(typeof(T).FullName.Contains("System.Collections.Generic.List`"), "  need  where T: class, new() ","需要Class,new()约束，并且类属性中不能有required修饰符");
             if (typeof(T).Name == "Object") 
             {
                 Check.ExceptionEasy("Object type use db.InsertableByObject(obj).ExecuteCommand()", "检测到T为Object类型，请使用 db.InsertableByObject(obj).ExecuteCommand()，Insertable不支持object，InsertableByObject可以(缺点：功能比较少)");
@@ -230,6 +230,20 @@ namespace SqlSugar
         {
             return  this.Context.DeleteNav(whereExpression);
         }
+
+        public DeleteNavTaskInit<T, T> DeleteNav<T>(T data, DeleteNavRootOptions options) where T : class, new()
+        {
+            return this.Context.DeleteNav(data, options);
+        }
+        public DeleteNavTaskInit<T, T> DeleteNav<T>(List<T> datas, DeleteNavRootOptions options) where T : class, new()
+        {
+            return this.Context.DeleteNav(datas, options);
+        }
+        public DeleteNavTaskInit<T, T> DeleteNav<T>(Expression<Func<T, bool>> whereExpression, DeleteNavRootOptions options) where T : class, new()
+        {
+            return this.Context.DeleteNav(whereExpression, options);
+        }
+
         public UpdateNavTaskInit<T, T> UpdateNav<T>(T data) where T : class, new()
         {
             return this.Context.UpdateNav(data);
@@ -270,6 +284,14 @@ namespace SqlSugar
         }
         #endregion
 
+        public QueryMethodInfo QueryableByObject(Type entityType) 
+        {
+            return this.Context.QueryableByObject(entityType);
+        }
+        public QueryMethodInfo QueryableByObject(Type entityType,string shortName)
+        {
+            return this.Context.QueryableByObject(entityType,shortName);
+        }
         public ISugarQueryable<T> MasterQueryable<T>()
         {
             return this.Context.MasterQueryable<T>();
@@ -853,6 +875,14 @@ namespace SqlSugar
             var configId = attr.configId;
             return this.GetConnection(configId);
         }
+        public SqlSugarProvider GetConnectionWithAttr(Type type)
+        {
+            var attr = type.GetCustomAttribute<TenantAttribute>();
+            if (attr == null)
+                return this.GetConnection(this.CurrentConnectionConfig.ConfigId);
+            var configId = attr.configId;
+            return this.GetConnection(configId);
+        }
         public SqlSugarScopeProvider GetConnectionScopeWithAttr<T>()
         {
             var attr = typeof(T).GetCustomAttribute<TenantAttribute>();
@@ -1430,7 +1460,7 @@ namespace SqlSugar
             {
                 if (item.ConfigId == null)
                 {
-                    item.ConfigId = Guid.NewGuid().ToString();
+                    item.ConfigId = "";
                 }
             }
         }

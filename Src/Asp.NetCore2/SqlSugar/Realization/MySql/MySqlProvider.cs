@@ -1,4 +1,5 @@
 ﻿using MySqlConnector;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -143,6 +144,10 @@ namespace SqlSugar
                         sqlParameter.Value = UtilMethods.GetMinDate(this.Context.CurrentConnectionConfig);
                     }
                 }
+                if (parameter.IsJson == false&& sqlParameter.Value!=null&& sqlParameter.Value is JArray) 
+                {
+                    sqlParameter.Value = sqlParameter.Value.ToString();
+                }
                 ++index;
             }
             return result;
@@ -187,6 +192,8 @@ namespace SqlSugar
         }
         public override async Task<int> ExecuteCommandAsync(string sql, params SugarParameter[] parameters)
         {
+            if (this.Context.CurrentConnectionConfig?.SqlMiddle?.IsSqlMiddle == true)
+                return  await base.ExecuteCommandAsync(sql,parameters);
             try
             {
                 Async();
@@ -227,6 +234,8 @@ namespace SqlSugar
         }
         public override async Task<IDataReader> GetDataReaderAsync(string sql, params SugarParameter[] parameters)
         {
+            if (this.Context.CurrentConnectionConfig?.SqlMiddle?.IsSqlMiddle == true)
+                return await base.GetDataReaderAsync(sql, parameters);
             try
             {
                 Async();
@@ -264,6 +273,8 @@ namespace SqlSugar
         }
         public override async Task<object> GetScalarAsync(string sql, params SugarParameter[] parameters)
         {
+            if (this.Context.CurrentConnectionConfig?.SqlMiddle?.IsSqlMiddle == true)
+                return await base.GetScalarAsync(sql, parameters);
             try
             {
                 Async();

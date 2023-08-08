@@ -28,6 +28,10 @@ namespace SqlSugar
             this.ContextID = Guid.NewGuid();
             Check.ArgumentNullException(config, "config is null");
             CheckDbDependency(config);
+            if (StaticConfig.CompleteDbFunc != null) 
+            {
+                StaticConfig.CompleteDbFunc(this);
+            }
         }
         #endregion
 
@@ -78,6 +82,21 @@ namespace SqlSugar
         #endregion
 
         #region Queryable
+        public QueryMethodInfo QueryableByObject(Type entityType) 
+        {
+            QueryMethodInfo result = new QueryMethodInfo();
+            var method=this.GetType().GetMyMethod("Queryable", 0);
+            var methodT=method.MakeGenericMethod(entityType);
+            var queryableObj=methodT.Invoke(this,new object[] {});
+            result.QueryableObj = queryableObj;
+            result.Context = this.Context;
+            result.EntityType = entityType;
+            return result;
+        }
+        public QueryMethodInfo QueryableByObject(Type entityType, string shortName)
+        {
+            return this.QueryableByObject(entityType).AS(this.Context.EntityMaintenance.GetTableName(entityType),shortName);
+        }
         /// <summary>
         /// Get datebase time
         /// </summary>
@@ -108,6 +127,7 @@ namespace SqlSugar
 
             InitMappingInfo<T>();
             var result = this.CreateQueryable<T>();
+            UtilMethods.AddDiscrimator(typeof(T), result);
             return result;
         }
         /// <summary>
@@ -415,6 +435,8 @@ namespace SqlSugar
             var newQueryable = this.SqlQueryable<object>(sqlobj.Key).AddParameters(sqlobj.Value);
             var result = newQueryable.Select<T>(newQueryable.QueryBuilder.SelectValue+"");
             result.QueryBuilder.IsSqlQuery = false;
+            result.QueryBuilder.NoCheckInclude = true;
+            result.QueryBuilder.Includes = queryable.QueryBuilder.Includes?.ToList();
             return result;
         }
         public virtual ISugarQueryable<T, T2> Queryable<T, T2>(
@@ -670,6 +692,7 @@ namespace SqlSugar
             var result= this.Context.Queryable<T>().AS(sqlBuilder.GetPackTable(sql, sqlBuilder.GetDefaultShortName())).With(SqlWith.Null).Select(sqlBuilder.GetDefaultShortName() + ".*");
             result.QueryBuilder.IsSqlQuery = true;
             result.QueryBuilder.OldSql = sql;
+            result.QueryBuilder.NoCheckInclude = true;
             return result;
         }
         #endregion
@@ -1005,6 +1028,7 @@ namespace SqlSugar
         }
         public IStorageable<T> Storageable<T>(List<T> dataList) where T : class, new()
         {
+            dataList = dataList.Where(it => it != null).ToList();
             this.InitMappingInfo<T>();
             var sqlBuilder = InstanceFactory.GetSqlbuilder(this.Context.CurrentConnectionConfig);
             var result= new Storageable<T>(dataList,this);
@@ -1153,6 +1177,25 @@ namespace SqlSugar
         {
             return DeleteNav(this.Queryable<T>().Where(whereExpression).ToList());
         }
+
+        public DeleteNavTaskInit<T, T> DeleteNav<T>(T data, DeleteNavRootOptions options) where T : class, new()
+        {
+            return DeleteNav(new List<T>() { data }, options);
+        }
+        public DeleteNavTaskInit<T, T> DeleteNav<T>(List<T> datas, DeleteNavRootOptions options) where T : class, new()
+        {
+            var result = new DeleteNavTaskInit<T, T>();
+            result.deleteNavProvider = new DeleteNavProvider<T, T>();
+            result.deleteNavProvider._Roots = datas;
+            result.deleteNavProvider._Context = this;
+            result.deleteNavProvider._RootOptions = options;
+            return result;
+        }
+        public DeleteNavTaskInit<T, T> DeleteNav<T>(Expression<Func<T, bool>> whereExpression, DeleteNavRootOptions options) where T : class, new()
+        {
+            return DeleteNav(this.Queryable<T>().Where(whereExpression).ToList(),options);
+        }
+
         public UpdateNavTaskInit<T, T> UpdateNav<T>(T data) where T : class, new()
         {
             return UpdateNav(new List<T>() { data });
@@ -1451,6 +1494,13 @@ namespace SqlSugar
                 var index = 1;
                 if (this.Queues.HasValue())
                 {
+                    var repeatList =
+                        Queues.SelectMany(it => it.Parameters ?? new SugarParameter[] { }).Select(it => it.ParameterName)
+                       .GroupBy(it => it)
+                       .Where(it => it.Count() > 1);
+                    var repeatCount = repeatList.Count();
+                    var isParameterNameRepeat = repeatList
+                        .Count() > 0;
                     foreach (var item in Queues)
                     {
                         if (item.Sql == null)
@@ -1465,8 +1515,16 @@ namespace SqlSugar
                             var newName = itemParameter.ParameterName + "_q_" + index;
                             SugarParameter parameter = new SugarParameter(newName, itemParameter.Value);
                             parameter.DbType = itemParameter.DbType;
-                            itemSql = UtilMethods.ReplaceSqlParameter(itemSql, itemParameter, newName);
-                            addParameters.Add(parameter);
+                            if (repeatCount>500||(isParameterNameRepeat&& repeatList.Any(it=>it.Key.EqualCase(itemParameter.ParameterName))))
+                            {
+                                itemSql = UtilMethods.ReplaceSqlParameter(itemSql, itemParameter, newName);
+                                addParameters.Add(parameter);
+                            }
+                            else
+                            {
+                                parameter.ParameterName = itemParameter.ParameterName;
+                                addParameters.Add(parameter);
+                            }
                         }
                         parsmeters.AddRange(addParameters);
                         itemSql = itemSql
@@ -1510,6 +1568,13 @@ namespace SqlSugar
                 var index = 1;
                 if (this.Queues.HasValue())
                 {
+                    var repeatList =
+                         Queues.SelectMany(it => it.Parameters ?? new SugarParameter[] { }).Select(it => it.ParameterName)
+                        .GroupBy(it => it)
+                        .Where(it => it.Count() > 1);
+                    var repeatCount = repeatList.Count();
+                    var isParameterNameRepeat = repeatList
+                        .Count() > 0;
                     foreach (var item in Queues)
                     {
                         if (item.Sql == null)
@@ -1524,7 +1589,14 @@ namespace SqlSugar
                             var newName = itemParameter.ParameterName + "_q_" + index;
                             SugarParameter parameter = new SugarParameter(newName, itemParameter.Value);
                             parameter.DbType = itemParameter.DbType;
-                            itemSql = UtilMethods.ReplaceSqlParameter(itemSql, itemParameter, newName);
+                            if (repeatCount>500||(isParameterNameRepeat&& repeatList.Any(it=>it.Key.EqualCase(itemParameter.ParameterName))))
+                            {
+                                itemSql = UtilMethods.ReplaceSqlParameter(itemSql, itemParameter, newName);
+                            }
+                            else 
+                            {
+                                parameter.ParameterName = itemParameter.ParameterName;
+                            }
                             addParameters.Add(parameter);
                         }
                         parsmeters.AddRange(addParameters);
@@ -1575,6 +1647,7 @@ namespace SqlSugar
         #region Split table
         public SplitTableContext SplitHelper<T>() where T : class, new()
         {
+            UtilMethods.StartCustomSplitTable(this, typeof(T));
             var result = new SplitTableContext(this.Context)
             {
                 EntityInfo = this.Context.EntityMaintenance.GetEntityInfo<T>()
@@ -1583,6 +1656,7 @@ namespace SqlSugar
         }
         public SplitTableContext SplitHelper(Type entityType)  
         {
+            UtilMethods.StartCustomSplitTable(this,entityType);
             var result = new SplitTableContext(this.Context)
             {
                 EntityInfo = this.Context.EntityMaintenance.GetEntityInfo(entityType)
@@ -1591,6 +1665,7 @@ namespace SqlSugar
         }
         public SplitTableContextResult<T> SplitHelper<T>(T data) where T : class, new()
         {
+            UtilMethods.StartCustomSplitTable(this, typeof(T));
             var result = new SplitTableContext(this.Context)
             {
                 EntityInfo = this.Context.EntityMaintenance.GetEntityInfo<T>()
@@ -1603,6 +1678,7 @@ namespace SqlSugar
         }
         public SplitTableContextResult<T> SplitHelper<T>(List<T> data) where T : class, new()
         {
+            UtilMethods.StartCustomSplitTable(this, typeof(T));
             var result = new SplitTableContext(this.Context)
             {
                 EntityInfo = this.Context.EntityMaintenance.GetEntityInfo<T>()
@@ -1618,8 +1694,15 @@ namespace SqlSugar
         #region AsTenant
         public ITenant AsTenant()
         {
-            Check.Exception(true,ErrorMessage.GetThrowMessage("Child objects do not support tenant methods, var childDb= Db.GetConnection(confid)  ,Db is master  ", "Db子对象不支持租户方法，请使用主对象,例如：var childDb= Db.GetConnection(confid)  Db是主对象，childDb是子对象 "));
-            return null;
+            if (this.Root != null)
+            {
+                return this.Root;
+            }
+            else
+            {
+                Check.Exception(true, ErrorMessage.GetThrowMessage("Child objects do not support tenant methods, var childDb= Db.GetConnection(confid)  ,Db is master  ", "Db子对象不支持租户方法，请使用主对象,例如：var childDb= Db.GetConnection(confid)  Db是主对象，childDb是子对象 "));
+                return null;
+            }
         }
 
         #endregion

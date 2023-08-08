@@ -454,6 +454,10 @@ namespace SqlSugar
         #region Min Max Sum Gvg
         protected TResult _Min<TResult>(Expression expression)
         {
+            if (this.QueryBuilder.IsSqlQuery)
+            {
+                this.QueryBuilder.IsSqlQuery = false;
+            }
             QueryBuilder.CheckExpression(expression, "Main");
             var isSingle = QueryBuilder.IsSingle();
             var lamResult = QueryBuilder.GetExpressionValue(expression, isSingle ? ResolveExpressType.FieldSingle : ResolveExpressType.FieldMultiple);
@@ -463,6 +467,10 @@ namespace SqlSugar
         }
         protected async Task<TResult> _MinAsync<TResult>(Expression expression)
         {
+            if (this.QueryBuilder.IsSqlQuery)
+            {
+                this.QueryBuilder.IsSqlQuery = false;
+            }
             QueryBuilder.CheckExpression(expression, "Main");
             var isSingle = QueryBuilder.IsSingle();
             var lamResult = QueryBuilder.GetExpressionValue(expression, isSingle ? ResolveExpressType.FieldSingle : ResolveExpressType.FieldMultiple);
@@ -472,6 +480,10 @@ namespace SqlSugar
         }
         protected TResult _Avg<TResult>(Expression expression)
         {
+            if (this.QueryBuilder.IsSqlQuery)
+            {
+                this.QueryBuilder.IsSqlQuery = false;
+            }
             QueryBuilder.CheckExpression(expression, "Avg");
             var isSingle = QueryBuilder.IsSingle();
             var lamResult = QueryBuilder.GetExpressionValue(expression, isSingle ? ResolveExpressType.FieldSingle : ResolveExpressType.FieldMultiple);
@@ -479,6 +491,10 @@ namespace SqlSugar
         }
         protected async Task<TResult> _AvgAsync<TResult>(Expression expression)
         {
+            if (this.QueryBuilder.IsSqlQuery)
+            {
+                this.QueryBuilder.IsSqlQuery = false;
+            }
             QueryBuilder.CheckExpression(expression, "Avg");
             var isSingle = QueryBuilder.IsSingle();
             var lamResult = QueryBuilder.GetExpressionValue(expression, isSingle ? ResolveExpressType.FieldSingle : ResolveExpressType.FieldMultiple);
@@ -486,6 +502,10 @@ namespace SqlSugar
         }
         protected TResult _Max<TResult>(Expression expression)
         {
+            if (this.QueryBuilder.IsSqlQuery)
+            {
+                this.QueryBuilder.IsSqlQuery = false;
+            }
             QueryBuilder.CheckExpression(expression, "Max");
             var isSingle = QueryBuilder.IsSingle();
             var lamResult = QueryBuilder.GetExpressionValue(expression, isSingle ? ResolveExpressType.FieldSingle : ResolveExpressType.FieldMultiple);
@@ -495,6 +515,10 @@ namespace SqlSugar
         }
         protected async Task<TResult> _MaxAsync<TResult>(Expression expression)
         {
+            if (this.QueryBuilder.IsSqlQuery)
+            {
+                this.QueryBuilder.IsSqlQuery = false;
+            }
             QueryBuilder.CheckExpression(expression, "Max");
             var isSingle = QueryBuilder.IsSingle();
             var lamResult = QueryBuilder.GetExpressionValue(expression, isSingle ? ResolveExpressType.FieldSingle : ResolveExpressType.FieldMultiple);
@@ -504,6 +528,10 @@ namespace SqlSugar
         }
         protected TResult _Sum<TResult>(Expression expression)
         {
+            if (this.QueryBuilder.IsSqlQuery)
+            {
+                this.QueryBuilder.IsSqlQuery = false;
+            }
             QueryBuilder.CheckExpression(expression, "Sum");
             var isSingle = QueryBuilder.IsSingle();
             var lamResult = QueryBuilder.GetExpressionValue(expression, isSingle ? ResolveExpressType.FieldSingle : ResolveExpressType.FieldMultiple);
@@ -513,6 +541,10 @@ namespace SqlSugar
         }
         protected async Task<TResult> _SumAsync<TResult>(Expression expression)
         {
+            if (this.QueryBuilder.IsSqlQuery)
+            {
+                this.QueryBuilder.IsSqlQuery = false;
+            }
             QueryBuilder.CheckExpression(expression, "Sum");
             var isSingle = QueryBuilder.IsSingle();
             var lamResult = QueryBuilder.GetExpressionValue(expression, isSingle ? ResolveExpressType.FieldSingle : ResolveExpressType.FieldMultiple);
@@ -556,6 +588,81 @@ namespace SqlSugar
         #endregion
 
         #region Navigate
+        internal bool IsAppendNavColumns()
+        {
+            return this.QueryBuilder.Includes.HasValue() && this.QueryBuilder.AppendNavInfo == null;
+        }
+
+        internal void SetAppendNavColumns(Expression  expression)
+        {
+            var tResultType = expression.Type;
+            var dic = ExpressionTool.GetNewExpressionItemList(expression);
+            var navs = this.QueryBuilder.Includes;
+            var navManages = navs.Cast<NavigatManager<T>>();
+            if (navManages.FirstOrDefault() == null) return;
+            this.QueryBuilder.AppendNavInfo = new AppendNavInfo();
+            var navInfo = this.QueryBuilder.AppendNavInfo;
+            var entityColumns = this.EntityInfo.Columns;
+            var pkColumns = entityColumns.Where(it => it.IsPrimarykey);
+            AddAppendProperties(navManages, navInfo, entityColumns, pkColumns);
+            AddMappingNavProperties(dic, navInfo, entityColumns);
+        }
+
+        private static void AddMappingNavProperties(Dictionary<string, Expression> dic, AppendNavInfo navInfo, List<EntityColumnInfo> entityColumns)
+        {
+            foreach (var item in dic)
+            {
+                var value = item.Value;
+                var expressionTree = new ExpressionTreeVisitor().GetExpressions(value);
+                var isSqlMethod = expressionTree.Any()&&ExpressionTool.GetMethodName(expressionTree.Last()).IsIn("Any", "Count");
+                if (expressionTree.Any()&&isSqlMethod==false)
+                {
+                   
+                    var name = ExpressionTool.GetMemberName(expressionTree.First());
+                    if (name != null && entityColumns.Any(it => it.Navigat != null && it.PropertyName == name))
+                    {
+                        var mappingNavColumnInfo = new MappingNavColumnInfo()
+                        {
+                            ExpressionList = expressionTree,
+                            Name = name
+                        };
+                        navInfo.MappingNavProperties.Add(item.Key, mappingNavColumnInfo);
+                    }
+                }
+
+            }
+        }
+
+        private static void AddAppendProperties(IEnumerable<NavigatManager<T>> navManages, AppendNavInfo navInfo, List<EntityColumnInfo> entityColumns, IEnumerable<EntityColumnInfo> pkColumns)
+        {
+            foreach (var item in pkColumns)
+            {
+                navInfo.AppendProperties.Add(item.PropertyName, item.DbColumnName);
+            }
+            foreach (var item in navManages)
+            {
+                var navName = ExpressionTool.GetMemberName(item.Expressions.First());
+                var navColumn = entityColumns.Where(it => it.IsPrimarykey == false).Where(it => it.Navigat != null).FirstOrDefault(it => it.PropertyName == navName);
+                if (navColumn != null && navColumn.Navigat.NavigatType != NavigateType.ManyToMany)
+                {
+                    var name1 = navColumn.Navigat.Name;
+                    var name2 = navColumn.Navigat.Name2;
+                    var name1Column = entityColumns.FirstOrDefault(it => it.PropertyName == name1);
+                    var name2Column = entityColumns.FirstOrDefault(it => it.PropertyName == name2);
+                    if (name1Column != null)
+                    {
+                        if (!navInfo.AppendProperties.ContainsKey(name1Column.PropertyName))
+                            navInfo.AppendProperties.Add(name1Column.PropertyName, name1Column.DbColumnName);
+                    }
+                    if (name2Column != null)
+                    {
+                        if (!navInfo.AppendProperties.ContainsKey(name2Column.PropertyName))
+                            navInfo.AppendProperties.Add(name2Column.PropertyName, name2Column.DbColumnName);
+                    }
+                }
+            }
+        }
+
         private async Task _InitNavigatAsync<TResult>(List<TResult> result)
         {
             if (this.QueryBuilder.Includes != null)
@@ -568,18 +675,140 @@ namespace SqlSugar
             if (this.QueryBuilder.Includes != null)
             {
                 var managers = (this.QueryBuilder.Includes as List<object>);
-                if (this.QueryBuilder.SelectValue.HasValue() && this.QueryBuilder.NoCheckInclude == false)
+                if (this.QueryBuilder.AppendNavInfo?.AppendProperties?.Any()==true)
                 {
-                    Check.ExceptionEasy("To use includes, use select after tolist()", "使用Includes请在ToList()之后在使用Select");
+                    if (result.HasValue())
+                    {
+                        SelectNavQuery(result, managers);
+                    }
                 }
-                foreach (var it in managers)
+                else
                 {
-                    var manager = it as NavigatManager<TResult>;
-                    manager.RootList = result;
-                    manager.Execute();
+                    foreach (var it in managers)
+                    {
+                        var manager = it as NavigatManager<TResult>;
+                        if (manager != null)
+                        {
+                            manager.RootList = result;
+                            manager.Execute();
+                        }
+                    }
                 }
             }
         }
+
+        private void SelectNavQuery<TResult>(List<TResult> result, List<object> managers)
+        {
+            if (result.Any())
+            {
+                foreach (var it in managers)
+                {
+                    var manager = it;
+                    var p = it.GetType().GetProperty("RootList");
+                    var tType = it.GetType().GenericTypeArguments[0];
+                    var allColumns = this.Context.EntityMaintenance.GetEntityInfo(tType)
+                        .Columns;
+                    var columns = allColumns
+                        .Where(a => this.QueryBuilder.AppendNavInfo.Result.First().result.ContainsKey("SugarNav_" + a.PropertyName))
+                        .ToList();
+                    var listType = typeof(List<>).MakeGenericType(tType);
+                    var outList = SelectNavQuery_SetList(result, it, p, tType, columns, listType);
+                    it.GetType().GetMethod("Execute").Invoke(it, null);
+                    SelectNavQuery_MappingList(it, result, outList, allColumns.Where(a => a.Navigat != null).ToList());
+                }
+            }
+        }
+
+        private void SelectNavQuery_MappingList<TResult>(object it,List<TResult> result, IList outList,List<EntityColumnInfo> columnInfos)
+        {
+            for (int i = 0; i < result.Count; i++)
+            {
+                var leftObject = result[i];
+                var rightObject = outList[i];
+                foreach (var item in this.QueryBuilder.AppendNavInfo.MappingNavProperties)
+                {
+                    var rightName = item.Value.Name;
+                    var rightColumnInfo = columnInfos.FirstOrDefault(a => a.PropertyName == rightName);
+                    var rightValue=rightColumnInfo.PropertyInfo.GetValue(rightObject);
+                    var leftName = item.Key;
+                    ////  var rightColumn=col
+                    //  object value = item;
+                    if (item.Value.ExpressionList.Count > 1 && rightValue != null)
+                    {
+
+                        //foreach (var callExp in item.Value.ExpressionList.Skip(1))
+                        //{
+                        try
+                        {
+                            MethodCallExpression meExp = (MethodCallExpression)item.Value.ExpressionList.Last();
+                            ParameterExpression ps = ExpressionTool.GetParameters(meExp).First();
+                            var comExp = Expression.Lambda(meExp, ps);
+                            var obj = comExp.Compile();
+                            // 传递参数值
+                            var leftValue = obj.DynamicInvoke(rightObject);
+                            UtilMethods.SetAnonymousObjectPropertyValue(leftObject, leftName, leftValue);
+                        }
+                        catch(Exception ex)
+                        {
+                            var errorExp = item.Value.ExpressionList.Last().ToString();
+                            Check.ExceptionEasy($"{errorExp} no support，{ex.Message}", $"{errorExp}语法不支持，请查SqlSugar文档询导航DTO用法，{ex.Message}");
+                        }
+                        // // 重新构造Lambda表达式，将参数替换为新的参数，方法调用替换为新的方法调用
+                        // var newExpression = Expression.Lambda<Func<X, List<int>>>(newMethodCallExpr, paramExpr);
+                        // Expression.Call(callExp, (callExp as MethodCallExpression).Method,new )
+                        //  var propertyExpr = Expression.Property(paramExpr, rightName);
+                        // }
+                    }
+                    else if(rightValue != null)
+                    {
+                        //leftObject.GetType().GetProperty(leftName).SetValue(leftObject, rightValue);
+                       UtilMethods.SetAnonymousObjectPropertyValue(leftObject, leftName, rightValue);
+                    }
+                } 
+            }
+        }
+    
+        private IList SelectNavQuery_SetList<TResult>(List<TResult> result, object it, PropertyInfo p, Type tType, List<EntityColumnInfo> columns, Type listType)
+        {
+            var outList = Activator.CreateInstance(listType);
+            p.SetValue(it, outList);
+            var index = 0;
+            foreach (var item in result)
+            {
+                var addItem = Activator.CreateInstance(tType);
+                var appendResult = this.QueryBuilder.AppendNavInfo.Result[index];
+                foreach (var kv in appendResult.result)
+                {
+                    var propertyName = kv.Key.Replace("SugarNav_", "");
+                    var propertyInfo = columns.First(i => i.PropertyName == propertyName).PropertyInfo;
+                    if (kv.Value is decimal &&UtilMethods.GetUnderType(propertyInfo.PropertyType).IsIn(typeof(int), typeof(long)))
+                    {
+                   
+                        var changeValue = UtilMethods.ChangeType2(kv.Value, propertyInfo.PropertyType);
+                        propertyInfo.SetValue(addItem, changeValue);
+                    }
+                    if (kv.Value ==DBNull.Value && UtilMethods.GetUnderType(propertyInfo.PropertyType).IsIn(typeof(int), typeof(long)))
+                    {
+
+                        var changeValue = UtilMethods.ChangeType2(0, propertyInfo.PropertyType);
+                        propertyInfo.SetValue(addItem, changeValue);
+                    }
+                    else
+                    {
+                        propertyInfo.SetValue(addItem, kv.Value);
+                    }
+                }
+                (outList as IList).Add(addItem);
+                index++;
+            }
+            return outList as IList;
+        }
+
+        private bool IsSelectNavQuery()
+        {
+            return this.QueryBuilder.SelectValue.HasValue() && this.QueryBuilder.NoCheckInclude == false;
+        }
+
         protected void _Mapper<TResult>(List<TResult> result)
         {
             if (this.EntityInfo.Columns.Any(it => it.IsTranscoding))
@@ -999,40 +1228,157 @@ namespace SqlSugar
         #endregion
 
         #region  Other
+
+        private void orderPropertyNameByJoin(string orderPropertyName, OrderByType? orderByType)
+        {
+            var shortName = orderPropertyName.Split('.').FirstOrDefault();
+            orderPropertyName = orderPropertyName.Split('.').Last();
+            var entityType = this.QueryBuilder.JoinQueryInfos.FirstOrDefault(it => it.ShortName.EqualCase(shortName))?.EntityType;
+            if (entityType == null)
+            {
+                entityType=this.EntityInfo.Type;
+            }
+            if (this.Context.EntityMaintenance.GetEntityInfoWithAttr(entityType).Columns.Any(it =>
+                it.DbColumnName?.EqualCase(orderPropertyName) == true
+                || it.PropertyName?.EqualCase(orderPropertyName) == true))
+            {
+                var name = this.Context.EntityMaintenance.GetEntityInfoWithAttr(entityType).Columns.FirstOrDefault(it =>
+            it.DbColumnName?.EqualCase(orderPropertyName) == true
+            || it.PropertyName?.EqualCase(orderPropertyName) == true)?.DbColumnName;
+                  this.OrderBy(this.SqlBuilder.GetTranslationColumnName(shortName)+"."+this.SqlBuilder.GetTranslationColumnName(name) + " " + orderByType);
+            }
+            else
+            {
+                Check.ExceptionEasy($"OrderByPropertyName error.{orderPropertyName} does not exist in the entity class", $"OrderByPropertyName出错实体类中不存在{orderPropertyName}");
+            }
+        }
+
+        private void OutIntoTableSql(string TableName, out KeyValuePair<string, List<SugarParameter>> sqlInfo, out string sql,Type tableInfo)
+        {
+            var columnList = this.Context.EntityMaintenance.GetEntityInfo(tableInfo).Columns;
+            //var entityInfo = this.Context.EntityMaintenance.GetEntityInfo(TableEntityType);
+            sqlInfo = this.ToSql();
+            var name = this.SqlBuilder.GetTranslationTableName(TableName);
+            var columns = "";
+            sql = "";
+            var isSqlFunc = this.QueryBuilder.GetSelectValue?.Contains(")") == true && this.QueryBuilder.SelectValue is Expression;
+            if (isSqlFunc)
+            {
+                columns = "(";
+                foreach (var item in ExpressionTool.GetNewExpressionItemList((Expression)this.QueryBuilder.SelectValue))
+                {
+                    var column = item.Key;
+                    var columnInfo = columnList.FirstOrDefault(it => it.PropertyName == item.Key);
+                    if (columnInfo != null) 
+                    {
+                        column =this.SqlBuilder.GetTranslationColumnName(columnInfo.DbColumnName);
+                    }
+                    columns += $"{column},";
+                }
+                columns = columns.TrimEnd(',') + ")";
+                sql = $" INSERT  INTO {name} {columns} " + sqlInfo.Key;
+            }
+            else
+            {
+                if (this.QueryBuilder.GetSelectValue != null && this.QueryBuilder.GetSelectValue.Contains(",")) ;
+                {
+                    columns = "(";
+                    foreach (var item in this.QueryBuilder.GetSelectValue.Split(','))
+                    {
+                        var column = Regex.Split(item, "AS").Last().Trim();
+                        columns += $"{column},";
+                    }
+                    columns = columns.TrimEnd(',') + ")";
+                }
+                sql = $" INSERT  INTO {name} {columns} " + sqlInfo.Key;
+            }
+        }
+
         private string GetTableName(EntityInfo entity, string tableName)
         {
+            var oldTableName = tableName;
             var attr = entity?.Type?.GetCustomAttribute<TenantAttribute>();
             var configId = ((object)this.Context.CurrentConnectionConfig.ConfigId).ObjToString();
             if (attr != null && configId != attr.configId.ObjToString())
             {
                 var dbName = this.Context.Root.GetConnection(attr.configId).Ado.Connection.Database;
+                tableName = this.Context.Root.GetConnection(attr.configId).EntityMaintenance.GetEntityInfo(entity.Type).DbTableName;
+                oldTableName = tableName;
                 tableName = this.QueryBuilder.LambdaExpressions.DbMehtods.GetTableWithDataBase
                 (this.QueryBuilder.Builder.GetTranslationColumnName(dbName), this.QueryBuilder.Builder.GetTranslationColumnName(tableName));
+            }
+
+            if (attr != null && configId != attr.configId.ObjToString())
+            {
+                var dbLinkName = this.Context.Root.GetConnection(attr.configId).CurrentConnectionConfig.DbLinkName;
+                if (dbLinkName != null)
+                {
+                    if (dbLinkName.First()== '@')
+                    {
+                        tableName = this.QueryBuilder.Builder.GetTranslationColumnName(oldTableName) +dbLinkName;
+                    }
+                    else if (dbLinkName.Last() == '_')
+                    {
+                        tableName = dbLinkName+oldTableName;
+                    }
+                    else
+                    {
+                        tableName = dbLinkName + "." + this.QueryBuilder.Builder.GetTranslationColumnName(oldTableName);
+                    }
+                }
+            }
+            if (tableName == null) 
+            {
+                tableName = entity.DbTableName;
             }
             return tableName;
         }
         protected string AppendSelect(List<EntityColumnInfo> entityColumnInfos,string sql, ReadOnlyCollection<ParameterExpression> parameters, List<EntityColumnInfo> columnsResult, int parameterIndex1)
         {
-            var lowerSql = sql.ToLower();
-            var isSubquery = lowerSql.Contains("select ") && ExpressionTool.IsMemberInit(this.QueryBuilder.SelectValue);
-            if (isSubquery) 
-            {
+            //var lowerSql = sql.ToLower();
+            //var isSubquery = lowerSql.Contains("select ") && ExpressionTool.IsMemberInit(this.QueryBuilder.SelectValue);
+            //if (isSubquery) 
+            //{
                 return AppendSelectWithSubQuery(entityColumnInfos, sql, parameters, columnsResult, parameterIndex1);
-            }
+            //}
+            //var columns = entityColumnInfos;
+            //var parameterName = parameters[parameterIndex1];
+            //foreach (var item in columns)
+            //{
+            //    if (item.IsIgnore == false && columnsResult.Any(it => it.PropertyName.EqualCase(item.PropertyName)) && !lowerSql.Contains(SqlBuilder.GetTranslationColumnName(item.PropertyName.ToLower())))
+            //    {
+            //        if (item.EntityName == this.QueryBuilder.EntityName&&sql.StartsWith("*,")) 
+            //        {
+            //            continue;
+            //        }
+            //        sql = $" {sql},{SqlBuilder.GetTranslationColumnName(item.DbColumnName)} AS {SqlBuilder.GetTranslationColumnName(item.PropertyName)} ";
+            //    }
+            //}
+
+            //return sql;
+        }
+        private string AppendSelectWithSubQuery(List<EntityColumnInfo> entityColumnInfos, string sql, ReadOnlyCollection<ParameterExpression> parameters, List<EntityColumnInfo> columnsResult, int parameterIndex1,string parameterName)
+        {
+            var list = ExpressionTool.GetMemberInit(this.QueryBuilder.SelectValue).Bindings.Cast<MemberBinding>()
+                 .Select(it => it.Member.Name).ToList();
             var columns = entityColumnInfos;
-            var parameterName = parameters[parameterIndex1];
+            //var parameterName = parameters[parameterIndex1];
+            if (this.QueryBuilder.AutoAppendedColumns == null)
+            {
+                this.QueryBuilder.AutoAppendedColumns = new List<string>();
+            }
             foreach (var item in columns)
             {
-                if (item.IsIgnore == false && columnsResult.Any(it => it.PropertyName.EqualCase(item.PropertyName)) && !lowerSql.Contains(SqlBuilder.GetTranslationColumnName(item.PropertyName.ToLower())))
+                if (item.IsIgnore == false && !this.QueryBuilder.AutoAppendedColumns.Contains(item.PropertyName) && columnsResult.Any(it => it.PropertyName.EqualCase(item.PropertyName)) && !list.Any(it => it.EqualCase(item.PropertyName)))
                 {
-                    if (item.EntityName == this.QueryBuilder.EntityName&&sql.StartsWith("*,")) 
+                    if (!sql.Contains($"{SqlBuilder.GetTranslationColumnName(parameterName)}.{SqlBuilder.GetTranslationColumnName(item.DbColumnName)} AS {SqlBuilder.GetTranslationColumnName(item.PropertyName)}")&&
+                        !sql.Contains($"{SqlBuilder.GetTranslationColumnName(parameterName)}.{SqlBuilder.GetTranslationColumnName(item.DbColumnName)} AS  {SqlBuilder.GetTranslationColumnName(item.PropertyName)}"))
                     {
-                        continue;
+                        sql = $" {sql},{SqlBuilder.GetTranslationColumnName(parameterName)}.{SqlBuilder.GetTranslationColumnName(item.DbColumnName)} AS {SqlBuilder.GetTranslationColumnName(item.PropertyName)} ";
+                        this.QueryBuilder.AutoAppendedColumns.Add(item.PropertyName);
                     }
-                    sql = $" {sql},{SqlBuilder.GetTranslationColumnName(item.DbColumnName)} AS {SqlBuilder.GetTranslationColumnName(item.PropertyName)} ";
                 }
             }
-
             return sql;
         }
 
@@ -1050,8 +1396,12 @@ namespace SqlSugar
             {
                 if (item.IsIgnore == false &&!this.QueryBuilder.AutoAppendedColumns.Contains(item.PropertyName)&& columnsResult.Any(it => it.PropertyName.EqualCase(item.PropertyName))&& !list.Any(it=>it.EqualCase(item.PropertyName)))
                 {
-                    sql = $" {sql},{SqlBuilder.GetTranslationColumnName(item.DbColumnName)} AS {SqlBuilder.GetTranslationColumnName(item.PropertyName)} ";
-                    this.QueryBuilder.AutoAppendedColumns.Add(item.PropertyName);
+                    if (!sql.Contains($"{SqlBuilder.GetTranslationColumnName(item.DbColumnName)} AS {SqlBuilder.GetTranslationColumnName(item.PropertyName)}")&&
+                        !sql.Contains($"{SqlBuilder.GetTranslationColumnName(item.DbColumnName)} AS  {SqlBuilder.GetTranslationColumnName(item.PropertyName)}"))
+                    {
+                        sql = $" {sql},{SqlBuilder.GetTranslationColumnName(item.DbColumnName)} AS {SqlBuilder.GetTranslationColumnName(item.PropertyName)} ";
+                        this.QueryBuilder.AutoAppendedColumns.Add(item.PropertyName);
+                    }
                 }
             }
             return sql;
@@ -1059,24 +1409,34 @@ namespace SqlSugar
 
         protected string AppendSelect<EntityType>(string sql, ReadOnlyCollection<ParameterExpression> parameters, List<EntityColumnInfo> columnsResult, int parameterIndex1)
         {
-            var columns = this.Context.EntityMaintenance.GetEntityInfo<EntityType>().Columns;
-            var parameterName = parameters[parameterIndex1].Name;
-            if (parameterName.HasValue()) 
-            {
-                parameterName = this.SqlBuilder.GetTranslationColumnName(parameterName);
-            }
-            foreach (var item in columns)
-            {
-                if (item.IsIgnore == false && columnsResult.Any(it => it.PropertyName.EqualCase(item.PropertyName)) && !sql.ToLower().Contains(SqlBuilder.GetTranslationColumnName(item.PropertyName).ToLower()))
-                {
-                    sql = $" {sql},{parameterName}.{SqlBuilder.GetTranslationColumnName(item.DbColumnName)} AS {SqlBuilder.GetTranslationColumnName(item.PropertyName)} ";
-                }
-            }
+            var columns = this.Context.EntityMaintenance.GetEntityInfoWithAttr(typeof(EntityType)).Columns;
+            //var lowerSql = sql.ToLower();
+            //var isSubquery = lowerSql.Contains("select ") && ExpressionTool.IsMemberInit(this.QueryBuilder.SelectValue);
+            //if (isSubquery)
+            //{
+                return AppendSelectWithSubQuery(columns, sql, parameters, columnsResult, parameterIndex1, parameters[parameterIndex1].Name);
+            //}
+            //var parameterName = parameters[parameterIndex1].Name;
+            //if (parameterName.HasValue()) 
+            //{
+            //    parameterName = this.SqlBuilder.GetTranslationColumnName(parameterName);
+            //}
+            //foreach (var item in columns)
+            //{
+            //    if (item.IsIgnore == false && columnsResult.Any(it => it.PropertyName.EqualCase(item.PropertyName)) && !sql.ToLower().Contains(SqlBuilder.GetTranslationColumnName(item.PropertyName).ToLower()))
+            //    {
+            //        if (!sql.Contains($"{parameterName}.{SqlBuilder.GetTranslationColumnName(item.DbColumnName)} AS {SqlBuilder.GetTranslationColumnName(item.PropertyName)}")&&
+            //            !sql.Contains($"{parameterName}.{SqlBuilder.GetTranslationColumnName(item.DbColumnName)} AS  {SqlBuilder.GetTranslationColumnName(item.PropertyName)}"))
+            //        {
+            //            sql = $" {sql},{parameterName}.{SqlBuilder.GetTranslationColumnName(item.DbColumnName)} AS {SqlBuilder.GetTranslationColumnName(item.PropertyName)} ";
+            //        }
+            //    }
+            //}
 
-            return sql;
+            //return sql;
         }
 
-        protected JoinQueryInfo GetJoinInfo(Expression joinExpression, JoinType joinType)
+        internal JoinQueryInfo GetJoinInfo(Expression joinExpression, JoinType joinType)
         {
             QueryBuilder.CheckExpressionNew(joinExpression, "Join");
             QueryBuilder.JoinExpression = joinExpression;
@@ -1091,11 +1451,15 @@ namespace SqlSugar
                 JoinWhere = expResult.GetResultString(),
                 ShortName = lastPareamter.Name,
                 EntityType= lastPareamter.Type,
-                TableName = this.Context.EntityMaintenance.GetTableName(lastPareamter.Type)
+                TableName = null
             };
-            if (QueryBuilder.IsCrossQueryWithAttr) 
+            if (QueryBuilder.IsCrossQueryWithAttr)
             {
-               result.TableName=GetTableName(this.Context.EntityMaintenance.GetEntityInfo(lastPareamter.Type), result.TableName);
+                result.TableName = GetTableName(this.Context.EntityMaintenance.GetEntityInfoWithAttr(lastPareamter.Type), result.TableName);
+            }
+            else 
+            {
+                result.TableName= this.Context.EntityMaintenance.GetTableName(lastPareamter.Type);
             }
             if (this.Context.CurrentConnectionConfig?.MoreSettings?.PgSqlIsAutoToLower == false) 
             {
@@ -1420,6 +1784,10 @@ namespace SqlSugar
             {
                 result = this.Context.Utilities.DataReaderToExpandoObjectList(dataReader) as List<TResult>;
             }
+            else if (entityType.Name?.StartsWith("ValueTuple`")==true) 
+            {
+                result = Db.Context.Utilities.DataReaderToValueTupleType<TResult>(dataReader);
+            }
             else if (entityType == UtilConstants.ObjType)
             {
                 result = this.Context.Utilities.DataReaderToExpandoObjectList(dataReader).Select(it => ((TResult)(object)it)).ToList();
@@ -1451,6 +1819,10 @@ namespace SqlSugar
             if (entityType == UtilConstants.DynamicType)
             {
                 result = await this.Context.Utilities.DataReaderToExpandoObjectListAsync(dataReader) as List<TResult>;
+            }
+            else if (entityType.Name?.StartsWith("ValueTuple`") == true)
+            {
+                result =await Db.Context.Utilities.DataReaderToValueTupleTypeAsync<TResult>(dataReader);
             }
             else if (entityType == UtilConstants.ObjType)
             {
@@ -1578,6 +1950,14 @@ namespace SqlSugar
             asyncQueryableBuilder.AppendColumns = this.Context.Utilities.TranslateCopy(this.QueryBuilder.AppendColumns);
             asyncQueryableBuilder.AppendValues = this.Context.Utilities.TranslateCopy(this.QueryBuilder.AppendValues);
             asyncQueryableBuilder.RemoveFilters = this.QueryBuilder.RemoveFilters?.ToArray();
+            if (this.QueryBuilder.AppendNavInfo != null)
+            {
+                asyncQueryableBuilder.AppendNavInfo = new AppendNavInfo() 
+                {
+                     AppendProperties= this.QueryBuilder.AppendNavInfo.AppendProperties.ToDictionary(it => it.Key, it => it.Value),
+                     MappingNavProperties= this.QueryBuilder.AppendNavInfo.MappingNavProperties.ToDictionary(it=>it.Key,it=>it.Value)
+                } ;
+            }
         }
 
         private static JoinQueryInfo CopyJoinInfo(JoinQueryInfo it)
@@ -1912,6 +2292,10 @@ namespace SqlSugar
                             if (addItem is SubQueryToListDefaultT) 
                             {
                                 addItem= ((SubQueryToListDefaultT)addItem).id;
+                            }
+                            if (addItem!=null&&addItem is string && itemProperty?.PropertyType?.GenericTypeArguments?.FirstOrDefault() == UtilConstants.GuidType) 
+                            {
+                                addItem = Guid.Parse(addItem+"");
                             }
                             setValue.Add(addItem);
                         }

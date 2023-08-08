@@ -8,7 +8,7 @@ namespace SqlSugar
     public abstract partial class SqlBuilderProvider : SqlBuilderAccessory, ISqlBuilder
     {
         #region  Variable
-        private string[] SqlSplicingOperator = new string[] { ">", ">=", "<", "<=", "(", ")", "=", "||", "&&","&","|","null","is","isnot","like","nolike" }; 
+        private string[] SqlSplicingOperator = new string[] { ">", ">=", "<", "<=", "(", ")", "=", "||", "&&","&","|","null","is","isnot","like","nolike","+","-","*","/","%" }; 
         #endregion
 
         #region Root
@@ -46,6 +46,7 @@ namespace SqlSugar
             var result= value.ObjToString();
             if (result == "||") return "OR";
             else if (result == "&&") return "AND";
+            else if (result.EqualCase("isnot")) return " IS NOT ";
             return result;
         }
         private static string GetSqlPartError(object value)
@@ -112,12 +113,14 @@ namespace SqlSugar
             var parname = GetParameterName(pars, parvalue);
             return parname;
         }
+        private int GetParameterNameIndex = 100;
 
-        private static string GetParameterName(List<SugarParameter> pars, object parvalue)
+        private   string GetParameterName(List<SugarParameter> pars, object parvalue)
         {
-            var parname = "@p" + pars.Count();
+            var parname = "@p" + pars.Count()+"_"+(this?.QueryBuilder?.WhereIndex?? GetParameterNameIndex);
             SugarParameter parameter = new SugarParameter(parname, parvalue);
             pars.Add(parameter);
+            GetParameterNameIndex++;
             return parname;
         }
         #endregion

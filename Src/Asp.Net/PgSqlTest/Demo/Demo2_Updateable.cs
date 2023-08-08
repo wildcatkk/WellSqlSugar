@@ -54,9 +54,26 @@ namespace OrmTest
             var result5 = db.Updateable(updateObj).WhereColumns(it => new { it.Id }).ExecuteCommand();//update single by id
             var result6 = db.Updateable(updateObjs).WhereColumns(it => new { it.Id }).ExecuteCommand();//update List<Class> by id
 
+            var result67 =
+            db.Updateable(updateObjs)
+           .PublicSetColumns(it => it.Price, it => it.Price + 1)
+           .ExecuteCommand();
 
+            var result68 =
+             db.Updateable(updateObjs.First())
+             .PublicSetColumns(it => it.Price, it => it.Price + 1)
+             .ExecuteCommand();
 
-
+            var list = db.Queryable<Order>().OrderBy(it => it.Id).Take(2).ToList();
+            if (list.Count >= 2)
+            {
+                list[0].Price = 10;
+                list[1].Price = 2;
+                var result69 =
+                db.Updateable(list)
+                .PublicSetColumns(it => it.Price, "+")
+                .ExecuteCommand();
+            }
             /*** 2.by expression ***/
 
             //update  name,createtime
@@ -69,9 +86,12 @@ namespace OrmTest
                   .SetColumns(it => it.CreateTime == DateTime.Now)
                 .Where(it => it.Id == 1).ExecuteCommand();
             //
-
-
-
+            var result61 = db.Updateable<Order>()
+               .InnerJoin<Custom>((x, y) => x.CustomId == y.Id)
+               .SetColumns((x, y) => new Order() { Name = y.Name, Price = y.Id })
+               .Where((x, y) => x.Id == 1)
+               .ExecuteCommand();
+             
 
             /*** 3.by Dictionary ***/
             var dt = new Dictionary<string, object>();

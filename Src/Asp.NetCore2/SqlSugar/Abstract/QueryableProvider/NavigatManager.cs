@@ -332,12 +332,16 @@ namespace SqlSugar
             }
             var ids = list.Select(it => it.GetType().GetProperty(navObjectNameColumnInfo.Navigat.Name).GetValue(it)).Select(it => it == null ? "null" : it).Distinct().ToList();
             List<IConditionalModel> conditionalModels = new List<IConditionalModel>();
+            if (IsEnumNumber(navColumn))
+            {
+                ids = ids.Select(it => Convert.ToInt64(it)).Cast<object>().ToList();
+            }
             conditionalModels.Add((new ConditionalModel()
             {
                 ConditionalType = ConditionalType.In,
                 FieldName = navPkColumn.DbColumnName,
                 FieldValue = String.Join(",", ids),
-                CSharpTypeName = navPkColumn.PropertyInfo.PropertyType.Name
+                CSharpTypeName = navPkColumn?.UnderType?.Name
             }));
             if (list.Any()&&navObjectNamePropety.GetValue(list.First()) == null)
             {
@@ -393,12 +397,16 @@ namespace SqlSugar
             }
             var ids = list.Select(it => it.GetType().GetProperty(listItemPkColumn.PropertyName).GetValue(it)).Select(it => it == null ? "null" : it).Distinct().ToList();
             List<IConditionalModel> conditionalModels = new List<IConditionalModel>();
+            if (IsEnumNumber(navColumn)) 
+            {
+                ids = ids.Select(it => Convert.ToInt64(it)).Cast<object>().ToList();
+            }
             conditionalModels.Add((new ConditionalModel()
             {
                 ConditionalType = ConditionalType.In,
                 FieldName = navColumn.DbColumnName,
                 FieldValue = String.Join(",", ids),
-                CSharpTypeName = listItemPkColumn.PropertyInfo.PropertyType.Name
+                CSharpTypeName = listItemPkColumn?.UnderType?.Name
             }));
             var sqlObj = GetWhereSql(navObjectNameColumnInfo.Navigat.Name);
       
@@ -481,18 +489,22 @@ namespace SqlSugar
                 return;
             }
             var navEntity = args[0];
-            this.Context.InitMappingInfo(navEntity);
-            var navEntityInfo = this.Context.EntityMaintenance.GetEntityInfo(navEntity);
+
+            var childDb = this.Context;
+            childDb = GetCrossDatabase(childDb, navEntity);
+
+            childDb.InitMappingInfo(navEntity);
+            var navEntityInfo = childDb.EntityMaintenance.GetEntityInfo(navEntity);
             var sqlObj = GetWhereSql(navObjectNameColumnInfo.Navigat.Name);
             Check.ExceptionEasy(sqlObj.MappingExpressions.IsNullOrEmpty(), $"{expression} error,dynamic need MappingField ,Demo: Includes(it => it.Books.MappingField(z=>z.studenId,()=>it.StudentId).ToList())", $"{expression} 解析出错,自定义映射需要 MappingField ,例子: Includes(it => it.Books.MappingField(z=>z.studenId,()=>it.StudentId).ToList())");
             if (list.Any() && navObjectNamePropety.GetValue(list.First()) == null)
             {
                 MappingFieldsHelper<T> helper = new MappingFieldsHelper<T>();
-                helper.Context = this.Context;
+                helper.Context = childDb;
                 helper.NavEntity = navEntityInfo;
-                helper.RootEntity = this.Context.EntityMaintenance.GetEntityInfo<T>();
+                helper.RootEntity = childDb.EntityMaintenance.GetEntityInfo<T>();
                 var whereSql = helper.GetMppingSql(list, sqlObj.MappingExpressions);
-                var navList = selector(this.Context.Queryable<object>().AS(navEntityInfo.DbTableName).AddParameters(sqlObj.Parameters).Where(whereSql,true).WhereIF(sqlObj.WhereString.HasValue(), sqlObj.WhereString).Select(sqlObj.SelectString).OrderByIF(sqlObj.OrderByString.HasValue(), sqlObj.OrderByString));
+                var navList = selector(childDb.Queryable<object>().AS(navEntityInfo.DbTableName).AddParameters(sqlObj.Parameters).Where(whereSql,true).WhereIF(sqlObj.WhereString.HasValue(), sqlObj.WhereString).Select(sqlObj.SelectString).OrderByIF(sqlObj.OrderByString.HasValue(), sqlObj.OrderByString));
                 if (navList.HasValue())
                 {
                     foreach (var item in list)
@@ -582,7 +594,7 @@ namespace SqlSugar
                         parameterIndex = queryable.QueryBuilder.LambdaExpressions.ParameterIndex;
                     }
                 }
-                else if (method.Method.Name == "OrderBy")
+                else if (method.Method.Name.IsIn( "OrderBy", "ThenBy"))
                 {
                     var exp = method.Arguments[1];
                     oredrBy.Add(" " + queryable.QueryBuilder.GetExpressionValue(exp, ResolveExpressType.WhereSingle).GetString());
@@ -602,7 +614,7 @@ namespace SqlSugar
                 {
                     Select(properyName, result, method, queryable);
                 }
-                else if (method.Method.Name == "OrderByDescending")
+                else if (method.Method.Name.IsIn("OrderByDescending", "ThenByDescending"))
                 {
                     var exp = method.Arguments[1];
                     oredrBy.Add(" " + queryable.QueryBuilder.GetExpressionValue(exp, ResolveExpressType.WhereSingle).GetString() + " DESC");
@@ -814,5 +826,12 @@ namespace SqlSugar
         }
 
 
+        private bool IsEnumNumber(EntityColumnInfo navPkColumn)
+        {
+            return
+                navPkColumn?.UnderType?.IsEnum()==true &&
+                navPkColumn?.SqlParameterDbType == null &&
+                this.Context?.CurrentConnectionConfig?.MoreSettings?.TableEnumIsString != true;
+        }
     }
 }

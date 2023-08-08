@@ -45,7 +45,22 @@ namespace SqlSugar
             DefultLength = length;
             return this;
         }
-
+        public void InitTablesWithAttr(params Type[] entityTypes) 
+        {
+            foreach (var item in entityTypes)
+            {
+                var attr = item.GetCustomAttribute<TenantAttribute>();
+                if (attr==null||this.Context?.Root == null)
+                {
+                    this.Context.CodeFirst.InitTables(item);
+                }
+                else
+                {
+                    var newDb = this.Context.Root.GetConnectionWithAttr(item);
+                    newDb.CodeFirst.InitTables(item);
+                }
+            }
+        }
         public virtual void InitTables(Type entityType)
         {
             var splitTableAttribute = entityType.GetCustomAttribute<SplitTableAttribute>();
@@ -54,8 +69,10 @@ namespace SqlSugar
                 var mappingInfo=this.Context.MappingTables.FirstOrDefault(it => it.EntityName == entityType.Name);
                 if (mappingInfo == null) 
                 {
+                    UtilMethods.StartCustomSplitTable(this.Context,entityType);
                     this.Context.CodeFirst.SplitTables().InitTables(entityType);
                     this.Context.MappingTables.RemoveAll(it=>it.EntityName==entityType.Name);
+                    UtilMethods.EndCustomSplitTable(this.Context, entityType);
                     return;
                 }
             }
@@ -200,6 +217,11 @@ namespace SqlSugar
                 var newTableInfo = tables.FirstOrDefault(it => it.Name.EqualCase(oldTableName));
                 var oldTable = db.DbMaintenance.GetColumnInfosByTableName(oldTableName, false);
                 var tempTable = db.DbMaintenance.GetColumnInfosByTableName(tempTableName, false);
+                if (oldTableInfo == null)
+                {
+                    oldTableInfo =new DbTableInfo() { Name = "还未创建:" + oldTableName };
+                    newTableInfo = new DbTableInfo() { Name = "还未创建:" + oldTableName };
+                }
                 result.tableInfos.Add(new DiffTableInfo()
                 {
                      OldTableInfo= oldTableInfo,
@@ -220,6 +242,17 @@ namespace SqlSugar
         protected virtual void Execute(Type entityType)
         {
             var entityInfo = this.Context.EntityMaintenance.GetEntityInfoNoCache(entityType);
+            if (entityInfo.Discrimator.HasValue())
+            {
+                Check.ExceptionEasy(!Regex.IsMatch(entityInfo.Discrimator, @"^(?:\w+:\w+)(?:,\w+:\w+)*$"), "The format should be type:cat for this type, and if there are multiple, it can be FieldName:cat,FieldName2:dog ", "格式错误应该是type:cat这种格式，如果是多个可以FieldName:cat,FieldName2:dog，不要有空格");
+                var array = entityInfo.Discrimator.Split(',');
+                foreach (var disItem in array)
+                {
+                    var name = disItem.Split(':').First();
+                    var value = disItem.Split(':').Last();
+                    entityInfo.Columns.Add(new EntityColumnInfo() {  PropertyInfo=typeof(DiscriminatorObject).GetProperty(nameof(DiscriminatorObject.FieldName)),IsOnlyIgnoreUpdate = true, DbColumnName = name, UnderType = typeof(string), PropertyName = name, Length = 50 });
+                }
+            }
             if (this.MappingTables.ContainsKey(entityType)) 
             {
                 entityInfo.DbTableName = this.MappingTables[entityType];
@@ -609,6 +642,10 @@ namespace SqlSugar
                 return false;
             }
             if (properyTypeName?.ToLower() == "number" && dataType?.ToLower() == "decimal")
+            {
+                return false;
+            }
+            if (this.Context.CurrentConnectionConfig?.MoreSettings?.EnableOracleIdentity==true&&properyTypeName?.ToLower() == "int" && dataType?.ToLower() == "decimal")
             {
                 return false;
             }

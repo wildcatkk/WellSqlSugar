@@ -15,9 +15,32 @@ namespace SqlSugar
     #region T6
     public partial class QueryableProvider<T, T2, T3, T4, T5, T6> : QueryableProvider<T>, ISugarQueryable<T, T2, T3, T4, T5, T6>
     {
+        public new ISugarQueryable<T, T2, T3, T4, T5,T6> OrderByPropertyName(string orderPropertyName, OrderByType? orderByType = null)
+        {
+            base.OrderByPropertyName(orderPropertyName, orderByType);
+            return this;
+        }
         public virtual ISugarQueryable<TResult> SelectMergeTable<TResult>(Expression<Func<T, T2, T3, T4, T5,T6, TResult>> expression)
         {
             return this.Select(expression).MergeTable();
+        }
+        public ISugarQueryable<T, T2, T3, T4, T5, T6, T7> LeftJoinIF<T7>(bool isLeftJoin, Expression<Func<T, T2, T3, T4, T5, T6, T7, bool>> joinExpression) 
+        {
+            var result = LeftJoin(joinExpression);
+            if (isLeftJoin == false)
+            {
+                result.QueryBuilder.JoinQueryInfos.Remove(result.QueryBuilder.JoinQueryInfos.Last());
+            }
+            return result;
+        }
+        public ISugarQueryable<T, T2, T3, T4, T5, T6, T7> InnerJoinIF<T7>(bool isJoin, Expression<Func<T, T2, T3, T4, T5, T6, T7, bool>> joinExpression)
+        {
+            var result = InnerJoin(joinExpression);
+            if (isJoin == false)
+            {
+                result.QueryBuilder.JoinQueryInfos.Remove(result.QueryBuilder.JoinQueryInfos.Last());
+            }
+            return result;
         }
         public ISugarQueryable<T, T2, T3, T4, T5, T6, T7> LeftJoin<T7>(ISugarQueryable<T7> joinQueryable, Expression<Func<T, T2, T3, T4, T5, T6, T7, bool>> joinExpression)
         {
@@ -254,22 +277,42 @@ namespace SqlSugar
         #region Select
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5,T6, TResult>> expression, bool isAutoFill)
@@ -278,7 +321,7 @@ namespace SqlSugar
             var sql = clone.QueryBuilder.GetSelectValue;
             if (this.QueryBuilder.IsSingle() || string.IsNullOrEmpty(sql) || sql.Trim() == "*")
             {
-                return this.Select<TResult>(expression);
+                sql = " ";
             }
             this.QueryBuilder.Parameters = clone.QueryBuilder.Parameters;
             this.QueryBuilder.SubToListParameters = clone.QueryBuilder.SubToListParameters;
@@ -291,6 +334,10 @@ namespace SqlSugar
             sql = AppendSelect<T4>(sql, parameters, columnsResult, 3);
             sql = AppendSelect<T5>(sql, parameters, columnsResult, 4);
             sql = AppendSelect<T6>(sql, parameters, columnsResult, 5);
+            if (sql.Trim().First() == ',')
+            {
+                sql = sql.TrimStart(' ').TrimStart(',');
+            }
             return this.Select<TResult>(sql);
         }
         #endregion
@@ -690,9 +737,32 @@ namespace SqlSugar
     #region T7
     public partial class QueryableProvider<T, T2, T3, T4, T5, T6, T7> : QueryableProvider<T>, ISugarQueryable<T, T2, T3, T4, T5, T6, T7>
     {
+        public new ISugarQueryable<T, T2, T3, T4, T5, T6,T7> OrderByPropertyName(string orderPropertyName, OrderByType? orderByType = null)
+        {
+            base.OrderByPropertyName(orderPropertyName, orderByType);
+            return this;
+        }
         public virtual ISugarQueryable<TResult> SelectMergeTable<TResult>(Expression<Func<T, T2, T3, T4, T5, T6,T7, TResult>> expression)
         {
             return this.Select(expression).MergeTable();
+        }
+         public ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8> LeftJoinIF<T8>(bool isLeftJoin, Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, bool>> joinExpression) 
+         {
+            var result = LeftJoin(joinExpression);
+            if (isLeftJoin == false)
+            {
+                result.QueryBuilder.JoinQueryInfos.Remove(result.QueryBuilder.JoinQueryInfos.Last());
+            }
+            return result;
+        }
+        public ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8> InnerJoinIF<T8>(bool isJoin, Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, bool>> joinExpression)
+        {
+            var result = InnerJoin(joinExpression);
+            if (isJoin == false)
+            {
+                result.QueryBuilder.JoinQueryInfos.Remove(result.QueryBuilder.JoinQueryInfos.Last());
+            }
+            return result;
         }
         public ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8> LeftJoin<T8>(ISugarQueryable<T8> joinQueryable, Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, bool>> joinExpression)
         {
@@ -936,26 +1006,50 @@ namespace SqlSugar
         #region Select
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6,T7, TResult>> expression, bool isAutoFill)
@@ -964,7 +1058,7 @@ namespace SqlSugar
             var sql = clone.QueryBuilder.GetSelectValue;
             if (this.QueryBuilder.IsSingle() || string.IsNullOrEmpty(sql) || sql.Trim() == "*")
             {
-                return this.Select<TResult>(expression);
+                sql = " ";
             }
             this.QueryBuilder.Parameters = clone.QueryBuilder.Parameters;
             this.QueryBuilder.SubToListParameters = clone.QueryBuilder.SubToListParameters;
@@ -978,12 +1072,52 @@ namespace SqlSugar
             sql = AppendSelect<T5>(sql, parameters, columnsResult, 4);
             sql = AppendSelect<T6>(sql, parameters, columnsResult, 5);
             sql = AppendSelect<T7>(sql, parameters, columnsResult, 6);
+            if (sql.Trim().First() == ',')
+            {
+                sql = sql.TrimStart(' ').TrimStart(',');
+            }
             return this.Select<TResult>(sql);
         }
 
         #endregion
 
         #region OrderBy
+        public new virtual ISugarQueryable<T, T2, T3, T4, T5, T6,T7> OrderByDescending(Expression<Func<T, object>> expression)
+        {
+            this._OrderBy(expression, OrderByType.Desc);
+            return this;
+        }
+        public virtual ISugarQueryable<T, T2, T3, T4, T5, T6,T7> OrderByDescending(Expression<Func<T, T2, object>> expression)
+        {
+            this._OrderBy(expression, OrderByType.Desc);
+            return this;
+        }
+        public virtual ISugarQueryable<T, T2, T3, T4, T5, T6,T7> OrderByDescending(Expression<Func<T, T2, T3, object>> expression)
+        {
+            this._OrderBy(expression, OrderByType.Desc);
+            return this;
+        }
+        public virtual ISugarQueryable<T, T2, T3, T4, T5, T6,T7> OrderByDescending(Expression<Func<T, T2, T3, T4, object>> expression)
+        {
+            this._OrderBy(expression, OrderByType.Desc);
+            return this;
+        }
+        public virtual ISugarQueryable<T, T2, T3, T4, T5, T6,T7> OrderByDescending(Expression<Func<T, T2, T3, T4, T5, object>> expression)
+        {
+            this._OrderBy(expression, OrderByType.Desc);
+            return this;
+        }
+        public virtual ISugarQueryable<T, T2, T3, T4, T5, T6,T7> OrderByDescending(Expression<Func<T, T2, T3, T4, T5, T6, object>> expression)
+        {
+            this._OrderBy(expression, OrderByType.Desc);
+            return this;
+        }
+        public virtual ISugarQueryable<T, T2, T3, T4, T5, T6, T7> OrderByDescending(Expression<Func<T, T2, T3, T4, T5, T6,T7, object>> expression)
+        {
+            this._OrderBy(expression, OrderByType.Desc);
+            return this;
+        }
+
         public new ISugarQueryable<T, T2, T3, T4, T5, T6, T7> OrderBy(string orderFileds)
         {
             base.OrderBy(orderFileds);
@@ -1327,9 +1461,32 @@ namespace SqlSugar
     #region T8
     public partial class QueryableProvider<T, T2, T3, T4, T5, T6, T7, T8> : QueryableProvider<T>, ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8>
     {
+        public new ISugarQueryable<T, T2, T3, T4, T5, T6, T7,T8> OrderByPropertyName(string orderPropertyName, OrderByType? orderByType = null)
+        {
+            base.OrderByPropertyName(orderPropertyName, orderByType);
+            return this;
+        }
         public virtual ISugarQueryable<TResult> SelectMergeTable<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, TResult>> expression)
         {
             return this.Select(expression).MergeTable();
+        }
+        public ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8, T9> LeftJoinIF<T9>(bool isLeftJoin, Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, bool>> joinExpression) 
+        {
+            var result = LeftJoin(joinExpression);
+            if (isLeftJoin == false)
+            {
+                result.QueryBuilder.JoinQueryInfos.Remove(result.QueryBuilder.JoinQueryInfos.Last());
+            }
+            return result;
+        }
+        public ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8, T9> InnerJoinIF<T9>(bool isJoin, Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, bool>> joinExpression)
+        {
+            var result = InnerJoin(joinExpression);
+            if (isJoin == false)
+            {
+                result.QueryBuilder.JoinQueryInfos.Remove(result.QueryBuilder.JoinQueryInfos.Last());
+            }
+            return result;
         }
         public ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8, T9> LeftJoin<T9>(ISugarQueryable<T9> joinQueryable, Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, bool>> joinExpression)
         {
@@ -1585,30 +1742,58 @@ namespace SqlSugar
         #region Select
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7,T8, TResult>> expression, bool isAutoFill)
@@ -1617,7 +1802,7 @@ namespace SqlSugar
             var sql = clone.QueryBuilder.GetSelectValue;
             if (this.QueryBuilder.IsSingle() || string.IsNullOrEmpty(sql) || sql.Trim() == "*")
             {
-                return this.Select<TResult>(expression);
+                sql = " ";
             }
             this.QueryBuilder.Parameters = clone.QueryBuilder.Parameters;
             this.QueryBuilder.SubToListParameters = clone.QueryBuilder.SubToListParameters;
@@ -1632,12 +1817,56 @@ namespace SqlSugar
             sql = AppendSelect<T6>(sql, parameters, columnsResult, 5);
             sql = AppendSelect<T7>(sql, parameters, columnsResult, 6);
             sql = AppendSelect<T8>(sql, parameters, columnsResult, 7);
+            if (sql.Trim().First() == ',')
+            {
+                sql = sql.TrimStart(' ').TrimStart(',');
+            }
             return this.Select<TResult>(sql);
         }
 
         #endregion
 
         #region OrderBy
+        public new virtual ISugarQueryable<T, T2, T3, T4, T5, T6, T7,T8> OrderByDescending(Expression<Func<T, object>> expression)
+        {
+            this._OrderBy(expression, OrderByType.Desc);
+            return this;
+        }
+        public virtual ISugarQueryable<T, T2, T3, T4, T5, T6, T7,T8> OrderByDescending(Expression<Func<T, T2, object>> expression)
+        {
+            this._OrderBy(expression, OrderByType.Desc);
+            return this;
+        }
+        public virtual ISugarQueryable<T, T2, T3, T4, T5, T6, T7,T8> OrderByDescending(Expression<Func<T, T2, T3, object>> expression)
+        {
+            this._OrderBy(expression, OrderByType.Desc);
+            return this;
+        }
+        public virtual ISugarQueryable<T, T2, T3, T4, T5, T6, T7,T8> OrderByDescending(Expression<Func<T, T2, T3, T4, object>> expression)
+        {
+            this._OrderBy(expression, OrderByType.Desc);
+            return this;
+        }
+        public virtual ISugarQueryable<T, T2, T3, T4, T5, T6, T7,T8> OrderByDescending(Expression<Func<T, T2, T3, T4, T5, object>> expression)
+        {
+            this._OrderBy(expression, OrderByType.Desc);
+            return this;
+        }
+        public virtual ISugarQueryable<T, T2, T3, T4, T5, T6, T7,T8> OrderByDescending(Expression<Func<T, T2, T3, T4, T5, T6, object>> expression)
+        {
+            this._OrderBy(expression, OrderByType.Desc);
+            return this;
+        }
+        public virtual ISugarQueryable<T, T2, T3, T4, T5, T6, T7,T8> OrderByDescending(Expression<Func<T, T2, T3, T4, T5, T6, T7, object>> expression)
+        {
+            this._OrderBy(expression, OrderByType.Desc);
+            return this;
+        }
+        public virtual ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8> OrderByDescending(Expression<Func<T, T2, T3, T4, T5, T6, T7,T8, object>> expression)
+        {
+            this._OrderBy(expression, OrderByType.Desc);
+            return this;
+        }
         public new ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8> OrderBy(string orderFileds)
         {
             base.OrderBy(orderFileds);
@@ -1956,9 +2185,32 @@ namespace SqlSugar
     #region T9
     public partial class QueryableProvider<T, T2, T3, T4, T5, T6, T7, T8, T9> : QueryableProvider<T>, ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8, T9>
     {
+        public new ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8,T9> OrderByPropertyName(string orderPropertyName, OrderByType? orderByType = null)
+        {
+            base.OrderByPropertyName(orderPropertyName, orderByType);
+            return this;
+        }
         public virtual ISugarQueryable<TResult> SelectMergeTable<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, TResult>> expression)
         {
             return this.Select(expression).MergeTable();
+        }
+        public ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8, T9, T10> LeftJoinIF<T10>(bool isLeftJoin, Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, bool>> joinExpression)
+        {
+            var result = LeftJoin(joinExpression);
+            if (isLeftJoin == false)
+            {
+                result.QueryBuilder.JoinQueryInfos.Remove(result.QueryBuilder.JoinQueryInfos.Last());
+            }
+            return result;
+        }
+        public ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8, T9, T10> InnerJoinIF<T10>(bool isJoin, Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, bool>> joinExpression)
+        {
+            var result = InnerJoin(joinExpression);
+            if (isJoin == false)
+            {
+                result.QueryBuilder.JoinQueryInfos.Remove(result.QueryBuilder.JoinQueryInfos.Last());
+            }
+            return result;
         }
         public ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8, T9, T10> LeftJoin<T10>(ISugarQueryable<T10> joinQueryable, Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, bool>> joinExpression)
         {
@@ -2208,7 +2460,7 @@ namespace SqlSugar
             var sql = clone.QueryBuilder.GetSelectValue;
             if (this.QueryBuilder.IsSingle() || string.IsNullOrEmpty(sql) || sql.Trim() == "*")
             {
-                return this.Select<TResult>(expression);
+                sql = " ";
             }
             this.QueryBuilder.Parameters = clone.QueryBuilder.Parameters;
             this.QueryBuilder.SubToListParameters = clone.QueryBuilder.SubToListParameters;
@@ -2224,39 +2476,75 @@ namespace SqlSugar
             sql = AppendSelect<T7>(sql, parameters, columnsResult, 6);
             sql = AppendSelect<T8>(sql, parameters, columnsResult, 7);
             sql = AppendSelect<T9>(sql, parameters, columnsResult, 8);
+            if (sql.Trim().First() == ',')
+            {
+                sql = sql.TrimStart(' ').TrimStart(',');
+            }
             return this.Select<TResult>(sql);
         }
 
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         #endregion
@@ -2581,9 +2869,32 @@ namespace SqlSugar
     #region T10
     public partial class QueryableProvider<T, T2, T3, T4, T5, T6, T7, T8, T9, T10> : QueryableProvider<T>, ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8, T9, T10>
     {
+        public new ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8, T9,T10> OrderByPropertyName(string orderPropertyName, OrderByType? orderByType = null)
+        {
+            base.OrderByPropertyName(orderPropertyName, orderByType);
+            return this;
+        }
         public virtual ISugarQueryable<TResult> SelectMergeTable<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult>> expression)
         {
             return this.Select(expression).MergeTable();
+        }
+        public ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> LeftJoinIF<T11>(bool isLeftJoin, Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, bool>> joinExpression) 
+        {
+            var result = LeftJoin(joinExpression);
+            if (isLeftJoin == false)
+            {
+                result.QueryBuilder.JoinQueryInfos.Remove(result.QueryBuilder.JoinQueryInfos.Last());
+            }
+            return result;
+        }
+        public ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> InnerJoinIF<T11>(bool isJoin, Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, bool>> joinExpression)
+        {
+            var result = InnerJoin(joinExpression);
+            if (isJoin == false)
+            {
+                result.QueryBuilder.JoinQueryInfos.Remove(result.QueryBuilder.JoinQueryInfos.Last());
+            }
+            return result;
         }
         public ISugarQueryable<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> LeftJoin<T11>(ISugarQueryable<T11> joinQueryable, Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, bool>> joinExpression)
         {
@@ -2844,7 +3155,7 @@ namespace SqlSugar
             var sql = clone.QueryBuilder.GetSelectValue;
             if (this.QueryBuilder.IsSingle() || string.IsNullOrEmpty(sql) || sql.Trim() == "*")
             {
-                return this.Select<TResult>(expression);
+                sql = " ";
             }
             this.QueryBuilder.Parameters = clone.QueryBuilder.Parameters;
             this.QueryBuilder.SubToListParameters = clone.QueryBuilder.SubToListParameters;
@@ -2861,43 +3172,83 @@ namespace SqlSugar
             sql = AppendSelect<T8>(sql, parameters, columnsResult, 7);
             sql = AppendSelect<T9>(sql, parameters, columnsResult, 8);
             sql = AppendSelect<T10>(sql, parameters, columnsResult, 9);
+            if (sql.Trim().First() == ',')
+            {
+                sql = sql.TrimStart(' ').TrimStart(',');
+            }
             return this.Select<TResult>(sql);
         }
 
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         public ISugarQueryable<TResult> Select<TResult>(Expression<Func<T, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult>> expression)
         {
+            if (IsAppendNavColumns())
+            {
+                SetAppendNavColumns(expression);
+            }
             return _Select<TResult>(expression);
         }
         #endregion

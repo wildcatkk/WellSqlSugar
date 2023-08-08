@@ -232,13 +232,18 @@ namespace SqlSugar
             var isAuto = this.context.CurrentConnectionConfig.IsAutoCloseConnection;
             this.context.CurrentConnectionConfig.IsAutoCloseConnection = false;
             dataTable.TableName = this.queryable.SqlBuilder.GetTranslationTableName(tableName);
-            DataTable dt = GetCopyWriteDataTable(dataTable);
+            DataTable dt = GetCopyWriteDataTableUpdate(dataTable);
             IFastBuilder buider = GetBuider();
             if (dt.Columns.Count != dataTable.Columns.Count)
             {
                 ActionIgnoreColums(whereColumns, updateColumns, dt, buider.IsActionUpdateColumns);
             }
             buider.Context = context;
+            if (buider.DbFastestProperties == null)
+            {
+                buider.DbFastestProperties = new DbFastestProperties();
+            }
+            buider.DbFastestProperties.WhereColumns = whereColumns;
             await buider.CreateTempAsync<object>(dt);
             await buider.ExecuteBulkCopyAsync(dt);
             //var queryTemp = this.context.Queryable<T>().AS(dt.TableName).ToList();//test
@@ -293,6 +298,30 @@ namespace SqlSugar
             if (this.context.CurrentConnectionConfig?.AopEvents?.OnLogExecuting != null)
             {
                 this.context.CurrentConnectionConfig?.AopEvents?.OnLogExecuting($"Begin {title} name:{GetTableName()} ,count: {datas.Count},current time: {DateTime.Now} ", new SugarParameter[] { });
+            }
+            var dataEvent = this.context.CurrentConnectionConfig.AopEvents?.DataExecuting;
+            if (IsDataAop&&dataEvent!=null) 
+            {
+                var entity = this.context.EntityMaintenance.GetEntityInfo(typeof(Type));
+                foreach (var item in datas)
+                {
+                    DataAop(item, isAdd
+                                   ? 
+                                   DataFilterType.InsertByObject:
+                                   DataFilterType.UpdateByObject
+                                   , entity);
+                }
+            }
+        }
+        private void DataAop<Type>(Type item, DataFilterType type,EntityInfo entity)
+        {
+            var dataEvent = this.context.CurrentConnectionConfig.AopEvents?.DataExecuting;
+            if (dataEvent != null && item != null)
+            {
+                foreach (var columnInfo in entity.Columns)
+                {
+                    dataEvent(columnInfo.PropertyInfo.GetValue(item, null), new DataFilterModel() { OperationType = type, EntityValue = item, EntityColumnInfo = columnInfo });
+                }
             }
         }
         #endregion

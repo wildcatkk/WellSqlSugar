@@ -19,9 +19,10 @@ namespace SqlSugar
         private int DatasTrackingExecommand()
         {
             var trakRows = 0;
+            var isNoTran = this.Context.Ado.IsNoTran();
             try
             {
-                if (this.Context.Ado.IsNoTran()) 
+                if (isNoTran) 
                 {
                     this.Context.Ado.BeginTran();
                 }
@@ -40,14 +41,14 @@ namespace SqlSugar
                     }
                     ++i;
                 }
-                if (this.Context.Ado.IsNoTran())
+                if (isNoTran)
                 {
                     this.Context.Ado.CommitTran();
                 }
             }
             catch (Exception)
             {
-                if (this.Context.Ado.IsNoTran())
+                if (isNoTran)
                 {
                     this.Context.Ado.RollbackTran();
                 }
@@ -57,10 +58,11 @@ namespace SqlSugar
         }
         private async Task<int> DatasTrackingExecommandAsync()
         {
+            var isNoTran = this.Context.Ado.IsNoTran();
             var trakRows = 0;
             try
             {
-                if (this.Context.Ado.IsNoTran())
+                if (isNoTran)
                 {
                     await this.Context.Ado.BeginTranAsync();
                 }
@@ -79,14 +81,14 @@ namespace SqlSugar
                     }
                     ++i;
                 }
-                if (this.Context.Ado.IsNoTran())
+                if (isNoTran)
                 {
                     await this.Context.Ado.CommitTranAsync();
                 }
             }
             catch (Exception)
             {
-                if (this.Context.Ado.IsNoTran())
+                if (isNoTran)
                 {
                    await  this.Context.Ado.RollbackTranAsync();
                 }
@@ -187,6 +189,10 @@ namespace SqlSugar
             }
             //Check.Exception(UpdateObjs == null || UpdateObjs.Count() == 0, "UpdateObjs is null");
             int i = 0;
+            if (this.EntityInfo.Columns.Any(it => it.IsPrimarykey)) 
+            {
+                this.UpdateBuilder.OldPrimaryKeys = this.EntityInfo.Columns.Where(it => it.IsPrimarykey).Select(it=>it.DbColumnName).ToList();
+            }
             foreach (var item in UpdateObjs)
             {
                 List<DbColumnInfo> updateItem = new List<DbColumnInfo>();
@@ -406,6 +412,7 @@ namespace SqlSugar
                     if (item.IsJson)
                     {
                         parameter.IsJson = true;
+                        SqlBuilder.ChangeJsonType(parameter);
                     }
                     if (item.IsArray)
                     {

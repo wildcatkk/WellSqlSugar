@@ -150,6 +150,10 @@ namespace SqlSugar
     }
     public class Subqueryable<T1, T2, T3, T4, T5, T6> : Subqueryable<T1> where T1 : class, new()
     {
+        public new Subqueryable<T1, T2, T3, T4, T5, T6> Where(List<IConditionalModel> conditionals)
+        {
+            return this;
+        }
         public Subqueryable<T1, T2, T3, T4, T5, T6, JoinType> InnerJoin<JoinType>(Func<T1, T2, T3, T4, T5, T6, JoinType, bool> expression)
         {
             return new Subqueryable<T1, T2, T3, T4, T5, T6, JoinType>();
@@ -189,6 +193,10 @@ namespace SqlSugar
     }
     public class Subqueryable<T1, T2, T3, T4, T5> : Subqueryable<T1> where T1 : class, new()
     {
+        public new Subqueryable<T1, T2, T3, T4,T5> Where(List<IConditionalModel> conditionals)
+        {
+            return this;
+        }
         public Subqueryable<T1, T2, T3, T4, T5, JoinType> InnerJoin<JoinType>(Func<T1, T2, T3, T4, T5, JoinType, bool> expression)
         {
             return new Subqueryable<T1, T2, T3, T4, T5, JoinType>();
@@ -224,6 +232,10 @@ namespace SqlSugar
     }
     public class Subqueryable<T1, T2, T3, T4> : Subqueryable<T1> where T1 : class, new()
     {
+        public new Subqueryable<T1, T2, T3,T4> Where(List<IConditionalModel> conditionals)
+        {
+            return this;
+        }
         public Subqueryable<T1, T2, T3, T4, JoinType> InnerJoin<JoinType>(Func<T1, T2, T3, T4, JoinType, bool> expression)
         {
             return new Subqueryable<T1, T2, T3, T4, JoinType>();
@@ -280,9 +292,54 @@ namespace SqlSugar
         {
             return null;
         }
+        public List<TResult> ToList<TResult>(Func<T1, T2, T3,T4, TResult> selector, bool isAutoDto) where TResult : class, new()
+        {
+            return null;
+        }
+        public TResult First<TResult>(Func<T1, T2, T3,T4, TResult> selector, bool isAutoDto) where TResult : class, new()
+        {
+            return default(TResult);
+        }
+        public TResult Max<TResult>(Func<T1, T2, T3,T4, TResult> expression)
+        {
+            return default(TResult);
+        }
+        public Byte[] Max(Func<T1, T2, T3, T4, Byte[]> expression)
+        {
+            return null;
+        }
+        public string Max(Func<T1, T2, T3, T4, string> expression)
+        {
+            return default(string);
+        }
+
+        public string Min(Func<T1, T2, T3, T4, string> expression)
+        {
+            return default(string);
+        }
+        public TResult Min<TResult>(Func<T1, T2,T3, T4, TResult> expression)
+        {
+            return default(TResult);
+        }
+        public Byte[] Min(Func<T1, T2, T3,T4, Byte[]> expression)
+        {
+            return null;
+        }
+        public string Sum(Func<T1, T2, T3,T4, string> expression)
+        {
+            return default(string);
+        }
+        public TResult Sum<TResult>(Func<T1, T2,T3,T4, TResult> expression)
+        {
+            return default(TResult);
+        }
     }
     public class Subqueryable<T1, T2, T3> : Subqueryable<T1> where T1 : class, new()
     {
+        public new Subqueryable<T1, T2,T3> Where(List<IConditionalModel> conditionals)
+        {
+            return this;
+        }
         public Subqueryable<T1, T2, T3, JoinType> InnerJoin<JoinType>(Func<T1, T2, T3, JoinType, bool> expression)
         {
             return new Subqueryable<T1, T2, T3, JoinType>();
@@ -335,9 +392,54 @@ namespace SqlSugar
         {
             return null;
         }
+        public List<TResult> ToList<TResult>(Func<T1,T2,T3, TResult> selector, bool isAutoDto) where TResult : class, new()
+        {
+            return null;
+        }
+        public TResult First<TResult>(Func<T1,T2,T3, TResult> selector, bool isAutoDto) where TResult : class, new()
+        {
+            return default(TResult);
+        }
+        public TResult Max<TResult>(Func<T1, T2,T3, TResult> expression)
+        {
+            return default(TResult);
+        }
+        public Byte[] Max(Func<T1, T2, T3, Byte[]> expression)
+        {
+            return null;
+        }
+        public string Max(Func<T1, T2, T3, string> expression)
+        {
+            return default(string);
+        }
+
+        public string Min(Func<T1, T2, T3, string> expression)
+        {
+            return default(string);
+        }
+        public TResult Min<TResult>(Func<T1, T2,T3, TResult> expression)
+        {
+            return default(TResult);
+        }
+        public Byte[] Min(Func<T1, T2, T3, Byte[]> expression)
+        {
+            return null;
+        }
+        public string Sum(Func<T1, T2, T3, string> expression)
+        {
+            return default(string);
+        }
+        public TResult Sum<TResult>(Func<T1, T2,T3, TResult> expression)
+        {
+            return default(TResult);
+        }
     }
     public class Subqueryable<T1, T2> : Subqueryable<T1> where T1 : class, new()
     {
+        public new Subqueryable<T1,T2> Where(List<IConditionalModel> conditionals)
+        {
+            return this;
+        }
         public Subqueryable<T1, T2, JoinType> InnerJoin<JoinType>(Func<T1, T2, JoinType, bool> expression)
         {
             return new Subqueryable<T1, T2, JoinType>();
@@ -385,6 +487,47 @@ namespace SqlSugar
         public List<TResult> ToList<TResult>(Func<T1,T2, TResult> selector)
         {
             return null;
+        }
+        public List<TResult> ToList<TResult>(Func<T1,T2, TResult> selector, bool isAutoDto) where TResult : class, new()
+        {
+            return null;
+        }
+        public TResult First<TResult>(Func<T1,T2, TResult> selector, bool isAutoDto) where TResult : class, new()
+        {
+            return default(TResult);
+        }
+        public TResult Max<TResult>(Func<T1,T2, TResult> expression)
+        {
+            return default(TResult);
+        }
+        public Byte[] Max(Func<T1, T2, Byte[]> expression)
+        {
+            return null;
+        }
+        public string Max(Func<T1, T2, string> expression)
+        {
+            return default(string);
+        }
+
+        public string Min(Func<T1, T2, string> expression)
+        {
+            return default(string);
+        }
+        public TResult Min<TResult>(Func<T1, T2, TResult> expression)
+        {
+            return default(TResult);
+        }
+        public Byte[] Min(Func<T1, T2, Byte[]> expression)
+        {
+            return null;
+        }
+        public string Sum(Func<T1, T2, string> expression)
+        {
+            return default(string);
+        }
+        public TResult Sum<TResult>(Func<T1, T2, TResult> expression)
+        {
+            return default(TResult);
         }
     }
 }

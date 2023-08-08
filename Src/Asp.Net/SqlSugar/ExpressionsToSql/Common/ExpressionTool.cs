@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -8,11 +10,88 @@ namespace SqlSugar
 {
     public class ExpressionTool
     {
+
+        public static List<string> GetTopLevelMethodCalls(Expression expression)
+        {
+            var methodCalls = new List<string>();
+            GetTopLevelMethodCalls(expression, methodCalls);
+            return methodCalls;
+        }
+
+        public static void GetTopLevelMethodCalls(Expression expression, List<string> methodCalls)
+        {
+            if (expression is MethodCallExpression methodCallExpression)
+            {
+                methodCalls.Add(methodCallExpression.Method.Name);
+                if (methodCallExpression.Object is MethodCallExpression parentMethodCallExpression)
+                {
+                    GetTopLevelMethodCalls(parentMethodCallExpression, methodCalls);
+                }
+            }
+            else if (expression is LambdaExpression lambdaExpression)
+            {
+                GetTopLevelMethodCalls(lambdaExpression.Body, methodCalls);
+            }
+        }
+
+        public static Dictionary<string, Expression> GetNewExpressionItemList(Expression lamExp)
+        {
+            var caseExp = GetLambdaExpressionBody(lamExp);
+            if (caseExp is MemberInitExpression) 
+            {
+                return GetMemberBindingItemList((caseExp as MemberInitExpression).Bindings);
+            }
+            var exp= caseExp as NewExpression;
+            if (exp == null) 
+            {
+                Check.ExceptionEasy("Use Select(it=>new class(){})", "导航查询请使用Select(it=>new class(){})");
+            }
+            var dict = new Dictionary<string, Expression>();
+
+            for (int i = 0; i < exp.Arguments.Count; i++)
+            {
+                var arg = exp.Arguments[i];
+                var parameterInfo = exp.Constructor.GetParameters()[i];
+
+                dict.Add(parameterInfo.Name, arg);
+            }
+
+            return dict;
+        }
+        public static Dictionary<string, Expression> GetMemberBindingItemList(ReadOnlyCollection<MemberBinding> exp)
+        {
+            Dictionary<string, Expression> dict = new Dictionary<string, Expression>();
+            // 获取MemberInitExpression中的每一个MemberBinding
+            foreach (var binding in exp)
+            {
+                // 判断是MemberAssignment还是MemberListBinding
+                if (binding is MemberAssignment assignment)
+                {
+                    // 获取属性名和属性值
+                    string propertyName = assignment.Member.Name;
+                    dict.Add(assignment.Member.Name, assignment.Expression);
+                }
+
+            }
+            return dict;
+        }
+        public static bool ContainsMethodName(BinaryExpression expression, string name)
+        {
+            var visitor = new MethodCallExpressionVisitor(name);
+            var hasMethodCallWithName = visitor.HasMethodCallWithName(expression);
+            return hasMethodCallWithName;
+        }
         public static bool IsVariable(Expression expr)
         {
             var ps = new ParameterExpressionVisitor();
             ps.Visit(expr);
             return ps.Parameters.Count==0;
+        }
+        public static List<ParameterExpression> GetParameters(Expression expr)
+        {
+            var ps = new ParameterExpressionVisitor();
+            ps.Visit(expr);
+            return ps.Parameters;
         }
         public static bool IsComparisonOperatorBool(BinaryExpression binaryExp)
         {
@@ -299,7 +378,7 @@ namespace SqlSugar
             {
                 expression = ((UnaryExpression)expression).Operand;   
             }
-            var member = (expression as MemberExpression).Member.Name;
+            var member = (expression as MemberExpression)?.Member?.Name;
             return member;
         }
         internal static object GetExpressionValue(Expression expression)
@@ -309,6 +388,10 @@ namespace SqlSugar
                 if (expression is ConstantExpression)
                 {
                     return (expression as ConstantExpression).Value;
+                }
+                else if (expression is MethodCallExpression) 
+                {
+                    return LambdaExpression.Lambda(expression).Compile().DynamicInvoke();
                 }
                 else
                 {
@@ -483,7 +566,25 @@ namespace SqlSugar
                     //additem.Value = "";
                     result.Add(additem);
                 }
-                else 
+                else if (memberAssignment.Expression is MemberInitExpression|| memberAssignment.Expression is NewExpression)
+                {
+                 
+                    var dic = ExpressionTool.GetNewExpressionItemList(memberAssignment.Expression);
+                    foreach (var kv in dic)
+                    {
+                        additem = new NewExpressionInfo();
+                        //var leftInfo = keys[i];
+                        additem.Type = nameof(NewExpression);
+                        additem.RightName = kv.Key;
+                        additem.ShortName = ExpressionTool.GetParameters(kv.Value).First().Name;
+                        additem.RightName = kv.Key;
+                        additem.LeftNameName = memberAssignment.Member.Name + "." + kv.Key;
+                        additem.RightDbName = kv.Key;
+                        //additem.Value = "";
+                        result.Add(additem);
+                    }
+                }
+                else
                 {
                     var value = baseResolve.GetNewExpressionValue(memberAssignment.Expression);
                     //var leftInfo = keys[i];
@@ -534,6 +635,24 @@ namespace SqlSugar
                     additem.RightDbName = UtilMethods.GetSqlValue(value);
                     //additem.Value = "";
                     result.Add(additem);
+                }
+                else if (binding is MemberInitExpression || binding is NewExpression)
+                {
+
+                    var dic = ExpressionTool.GetNewExpressionItemList(binding);
+                    foreach (var kv in dic)
+                    {
+                        additem = new NewExpressionInfo();
+                        //var leftInfo = keys[i];
+                        additem.Type = nameof(NewExpression);
+                        additem.RightName = kv.Key;
+                        additem.ShortName = ExpressionTool.GetParameters(kv.Value).First().Name;
+                        additem.RightName = kv.Key;
+                        additem.LeftNameName = keys[i].Name+ "." + kv.Key;
+                        additem.RightDbName = kv.Key;
+                        //additem.Value = "";
+                        result.Add(additem);
+                    }
                 }
                 else  
                 {

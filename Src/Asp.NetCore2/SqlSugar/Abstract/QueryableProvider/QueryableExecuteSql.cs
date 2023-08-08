@@ -244,7 +244,18 @@ namespace SqlSugar
             var list = this.ToList();
             return GetChildList(parentIdExpression, pk, list, primaryKeyValue, isContainOneself);
         }
-
+        public List<T> ToChildList(Expression<Func<T, object>> parentIdExpression, object [] primaryKeyValues, bool isContainOneself = true)
+        {
+            var entity = this.Context.EntityMaintenance.GetEntityInfo<T>();
+            var pk = GetTreeKey(entity);
+            var list = this.ToList();
+            List<T> result = new List<T>();
+            foreach (var item in primaryKeyValues)
+            {
+                result.AddRange(GetChildList(parentIdExpression, pk, list, item, isContainOneself));
+            }
+            return result;
+        }
         public List<T> ToParentList(Expression<Func<T, object>> parentIdExpression, object primaryKeyValue)
         {
             var entity = this.Context.EntityMaintenance.GetEntityInfo<T>();
@@ -335,14 +346,18 @@ namespace SqlSugar
             var entity = this.Context.EntityMaintenance.GetEntityInfo<T>();
             var pk = GetTreeKey(entity);
             var list = this.ToList();
-            return GetTreeRoot(childListExpression, parentIdExpression, pk, list, rootValue);
+            return GetTreeRoot(childListExpression, parentIdExpression, pk, list, rootValue)??new List<T>();
         }
         public  List<T> ToTree(Expression<Func<T, IEnumerable<object>>> childListExpression, Expression<Func<T, object>> parentIdExpression, object rootValue, object[] childIds)
         {
             var list =  this.ToList();
-            return TreeAndFilterIds(childListExpression, parentIdExpression, rootValue, childIds, ref list);
+            return TreeAndFilterIds(childListExpression, parentIdExpression, rootValue, childIds, ref list) ?? new List<T>();
         }
-
+        public virtual DataTable ToDataTableByEntity()
+        {
+            var list = this.ToList();
+            return this.Context.Utilities.ListToDataTable(list);
+        }
         public virtual DataTable ToDataTable()
         {
             QueryBuilder.ResultType = typeof(SugarCacheDataTable);
@@ -381,6 +396,11 @@ namespace SqlSugar
             }
             return ToDataTable();
         }
+        public DataTable ToDataTableByEntityPage(int pageNumber, int pageSize, ref int totalNumber) 
+        {
+            var  list=this.ToPageList(pageNumber, pageSize,ref totalNumber);
+            return this.Context.Utilities.ListToDataTable(list);    
+        }
         public virtual DataTable ToDataTablePage(int pageIndex, int pageSize, ref int totalNumber)
         {
             _RestoreMapping = false;
@@ -410,8 +430,17 @@ namespace SqlSugar
                 keyName = this.QueryBuilder.TableShortName + "." + keyName;
                 valueName = this.QueryBuilder.TableShortName + "." + valueName;
             }
-            var result = this.Select<KeyValuePair<string, object>>(keyName + "," + valueName).ToList().ToDictionary(it => it.Key.ObjToString(), it => it.Value);
-            return result;
+            var isJson=this.Context.EntityMaintenance.GetEntityInfo<T>().Columns.Where(it => it.IsJson && it.PropertyName == ExpressionTool.GetMemberName(value)).Any();
+            if (isJson)
+            {
+                var result = this.Select<T>(keyName + "," + valueName).ToList().ToDictionary(ExpressionTool.GetMemberName(key), ExpressionTool.GetMemberName(value));
+                return result;
+            }
+            else
+            {
+                var result = this.Select<KeyValuePair<string, object>>(keyName + "," + valueName).ToList().ToDictionary(it => it.Key.ObjToString(), it => it.Value);
+                return result;
+            }
         }
 
         public List<Dictionary<string, object>> ToDictionaryList()
@@ -744,43 +773,16 @@ namespace SqlSugar
         }
         public int IntoTable(Type TableEntityType) 
         {
-            var entityInfo=this.Context.EntityMaintenance.GetEntityInfo(TableEntityType);
-            var sqlInfo=this.ToSql();
+            var entityInfo = this.Context.EntityMaintenance.GetEntityInfo(TableEntityType);
             var name = this.SqlBuilder.GetTranslationTableName(entityInfo.DbTableName);
-            var columns = "";
-            if (this.QueryBuilder.GetSelectValue != null && this.QueryBuilder.GetSelectValue.Contains(",")) ;
-            {
-                columns = "(";
-                foreach (var item in this.QueryBuilder.GetSelectValue.Split(','))
-                {
-                    var column = Regex.Split(item,"AS").Last().Trim();
-                    columns += $"{column},";
-                }
-                columns = columns.TrimEnd(',') + ")";
-            }
-            var  sql= $" INSERT  INTO {name} {columns} " + sqlInfo.Key;
-            return this.Context.Ado.ExecuteCommand(sql, sqlInfo.Value);
+            return IntoTable(TableEntityType, name);
         }
-
         public int IntoTable(Type TableEntityType,string TableName)
         {
-            //var entityInfo = this.Context.EntityMaintenance.GetEntityInfo(TableEntityType);
-            var sqlInfo = this.ToSql();
-            var name = this.SqlBuilder.GetTranslationTableName(TableName);
-            var columns = "";
-            if (this.QueryBuilder.GetSelectValue != null && this.QueryBuilder.GetSelectValue.Contains(",")) ;
-            {
-                columns = "(";
-                foreach (var item in this.QueryBuilder.GetSelectValue.Split(','))
-                {
-                    var column = Regex.Split(item, "AS").Last().Trim();
-                    columns += $"{column},";
-                }
-                columns = columns.TrimEnd(',') + ")";
-            }
-            var sql = $" INSERT  INTO {name} {columns} " + sqlInfo.Key;
+            KeyValuePair<string, List<SugarParameter>> sqlInfo;
+            string sql;
+            OutIntoTableSql(TableName, out sqlInfo, out sql, TableEntityType);
             return this.Context.Ado.ExecuteCommand(sql, sqlInfo.Value);
         }
-
-    }
+  }
 }

@@ -20,6 +20,11 @@ namespace SqlSugar
     }
     public partial class SqlServerMethod : DefaultDbMethod, IDbMethods
     {
+        public override string WeekOfYear(MethodCallExpressionModel mode)
+        {
+            var parameterNameA = mode.Args[0].MemberName;
+            return $"DATEPART(WEEK, {parameterNameA})  ";
+        }
         public override string GetTableWithDataBase(string dataBaseName, string tableName)
         {
             return $"{dataBaseName}.dbo.{tableName}";
@@ -104,6 +109,28 @@ namespace SqlSugar
                       , model.Args[1].MemberName
                       );
         }
+        public override string TrimEnd(MethodCallExpressionModel mode)
+        {
+            var parameterNameA = mode.Args[0].MemberName;
+            var parameterNameB = mode.Args[1].MemberName;
+            return $"CASE WHEN RIGHT({parameterNameA}, 1) = {parameterNameB} THEN LEFT({parameterNameA}, LEN({parameterNameA}) - 1) ELSE {parameterNameA} END";
+        }
+        public override string TrimStart(MethodCallExpressionModel mode)
+        {
+
+            var parameterNameA = mode.Args[0].MemberName;
+            var parameterNameB = mode.Args[1].MemberName;
+            return $" CASE WHEN LEFT({parameterNameA}, 1) = {parameterNameB} THEN RIGHT({parameterNameA}, LEN({parameterNameA}) - 1) ELSE {parameterNameA} END ";
+        }
+
+        public override string PadLeft(MethodCallExpressionModel mode)
+        {
+            var parameterNameA = mode.Args[0].MemberName;
+            var parameterNameB = mode.Args[1].MemberName;
+            var parameterNameC = mode.Args[2].MemberName;
+            return $" CONCAT(REPLICATE({parameterNameC}, {parameterNameB} - LEN({parameterNameA})), {parameterNameA})  ";
+        }
     }
+
 
 }

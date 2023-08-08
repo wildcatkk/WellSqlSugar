@@ -43,15 +43,29 @@ namespace SqlSugar
             var argExp = exp.Arguments[0];
             var copyContext = this.Context;
 
-            if (this.Context.JoinIndex > 0) 
+            var pars = ExpressionTool.GetParameters(expression).Distinct();
+            if (this.Context.JoinIndex > 0|| pars.Count()>1) 
             {
                 copyContext = this.Context.GetCopyContextWithMapping();
                 copyContext.IsSingle = false;
             }
-
+            if (ExpressionTool.GetMethodName(argExp) == "ToExpression")
+            {
+                argExp = ExpressionTool.DynamicInvoke(argExp) as Expression;
+            }
             var result = "AND " + SubTools.GetMethodValue(copyContext, argExp, ResolveExpressType.WhereMultiple);
-            
-            if (this.Context.JoinIndex > 0)
+            if (argExp.Type == typeof(List<IConditionalModel>))
+            {
+                var p = this.Context.Parameters.Last();
+                this.Context.Parameters.Remove(p);
+                var cols = p.Value as List<IConditionalModel>;
+                var sqlObj = this.Context.SugarContext.QueryBuilder.Builder.ConditionalModelToSql(cols, this.Context.ParameterIndex * 100);
+                this.Context.ParameterIndex = this.Context.ParameterIndex + this.Context.ParameterIndex * 100;
+                result = "AND " + sqlObj.Key;
+                this.Context.Parameters.AddRange(sqlObj.Value);
+                return result;
+            }
+            if (this.Context.JoinIndex > 0 || pars.Count() > 1)
             {
                 this.Context.Parameters.AddRange(copyContext.Parameters);
                 this.Context.Index = copyContext.Index;
@@ -89,7 +103,7 @@ namespace SqlSugar
             {
                 this.Context.CurrentShortName = selfParameterName;
             }
-            else  if (this.Context.JoinIndex == 0)
+            else  if (this.Context.JoinIndex == 0 && this.Context.CurrentShortName != selfParameterName.TrimEnd('.'))
                 result = result.Replace(selfParameterName, SubTools.GetSubReplace(this.Context));
             return result;
         }

@@ -7,6 +7,7 @@ namespace SqlSugar
 {
     public class SqliteUpdateBuilder : UpdateBuilder
     {
+        public override string ReSetValueBySqlExpListType { get; set; }="sqlite";
         protected override string TomultipleSqlString(List<IGrouping<int, DbColumnInfo>> groupList)
         {
             StringBuilder sb = new StringBuilder();
@@ -14,7 +15,7 @@ namespace SqlSugar
             sb.AppendLine(string.Join("\r\n", groupList.Select(t =>
             {
                 var updateTable = string.Format("UPDATE {0} SET", base.GetTableNameStringNoWith);
-                var setValues = string.Join(",", t.Where(s => !s.IsPrimarykey).Select(m => GetOracleUpdateColums(i,m,false)).ToArray());
+                var setValues = string.Join(",", t.Where(s => !s.IsPrimarykey).Where(s=> OldPrimaryKeys==null||!OldPrimaryKeys.Contains(s.DbColumnName)).Select(m => GetOracleUpdateColums(i,m,false)).ToArray());
                 var pkList = t.Where(s => s.IsPrimarykey).ToList();
                 List<string> whereList = new List<string>();
                 foreach (var item in pkList)

@@ -125,6 +125,10 @@ namespace SqlSugar
             {
                 UpdateRoot();
             }
+            else if (isRoot &&_RootOptions?.IsInsertRoot==true&& nav.Navigat.NavigatType == NavigateType.ManyToMany)
+            {
+                UpdateRoot();
+            }
             else
             {
                 if (_Options != null && _Options.ManyToManyIsUpdateA)
@@ -164,7 +168,7 @@ namespace SqlSugar
                         }
                         else
                         {
-                            x.AsUpdateable.EnableDiffLogEventIF(_RootOptions.IsDiffLogEvent, _RootOptions.DiffLogBizData).ExecuteCommand();
+                            x.AsUpdateable.EnableDiffLogEventIF(_RootOptions.IsDiffLogEvent, _RootOptions.DiffLogBizData).ExecuteCommandWithOptLockIF(_RootOptions?.IsOptLock, _RootOptions?.IsOptLock);
                             newRoots.Add(item);
                         }
                     }
@@ -176,7 +180,7 @@ namespace SqlSugar
                         .EnableDiffLogEventIF(_RootOptions.IsDiffLogEvent,_RootOptions.DiffLogBizData)
                         .UpdateColumns(_RootOptions.UpdateColumns)
                         .IgnoreColumns(_RootOptions.IgnoreColumns)
-                        .ExecuteCommand();
+                        .ExecuteCommandWithOptLockIF(_RootOptions?.IsOptLock, _RootOptions?.IsOptLock);
                 }
             }
             else if (_RootOptions != null && _RootOptions?.IsDiffLogEvent == true) 

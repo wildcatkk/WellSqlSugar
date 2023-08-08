@@ -5,6 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace SqlSugar
@@ -119,6 +120,7 @@ namespace SqlSugar
                     if (item.IsJson)
                     {
                         paramters.IsJson = true;
+                        SqlBuilder.ChangeJsonType(paramters);
                     }
                     if (item.IsArray)
                     {
@@ -247,7 +249,8 @@ namespace SqlSugar
                     InsertSql = column.InsertSql,
                     InsertServerTime = column.InsertServerTime,
                     DataType=column.DataType,
-                    SqlParameterDbType= column.SqlParameterDbType 
+                    SqlParameterDbType= column.SqlParameterDbType ,
+                    IsIdentity= column.IsIdentity
                      
                 };
                 if (column.DbColumnName == null)
@@ -289,6 +292,17 @@ namespace SqlSugar
                     columnInfo.Value = UtilMethods.EncodeBase64(columnInfo.Value.ToString());
                 }
                 insertItem.Add(columnInfo);
+            }
+            if (EntityInfo.Discrimator.HasValue()) 
+            {
+                Check.ExceptionEasy(!Regex.IsMatch(EntityInfo.Discrimator, @"^(?:\w+:\w+)(?:,\w+:\w+)*$"), "The format should be type:cat for this type, and if there are multiple, it can be FieldName:cat,FieldName2:dog ", "格式错误应该是type:cat这种格式，如果是多个可以FieldName:cat,FieldName2:dog，不要有空格");
+                var array = EntityInfo.Discrimator.Split(',');
+                foreach (var disItem in array)
+                {
+                    var name = disItem.Split(':').First();
+                    var value = disItem.Split(':').Last();
+                    insertItem.Add(new DbColumnInfo() { DbColumnName = name, PropertyName = name, PropertyType = typeof(string), Value = value });
+                }
             }
         }
 
@@ -333,8 +347,11 @@ namespace SqlSugar
             else
             {
                 return this.EntityInfo.Columns.Where(it => {
-
-                    Check.Exception(it.IsIdentity && it.UnderType == typeof(string), "IsIdentity key can not be type of string");
+                    
+                    if (StaticConfig.Check_StringIdentity)
+                    {
+                        Check.ExceptionEasy(it.IsIdentity && it.UnderType == typeof(string), "Auto-incremented is not a string, how can I use a executable startup configuration: StaticConfig.Check_StringIdentity=false ", "自增不是能string,如何非要用可以程序启动配置：StaticConfig.Check_StringIdentity=false");
+                    }
                     return it.IsIdentity;
 
                 }).Select(it => it.DbColumnName).ToList();

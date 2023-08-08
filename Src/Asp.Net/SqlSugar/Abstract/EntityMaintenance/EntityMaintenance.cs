@@ -1,4 +1,5 @@
-﻿using System;
+﻿using SqlSugar.DbConvert;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,9 +16,33 @@ namespace SqlSugar
         {
             return GetEntityInfo(typeof(T));
         }
+        public EntityInfo GetEntityInfoWithAttr(Type type)
+        {
+            var attr = type?.GetCustomAttribute<TenantAttribute>();
+            if (attr == null)
+            {
+                return GetEntityInfo(type);
+            }
+            else if (attr.configId.ObjToString() == this.Context?.CurrentConnectionConfig?.ConfigId+"")
+            {
+                return GetEntityInfo(type);
+            }
+            else if (this.Context.Root == null)
+            {
+                return GetEntityInfo(type);
+            }
+            else if (!this.Context.Root.IsAnyConnection(attr.configId))
+            {
+                return GetEntityInfo(type);
+            }
+            else 
+            {
+                return this.Context.Root.GetConnection(attr.configId).EntityMaintenance.GetEntityInfo(type);
+            }
+        }
         public EntityInfo GetEntityInfo(Type type)
         {
-            string cacheKey = "GetEntityInfo" + type.GetHashCode() + type.FullName;
+            string cacheKey = "GetEntityInfo" + type.GetHashCode() + type.FullName+this.Context?.CurrentConnectionConfig?.ConfigId;
             return this.Context.Utilities.GetReflectionInoCacheInstance().GetOrCreate(cacheKey,
             () =>
             {
@@ -37,6 +62,7 @@ namespace SqlSugar
                 result.IsDisabledUpdateAll = sugarTable.IsDisabledUpdateAll;
                 result.IsDisabledDelete = sugarTable.IsDisabledDelete;
                 result.IsCreateTableFiledSort = sugarTable.IsCreateTableFiledSort;
+                result.Discrimator = sugarTable.Discrimator;
             }
             var indexs = type.GetCustomAttributes(typeof(SugarIndexAttribute));
             if (indexs != null && indexs.Any())
@@ -268,6 +294,7 @@ namespace SqlSugar
                 .Where(it => it is SugarColumn)
                 .Select(it => (SugarColumn)it)
                 .FirstOrDefault();
+                column.ExtendedAttribute = sugarColumn?.ExtendedAttribute;
                 column.DbTableName = result.DbTableName;
                 column.EntityName = result.EntityName;
                 column.PropertyName = property.Name;
@@ -317,13 +344,21 @@ namespace SqlSugar
                             {
                                 column.DataType = "json";
                             }
-                            else if (column.Length > 0) 
+                            else if (column.Length > 0)
                             {
                                 column.DataType = "varchar";
-                            }
+                            } 
                             else
                             {
                                 column.DataType = "varchar(4000)";
+                            }
+                        }
+                        else if (typeof(Nvarchar2PropertyConvert).Equals(sugarColumn.SqlParameterDbType)&&column.DataType==null) 
+                        {
+                            column.DataType = "nvarchar2";
+                            if (column.Length == 0) 
+                            {
+                                column.Length = 200;
                             }
                         }
                     }
@@ -369,6 +404,17 @@ namespace SqlSugar
                 if (column.DataType == null && property != null && property.PropertyType.Name.IsIn("DateOnly"))
                 {
                     column.DataType = "date";
+                }
+                if (column.DataType == null&&column.UnderType == typeof(TimeSpan) )
+                {
+                    column.DataType = "time";
+                    column.Length = 0;
+                    column.DecimalDigits = 0;
+                }
+                if (column.OracleSequenceName.HasValue() &&
+                     this.Context.CurrentConnectionConfig?.MoreSettings?.EnableOracleIdentity == true) 
+                {
+                    column.OracleSequenceName = null;
                 }
                 result.Columns.Add(column);
             }

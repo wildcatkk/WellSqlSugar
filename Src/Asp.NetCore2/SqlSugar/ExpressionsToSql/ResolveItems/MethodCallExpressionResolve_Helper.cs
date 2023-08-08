@@ -279,7 +279,7 @@ namespace SqlSugar
             }
             else
             {
-                AppendModel(parameter, model, item);
+                AppendModel(parameter, model, item,name, args);
             }
         }
 
@@ -334,7 +334,7 @@ namespace SqlSugar
                 Check.Exception(true, "The SqlFunc.IIF(arg1,arg2,arg3) , {0} argument  do not support ", item.ToString());
             }
         }
-        private void AppendModel(ExpressionParameter parameter, MethodCallExpressionModel model, Expression item)
+        private void AppendModel(ExpressionParameter parameter, MethodCallExpressionModel model, Expression item,string name, IEnumerable<Expression> args)
         {
             parameter.CommonTempData = CommonTempDataType.Result;
             base.Expression = item;
@@ -365,6 +365,14 @@ namespace SqlSugar
             else if (IsDateItemValue(item))
             {
                 parameter.CommonTempData = GetNewExpressionValue(item);
+            }
+            else if (name == "Format" && item is NewArrayExpression) 
+            {
+                var exps = (item as NewArrayExpression).Expressions;
+                parameter.CommonTempData = exps.Select(it => {
+                    var res = GetNewExpressionValue(ExpressionTool.RemoveConvert(it));
+                    return res;
+                }).ToArray(); 
             }
             else
             {
@@ -408,6 +416,19 @@ namespace SqlSugar
                 var parameterName = this.Context.SqlParameterKeyWord + ExpressionConst.MethodConst + this.Context.ParameterIndex;
                 this.Context.ParameterIndex++;
                 methodCallExpressionArgs.MemberName = parameterName;
+                if (name == "ToString"&&UtilMethods.GetUnderType(base.Expression.Type).IsEnum())
+                {
+                    value = value?.ToString();
+                }
+                else if (name == "ContainsArray"&&args.Count()==2&& value!= null && value is IList) 
+                {
+                    List<object> result = new List<object>();
+                    foreach (var memItem in (value as IList))
+                    {
+                        result.Add(GetMemberValue(memItem, args.Last()));
+                    }
+                    value = result;
+                }
                 methodCallExpressionArgs.MemberValue = value;
                 this.Context.Parameters.Add(new SugarParameter(parameterName, value));
             }
@@ -698,6 +719,10 @@ namespace SqlSugar
                         return this.Context.DbMehtods.AggregateDistinctCount(model);
                     case "MappingColumn":
                         var mappingColumnResult = this.Context.DbMehtods.MappingColumn(model);
+                        if (model.Args.Count == 1&& mappingColumnResult.IsNullOrEmpty()) 
+                        {
+                            return model.Args[0].MemberName.ObjToString().TrimStart('\'').TrimEnd('\'');
+                        }
                         var isValid = model.Args[0].IsMember && model.Args[1].IsMember == false;
                         //Check.Exception(!isValid, "SqlFunc.MappingColumn parameters error, The property name on the left, string value on the right");
                         if (model.Args.Count > 1)
@@ -747,7 +772,7 @@ namespace SqlSugar
                     case "Format":
                         var xx = base.BaseParameter;
                         var result = this.Context.DbMehtods.Format(model);
-                        if (!string.IsNullOrEmpty(this.Context.MethodName))
+                        if (this.Context.MethodName== "MappingColumn" || this.Context.MethodName?.StartsWith("Row")==true)
                         {
                             result = this.Context.DbMehtods.FormatRowNumber(model);
                         }
@@ -777,13 +802,23 @@ namespace SqlSugar
                         return this.Context.DbMehtods.RowNumber(model);
                     case "RowCount":
                         return this.Context.DbMehtods.RowCount(model);
+                    case "RowSum":
+                        return this.Context.DbMehtods.RowSum(model);
+                    case "RowMax":
+                        return this.Context.DbMehtods.RowMax(model);
+                    case "RowMin":
+                        return this.Context.DbMehtods.RowMin(model);
+                    case "RowAvg":
+                        return this.Context.DbMehtods.RowAvg(model);
                     case "Exists":
                         if (model.Args.Count > 1)
                         {
                             this.Context.Parameters.RemoveAll(it => model.Args[1].MemberName.ObjToString().Contains(it.ParameterName));
                             List<IConditionalModel> conditionalModels = (List<IConditionalModel>)model.Args[1].MemberValue;
                             var sqlObj = this.Context.SugarContext.Context.Queryable<object>().SqlBuilder.ConditionalModelToSql(conditionalModels, 0);
-                            model.Args[1].MemberName = sqlObj.Key;
+                            var sql = sqlObj.Key;
+                            UtilMethods.RepairReplicationParameters(ref sql, sqlObj.Value, 0, "_" + this.Context.ParameterIndex + "_B");
+                            model.Args[1].MemberName = sql;
                             if (sqlObj.Value != null)
                             {
                                 this.Context.Parameters.AddRange(sqlObj.Value);
@@ -818,9 +853,20 @@ namespace SqlSugar
                     case "SplitIn":
                         return this.Context.DbMehtods.SplitIn(model);
                     case "ListAny":
+                        this.Context.Result.IsNavicate = true;
                         this.Context.Parameters.RemoveAll(it => model.Args[0].MemberName.ObjToString().Contains(it.ParameterName));
                         return this.Context.DbMehtods.ListAny(model);
+                    case "Modulo":
+                        return this.Context.DbMehtods.Modulo(model);
+                    case "Like":
+                        return this.Context.DbMehtods.Like(model);
+                    case "ToSingle":
+                        return this.Context.DbMehtods.ToSingle(model);
                     default:
+                        if (typeof(IDbMethods).GetMethods().Any(it => it.Name == name))
+                        {
+                            return this.Context.DbMehtods.GetType().GetMethod(name).Invoke(this.Context.DbMehtods,new object[] { model});
+                        }
                         break;
                 }
             }
@@ -850,6 +896,10 @@ namespace SqlSugar
         }
         private bool CheckMethod(MethodCallExpression expression)
         {
+            if (expression?.Object?.Type?.Name?.StartsWith("ISugarQueryable`") == true) 
+            {
+                Check.ExceptionEasy("Sublookup is implemented using SqlFunc.Subquery<Order>(); Queryable objects cannot be used", "子查请使用SqlFunc.Subquery<Order>()来实现，不能用Queryable对象");
+            }
             if (expression.Method.Name == "SelectAll")
             {
                 return true;
@@ -858,7 +908,7 @@ namespace SqlSugar
             {
                 return true;
             }
-            if (expression.Method.Name == "Any"&& ExpressionTool.IsVariable(expression.Arguments[0]) )
+            if (expression.Method.Name == "Any"&& expression.Arguments.Count()>0&& ExpressionTool.IsVariable(expression.Arguments[0]) )
             {
                 return true;
             }

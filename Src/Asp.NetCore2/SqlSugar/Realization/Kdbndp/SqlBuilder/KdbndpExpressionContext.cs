@@ -104,6 +104,10 @@ namespace SqlSugar
     }
     public class KdbndpMethod : DefaultDbMethod, IDbMethods
     {
+        public override string CharIndex(MethodCallExpressionModel model)
+        {
+            return string.Format(" (strpos ({1},{0})-1)", model.Args[0].MemberName, model.Args[1].MemberName);
+        }
         public override string TrueValue()
         {
             return "true";
@@ -170,7 +174,7 @@ namespace SqlSugar
             }
             if (parameter2.MemberValue.ObjToString() == DateType.Hour.ToString())
             {
-                format = "hh";
+                format = "hh24";
             }
             if (parameter2.MemberValue.ObjToString() == DateType.Minute.ToString())
             {
@@ -454,6 +458,10 @@ namespace SqlSugar
             else if (formatString.HasValue() && formatString.Contains("HHmm"))
             {
                 formatString = formatString.Replace("HHmm", "HHmi");
+            }
+            if (formatString.Contains("HH")) 
+            {
+                formatString = formatString.Replace("HH", "hh24");
             }
             return $" to_char({dateValue},'{formatString}') ";
         }

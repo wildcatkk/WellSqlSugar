@@ -13,6 +13,10 @@ namespace SqlSugar
         public List<T> Items { get;  set; }
         public SplitTableContext Helper { get;  set; }
 
+        public string  GetTableName()
+        {
+            return GetTableNames().First();
+        }
         public string [] GetTableNames() 
         {
             List<string> result = new List<string>();
@@ -54,6 +58,10 @@ namespace SqlSugar
         }
         public List<SplitTableInfo> GetTables()
         {
+            if (StaticConfig.SplitTableGetTablesFunc != null) 
+            {
+                return StaticConfig.SplitTableGetTablesFunc();
+            }
             var oldIsEnableLogEvent = this.Context.Ado.IsEnableLogEvent;
             this.Context.Ado.IsEnableLogEvent = false;
             var tableInfos = this.Context.DbMaintenance.GetTableInfoList(false);

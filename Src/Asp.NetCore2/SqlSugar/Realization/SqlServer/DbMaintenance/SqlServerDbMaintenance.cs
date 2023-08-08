@@ -27,7 +27,7 @@ namespace SqlSugar
                            COLUMNPROPERTY(syscolumns.id,syscolumns.name,'PRECISION') as [length],
                            isnull(COLUMNPROPERTY(syscolumns.id,syscolumns.name,'Scale'),0) as Scale, 
 						   isnull(COLUMNPROPERTY(syscolumns.id,syscolumns.name,'Scale'),0) as DecimalDigits,
-                           sys.extended_properties.[value] AS [ColumnDescription],
+                           Cast( sys.extended_properties.[value] as nvarchar(2000)) AS [ColumnDescription],
                            syscomments.text AS DefaultValue,
                            syscolumns.isnullable AS IsNullable,
 	                       columnproperty(syscolumns.id,syscolumns.name,'IsIdentity')as IsIdentity,
@@ -57,7 +57,7 @@ namespace SqlSugar
                          WHERE upper(xtype) IN('U',
                                         'V') )
                       AND (systypes.name <> 'sysname')
-                      AND sysobjects.name='{0}'
+                      AND sysobjects.name=N'{0}'
                       AND systypes.name<>'geometry'
                       AND systypes.name<>'geography'
                     ORDER BY syscolumns.colid";
@@ -321,6 +321,74 @@ namespace SqlSugar
         #endregion
 
         #region Methods
+        private bool IsAnySchemaTable(string tableName)
+        {
+            if (tableName == null||!tableName.Contains(".") )
+            {
+                return false;
+            }
+            var list = GetSchemas() ?? new List<string>();
+            list.Add("dbo");
+            var isAnySchemas = list.Any(it => it.EqualCase(tableName?.Split('.').FirstOrDefault()));
+            return isAnySchemas;
+        }
+        public override bool IsAnyColumnRemark(string columnName, string tableName)
+        {
+            if (IsAnySchemaTable(tableName))
+            {
+                var schema = tableName.Split('.').First();
+                tableName = tableName.Split('.').Last();
+                var temp = this.IsAnyColumnRemarkSql.Replace("'dbo'", $"'{schema}'");
+                string sql = string.Format(temp, columnName, tableName);
+                var dt = this.Context.Ado.GetDataTable(sql);
+                return dt.Rows != null && dt.Rows.Count > 0;
+            }
+            return base.IsAnyColumnRemark(columnName, tableName);
+        }
+        public override bool DeleteColumnRemark(string columnName, string tableName)
+        {
+            if (IsAnySchemaTable(tableName))
+            {
+                var schema = tableName.Split('.').First();
+                tableName = tableName.Split('.').Last();
+                var temp = this.DeleteColumnRemarkSql.Replace(",dbo,", $",{schema},");
+                string sql = string.Format(temp, columnName, tableName);
+                this.Context.Ado.ExecuteCommand(sql);
+                return true;
+            }
+            return base.DeleteColumnRemark(columnName, tableName);
+        }
+        public override bool AddColumnRemark(string columnName, string tableName, string description)
+        {
+            if (IsAnySchemaTable(tableName))
+            {
+                var schema = tableName.Split('.').First();
+                tableName = tableName.Split('.').Last();
+                var temp = this.AddColumnRemarkSql.Replace("N'dbo'", $"N'{schema}'");
+                string sql = string.Format(temp, columnName, tableName, description);
+                this.Context.Ado.ExecuteCommand(sql);
+                return true;
+            }
+            return base.AddColumnRemark(columnName, tableName, description);
+        }
+
+        public override void AddDefaultValue(EntityInfo entityInfo)
+        {
+            var dbColumns = this.GetColumnInfosByTableName(entityInfo.DbTableName, false);
+            var db = this.Context;
+            var columns = entityInfo.Columns.Where(it => it.IsIgnore == false).ToList();
+            foreach (var item in columns)
+            {
+                if (item.DefaultValue.HasValue() || (item.DefaultValue == "" && item.UnderType == UtilConstants.StringType))
+                {
+                    if (!IsAnyDefaultValue(entityInfo.DbTableName, item.DbColumnName, dbColumns))
+                    {
+                        this.AddDefaultValue(entityInfo.DbTableName, item.DbColumnName, item.DefaultValue);
+                    }
+                }
+            }
+        }
+
         public override List<string> GetIndexList(string tableName)
         {
            return this.Context.Ado.SqlQuery<string>($"SELECT indexname = i.name FROM sys.indexes i\r\nJOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id\r\nJOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id\r\nWHERE i.object_id = OBJECT_ID('{tableName}')");
@@ -354,7 +422,7 @@ namespace SqlSugar
                 }
                 else
                 {
-                    var result= this.Context.Ado.GetInt($"select object_id('{tableName}')");
+                    var result= this.Context.Ado.GetInt($"select object_id(N'{tableName}')");
                     return result > 0;
                 }
             }
@@ -369,7 +437,7 @@ namespace SqlSugar
                     tableName = SqlBuilder.GetNoTranslationColumnName(tableName);
                 }
                 var sql = @"IF EXISTS (SELECT * FROM sys.objects
-                        WHERE type='u' AND name='"+tableName.ToSqlFilter()+@"')  
+                        WHERE type='u' AND name=N'"+tableName.ToSqlFilter()+@"')  
                         SELECT 1 AS res ELSE SELECT 0 AS res;";
                 return this.Context.Ado.GetInt(sql) > 0;
             }

@@ -10,7 +10,7 @@ using System.Reflection;
 using System.Dynamic;
 using System.Threading.Tasks;
 using System.Threading;
-
+ 
 namespace SqlSugar
 {
 
@@ -352,7 +352,11 @@ namespace SqlSugar
             this.Context.MappingTables = oldMapping;
             return await this.Clone().ToJsonPageAsync(pageIndex, pageSize);
         }
-        
+        public async virtual Task<DataTable> ToDataTableByEntityAsync()
+        {
+            var list =await this.ToListAsync();
+            return this.Context.Utilities.ListToDataTable(list);
+        }
         public async Task<DataTable> ToDataTableAsync()
         {
             QueryBuilder.ResultType = typeof(SugarCacheDataTable);
@@ -382,6 +386,11 @@ namespace SqlSugar
             totalNumber.Value = await this.Clone().CountAsync();
             this.Context.MappingTables = oldMapping;
             return await this.Clone().ToDataTablePageAsync(pageIndex, pageSize);
+        }
+        public async Task<DataTable> ToDataTableByEntityPageAsync(int pageNumber, int pageSize, RefAsync<int> totalNumber) 
+        {
+            var list =await this.ToPageListAsync(pageNumber, pageSize, totalNumber);
+            return this.Context.Utilities.ListToDataTable(list);
         }
         public async Task<List<T>> ToOffsetPageAsync(int pageIndex, int pageSize, RefAsync<int> totalNumber)
         {
@@ -561,20 +570,29 @@ ParameterT parameter)
             var keyName = QueryBuilder.GetExpressionValue(key, ResolveExpressType.FieldSingle).GetResultString();
             var valueName = QueryBuilder.GetExpressionValue(value, ResolveExpressType.FieldSingle).GetResultString();
             var list = await this.Select<KeyValuePair<string, object>>(keyName + "," + valueName).ToListAsync();
-            var result = list.ToDictionary(it => it.Key.ObjToString(), it => it.Value);
-            return result;
+            var isJson = this.Context.EntityMaintenance.GetEntityInfo<T>().Columns.Where(it => it.IsJson && it.PropertyName == ExpressionTool.GetMemberName(value)).Any();
+            if (isJson)
+            {
+                var result = this.Select<T>(keyName + "," + valueName).ToList().ToDictionary(ExpressionTool.GetMemberName(key), ExpressionTool.GetMemberName(value));
+                return result;
+            }
+            else
+            {
+                var result = list.ToDictionary(it => it.Key.ObjToString(), it => it.Value);
+                return result;
+            }
         }
         public async Task<List<T>> ToTreeAsync(Expression<Func<T, IEnumerable<object>>> childListExpression, Expression<Func<T, object>> parentIdExpression, object rootValue, object[] childIds)
         {
             var list = await this.ToListAsync();
-            return TreeAndFilterIds(childListExpression, parentIdExpression, rootValue, childIds, ref list);
+            return TreeAndFilterIds(childListExpression, parentIdExpression, rootValue, childIds, ref list) ?? new List<T>();
         }
         public async Task<List<T>> ToTreeAsync(Expression<Func<T, IEnumerable<object>>> childListExpression, Expression<Func<T, object>> parentIdExpression, object rootValue)
         {
             var entity = this.Context.EntityMaintenance.GetEntityInfo<T>();
             var pk = GetTreeKey(entity); ;
             var list = await this.ToListAsync();
-            return GetTreeRoot(childListExpression, parentIdExpression, pk, list, rootValue);
+            return GetTreeRoot(childListExpression, parentIdExpression, pk, list, rootValue) ?? new List<T>();
         }
         public async Task<List<T>> ToParentListAsync(Expression<Func<T, object>> parentIdExpression, object primaryKeyValue)
         {
@@ -666,6 +684,41 @@ ParameterT parameter)
             var pk = GetTreeKey(entity);
             var list = await this.ToListAsync();
             return GetChildList(parentIdExpression, pk, list, primaryKeyValue, isContainOneself);
+        }
+
+        public async Task<List<T>> ToChildListAsync(Expression<Func<T, object>> parentIdExpression, object[] primaryKeyValues, bool isContainOneself = true)
+        {
+            var entity = this.Context.EntityMaintenance.GetEntityInfo<T>();
+            var pk = GetTreeKey(entity);
+            var list =await this.ToListAsync();
+            List<T> result = new List<T>();
+            foreach (var item in primaryKeyValues)
+            {
+                result.AddRange(GetChildList(parentIdExpression, pk, list, item, isContainOneself));
+            }
+            return result;
+        }
+        public Task<int> IntoTableAsync<TableEntityType>(CancellationToken cancellationToken = default)
+        {
+            return IntoTableAsync(typeof(TableEntityType), cancellationToken);
+        }
+        public Task<int> IntoTableAsync<TableEntityType>(string TableName, CancellationToken cancellationToken = default)
+        {
+            return IntoTableAsync(typeof(TableEntityType), TableName, cancellationToken );
+        }
+        public Task<int> IntoTableAsync(Type TableEntityType, CancellationToken cancellationToken = default)
+        {
+            var entityInfo = this.Context.EntityMaintenance.GetEntityInfo(TableEntityType);
+            var name = this.SqlBuilder.GetTranslationTableName(entityInfo.DbTableName);
+            return IntoTableAsync(TableEntityType, name, cancellationToken);
+        }
+        public async Task<int> IntoTableAsync(Type TableEntityType, string TableName, CancellationToken cancellationToken = default)
+        {
+            this.Context.Ado.CancellationToken= cancellationToken;
+            KeyValuePair<string, List<SugarParameter>> sqlInfo;
+            string sql;
+            OutIntoTableSql(TableName, out sqlInfo, out sql,TableEntityType);
+            return await this.Context.Ado.ExecuteCommandAsync(sql, sqlInfo.Value);
         }
     }
 }

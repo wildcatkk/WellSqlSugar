@@ -17,6 +17,11 @@ namespace SqlSugar
     }
     public class MySqlMethod : DefaultDbMethod, IDbMethods
     {
+        public override string WeekOfYear(MethodCallExpressionModel mode)
+        {
+            var parameterNameA = mode.Args[0].MemberName;
+            return $" WEEK({parameterNameA})  ";
+        }
         public override string GetStringJoinSelector(string result, string separator)
         {
             return $"group_concat({result}  separator '{separator}') ";
@@ -240,5 +245,18 @@ namespace SqlSugar
                 return $" JSON_CONTAINS({model.Args[0].MemberName},'{{\"{model.Args[1].MemberValue}\":\"{model.Args[2].MemberValue.ObjToStringNoTrim().ToSqlFilter()}\"}}')";
             }
         }
+        //public override string TrimEnd(MethodCallExpressionModel mode)
+        //{
+        //    var parameterNameA = mode.Args[0].MemberName;
+        //    var parameterNameB = mode.Args[1].MemberName;
+        //    return $" TRIM(TRAILING {parameterNameA} FROM {parameterNameB}) ";
+        //}
+        //public override string TrimStart(MethodCallExpressionModel mode)
+        //{
+
+        //    var parameterNameA = mode.Args[0].MemberName;
+        //    var parameterNameB = mode.Args[1].MemberName;
+        //    return $" TRIM(LEADING  {parameterNameA} FROM {parameterNameB}) ";
+        //}
     }
 }

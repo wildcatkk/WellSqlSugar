@@ -71,7 +71,14 @@ namespace SqlSugar
                 {
                     uInt64TypeName.Add(item.ColumnName);
                 }
-                dt.Columns.Add(item.ColumnName, item.DataType);
+                if (item.DataType.Name == "ClickHouseDecimal")
+                {
+                    dt.Columns.Add(item.ColumnName, typeof(decimal));
+                }
+                else
+                {
+                    dt.Columns.Add(item.ColumnName, item.DataType);
+                }
             }
             dt.TableName = GetTableName();
             var columns = entityInfo.Columns;
@@ -172,11 +179,11 @@ namespace SqlSugar
             DataTable tempDataTable = null;
             if (AsName == null)
             {
-                tempDataTable=queryable.Where(it => false).Select("*").ToDataTable();
+                tempDataTable=queryable.Clone().Where(it => false).Select("*").ToDataTable();
             }
             else
             {
-                tempDataTable=queryable.AS(AsName).Where(it => false).Select("*").ToDataTable();
+                tempDataTable=queryable.Clone().AS(AsName).Where(it => false).Select("*").ToDataTable();
             };
             List<string> uInt64TypeName = new List<string>();
             foreach (DataColumn item in tempDataTable.Columns)
@@ -212,7 +219,53 @@ namespace SqlSugar
             tempDataTable.TableName = dt.TableName;
             return tempDataTable;
         }
+        private DataTable GetCopyWriteDataTableUpdate(DataTable dt)
+        {
+            var sqlBuilder = this.context.Queryable<object>().SqlBuilder;
+            var dts = dt.Columns.Cast<DataColumn>().Select(it => sqlBuilder.GetTranslationColumnName(it.ColumnName)).ToList();
+            DataTable tempDataTable = null;
+            if (AsName == null)
+            {
+                tempDataTable = queryable.Where(it => false).Select(string.Join(",", dts)).ToDataTable();
+            }
+            else
+            {
+                tempDataTable = queryable.AS(AsName).Where(it => false).Select(string.Join(",", dts)).ToDataTable();
+            };
+            List<string> uInt64TypeName = new List<string>();
+            foreach (DataColumn item in tempDataTable.Columns)
+            {
+                if (item.DataType == typeof(UInt64))
+                {
+                    uInt64TypeName.Add(item.ColumnName);
+                }
+            }
+            var temColumnsList = tempDataTable.Columns.Cast<DataColumn>().Select(it => it.ColumnName.ToLower()).ToList();
+            var columns = dt.Columns.Cast<DataColumn>().Where(it => temColumnsList.Contains(it.ColumnName.ToLower())).ToList();
+            foreach (DataRow item in dt.Rows)
+            {
+                DataRow dr = tempDataTable.NewRow();
+                foreach (DataColumn column in columns)
+                {
 
+                    dr[column.ColumnName] = item[column.ColumnName];
+                    if (dr[column.ColumnName] == null || dr[column.ColumnName] == DBNull.Value)
+                    {
+                        dr[column.ColumnName] = DBNull.Value;
+                    }
+                    else if (column.DataType == UtilConstants.BoolType && this.context.CurrentConnectionConfig.DbType.IsIn(DbType.MySql, DbType.MySqlConnector))
+                    {
+                        if (Convert.ToBoolean(dr[column.ColumnName]) == false && uInt64TypeName.Any(z => z.EqualCase(column.ColumnName)))
+                        {
+                            dr[column.ColumnName] = DBNull.Value;
+                        }
+                    }
+                }
+                tempDataTable.Rows.Add(dr);
+            }
+            tempDataTable.TableName = dt.TableName;
+            return tempDataTable;
+        }
 
         private void RemoveCache()
         {

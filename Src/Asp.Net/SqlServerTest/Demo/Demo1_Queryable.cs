@@ -204,6 +204,12 @@ namespace OrmTest
             })
             .ToList();
 
+            var test491 = db.Queryable<Order>().Select(it => new
+            {
+                index = SqlFunc.RowNumber($"{it.Name} asc,{it.Id} desc", $"{it.Id},{it.Name},{it.CustomId},{it.Price}")
+            })
+           .ToList();
+
             var test50 = db.Queryable<Order>()
             .GroupBy(z => z.Id).Select(it => new { disCount = SqlFunc.IsNull(SqlFunc.Subqueryable<Order>().Where(z => z.Id == it.Id).Select(z => z.Name), "") })
             .ToList();
@@ -216,6 +222,29 @@ namespace OrmTest
             var NIds = db.Queryable<Order>().Where(it => ids.Contains(it.Name, true)).ToList();
             var Ids = db.Queryable<Order>().Where(it => ids.Contains(it.Name, false)).ToList();
             var Ids2 = db.Queryable<Order>().Where(it => ids.Contains(it.Name)).ToList();
+
+            db.CurrentConnectionConfig.MoreSettings = new ConnMoreSettings { EnableModelFuncMappingColumn = true };
+            var test51 = db.Queryable<Order>()
+                .GroupBy(GroupByModel.Create(new GroupByModel() { FieldName="Id" }))
+                .Where(ObjectFuncModel.Create("MappingColumn", "id=1"))
+                .Select(SelectModel.Create(
+                    new SelectModel()
+                    {
+                        FiledName = ObjectFuncModel.Create("MappingColumn", "(select 1 as id)")       ,
+                        AsName = "id",
+                    })
+
+                ).ToList();
+
+            var ss = new string[] { "a", "b" };
+            var test52 = db.Queryable<Order>()
+                .Where(it => ss.Any(y => it.Name.Contains(y))).First();
+            var test53 = db.Queryable<Order>()
+             .Where(it => ss.Any(y => y==it.Name)).First();
+            var test54 = db.Queryable<Order>()
+            .Where(it => ss.Any(y => it.Name==y)).First();
+            var test55= db.Queryable<Order>()
+             .Where(it => test38.Any(y => it.Name == y.Name&&it.Id==y.Id)).First();
             Console.WriteLine("#### Examples End ####");
         }
 
@@ -622,6 +651,10 @@ namespace OrmTest
             var conModels = new List<IConditionalModel>();
             conModels.Add(new ConditionalModel() { FieldName = "id", ConditionalType = ConditionalType.Equal, FieldValue = "1" });//id=1
             var student = db.Queryable<Order>().Where(conModels).ToList();
+            var student2= db.Queryable<Order>()
+                .Where(conModels)
+                .Where(it=>SqlFunc.Subqueryable<Order>().Where(conModels).Any())
+                .Where(it => SqlFunc.Subqueryable<Order>().Where(conModels).Any()).ToList();
 
             //Complex use case
             List<IConditionalModel> Order = new List<IConditionalModel>();

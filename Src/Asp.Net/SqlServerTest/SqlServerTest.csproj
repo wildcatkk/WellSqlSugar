@@ -97,10 +97,20 @@
     <Compile Include="Models\OrderItem.cs" />
     <Compile Include="Demo\Demo0_SqlSugarClient.cs" />
     <Compile Include="Models\ViewOrder.cs" />
+    <Compile Include="UnitTest\Models\001\InsuranceSectionConfig.cs" />
+    <Compile Include="UnitTest\Models\001\ShouJi.cs" />
+    <Compile Include="UnitTest\Models\001\ShoujiSubnum.cs" />
+    <Compile Include="UnitTest\Models\001\ShoujiViewDto.cs" />
+    <Compile Include="UnitTest\Models\Unit23131.cs" />
+    <Compile Include="UnitTest\UEnum2.cs" />
     <Compile Include="UnitTest\UinitCustomConvert.cs" />
     <Compile Include="UnitTest\UInsert3.cs" />
+    <Compile Include="UnitTest\UJson2.cs" />
+    <Compile Include="UnitTest\Unitadf1131.cs" />
     <Compile Include="UnitTest\Unitadfa1231.cs" />
     <Compile Include="UnitTest\UnitFilterasdfas.cs" />
+    <Compile Include="UnitTest\UnitManyToMany4.cs" />
+    <Compile Include="UnitTest\UnitManyToMany3.cs" />
     <Compile Include="UnitTest\UnitSqlFunc.cs" />
     <Compile Include="UnitTest\UnitSubToList.cs" />
     <Compile Include="UnitTest\Models\EntityBase.cs" />
@@ -120,6 +130,8 @@
     <Compile Include="UnitTest\UExp.cs" />
     <Compile Include="UnitTest\UCustom24.cs" />
     <Compile Include="UnitTest\UCustom20.cs" />
+    <Compile Include="UnitTest\UnitUpdateOneToMany2.cs" />
+    <Compile Include="UnitTest\UnitUpdateOneToMany.cs" />
     <Compile Include="UnitTest\UnitUpdateSubQuery.cs" />
     <Compile Include="UnitTest\UnitManyToManyDeleteNav.cs" />
     <Compile Include="UnitTest\UnitCustom12312.cs" />
@@ -195,6 +207,8 @@
     <Compile Include="UnitTest\UOneManyMany3.cs" />
     <Compile Include="UnitTest\UOneManyMany2.cs" />
     <Compile Include="UnitTest\UOneManyMany.cs" />
+    <Compile Include="UnitTest\UOneManyMany7.cs" />
+    <Compile Include="UnitTest\UQueryableByObject.cs" />
     <Compile Include="UnitTest\USelectSinleDTO.cs" />
     <Compile Include="UnitTest\USelectTest.cs" />
     <Compile Include="UnitTest\USplit.cs" />
@@ -257,6 +271,11 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="UnitTest\Models\entityMapDTO\" />
+    <Folder Include="UnitTest\Models\entityMap\" />
+    <Folder Include="UnitTest\Models\entity\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -31,6 +31,15 @@ namespace OrmTest
         }
         public static void Init()
         {
+            Unitadf1131.Init();
+            UEnum2.Init();
+            UnitManyToMany4.Init();
+            UnitManyToMany3.Init();
+            UnitUpdateOneToMany.Init();
+            UQueryableByObject.Init();
+            Unit23131.Init();
+            SplitTest2();
+            UOneManyMany7.init();
             UinitCustomConvert.Init();
             UnitFilterasdfas.Init();
             Unitadfa1231.Init();

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
@@ -39,6 +39,10 @@ namespace SqlSugar
         internal bool OldClearParameters { get; set; }
         public IDataParameterCollection DataReaderParameters { get; set; }
         public TimeSpan SqlExecutionTime { get { return AfterTime - BeforeTime; } }
+        /// <summary>
+        /// Add, delete and modify: the number of affected items;
+        /// </summary>
+        public int SqlExecuteCount { get; private set; } = 0;
         public StackTraceInfo SqlStackTrace { get { return UtilMethods.GetStackTrace(); } }
         public bool IsDisableMasterSlaveSeparation { get; set; }
         internal DateTime BeforeTime = DateTime.MinValue;
@@ -428,6 +432,8 @@ namespace SqlSugar
                 int count = sqlCommand.ExecuteNonQuery();
                 if (this.IsClearParameters)
                     sqlCommand.Parameters.Clear();
+                // 影响条数
+                this.SqlExecuteCount = count;
                 ExecuteAfter(sql, parameters);
                 sqlCommand.Dispose();
                 return count;
@@ -578,6 +584,7 @@ namespace SqlSugar
                     count=await sqlCommand.ExecuteNonQueryAsync(this.CancellationToken.Value);
                 if (this.IsClearParameters)
                     sqlCommand.Parameters.Clear();
+                this.SqlExecuteCount = count;
                 ExecuteAfter(sql, parameters);
                 sqlCommand.Dispose();
                 return count;
@@ -1595,6 +1602,7 @@ namespace SqlSugar
 
         protected void ExecuteErrorEvent(string sql, SugarParameter[] parameters, Exception ex)
         {
+            this.AfterTime = DateTime.Now;
             ErrorEvent(new SqlSugarException(this.Context, ex, sql, parameters));
         }
         protected void InitParameters(ref string sql, SugarParameter[] parameters)
@@ -1606,7 +1614,7 @@ namespace SqlSugar
                     if (item.Value != null)
                     {
                         var type = item.Value.GetType();
-                        if ((type != UtilConstants.ByteArrayType && type.IsArray&&item.IsArray==false) || type.FullName.IsCollectionsList())
+                        if ((type != UtilConstants.ByteArrayType && type.IsArray&&item.IsArray==false) || type.FullName.IsCollectionsList()||type.IsIterator())
                         {
                             var newValues = new List<string>();
                             foreach (var inValute in item.Value as IEnumerable)
@@ -1621,9 +1629,18 @@ namespace SqlSugar
                             {
                                 sql = sql.Replace("@" + item.ParameterName.Substring(1), newValues.ToArray().ToJoinSqlInVals());
                             }
-                            if (item.ParameterName.Substring(0, 1) != this.SqlParameterKeyWord&& sql.ObjToString().Contains(this.SqlParameterKeyWord + item.ParameterName))
+                            if (item.ParameterName.Substring(0, 1) != this.SqlParameterKeyWord && sql.ObjToString().Contains(this.SqlParameterKeyWord + item.ParameterName))
                             {
-                                sql = sql.Replace(this.SqlParameterKeyWord+item.ParameterName, newValues.ToArray().ToJoinSqlInVals());
+                                sql = sql.Replace(this.SqlParameterKeyWord + item.ParameterName, newValues.ToArray().ToJoinSqlInVals());
+                            }
+                            else if (item.Value!=null&&UtilMethods.IsNumberArray(item.Value.GetType()))
+                            {
+                                if (newValues.Any(it => it == "")) 
+                                {
+                                    newValues.RemoveAll(r => r == "");
+                                    newValues.Add("null");
+                                }
+                                sql = sql.Replace(item.ParameterName, string.Join(",", newValues));
                             }
                             else
                             {
@@ -1641,6 +1658,9 @@ namespace SqlSugar
                 }
             }
         }
+
+ 
+
         private List<TResult> GetData<TResult>(Type entityType, IDataReader dataReader)
         {
             List<TResult> result;

@@ -15,7 +15,6 @@ namespace SqlSugar
         Dm,
         Kdbndp,
         Oscar,
-        [Obsolete("使用DbType.MySql，已经全部统一用MySqlConnector取代 MySql.Data 原因.NET7下面差了几倍性能")]
         MySqlConnector,
         Access,
         OpenGauss,
@@ -24,6 +23,11 @@ namespace SqlSugar
         ClickHouse,
         GBase,
         Odbc,
+        OceanBaseForOracle,
+        TDengine,
+        GaussDB,
+        OceanBase,
+        Tidb,
         Custom =900
     }
 }

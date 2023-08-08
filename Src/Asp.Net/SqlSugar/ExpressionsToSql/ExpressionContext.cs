@@ -19,6 +19,7 @@ namespace SqlSugar
         #endregion
 
         #region Properties
+        public virtual ExpressionContextCase  Case{ get; set; }
         public ExpressionOutParameter SugarContext { get; set; }
         public IDbMethods DbMehtods
         {
@@ -154,6 +155,7 @@ namespace SqlSugar
             copyContext.TableEnumIsString = this.TableEnumIsString;
             copyContext.IsSingle = this.IsSingle;
             copyContext.RootExpression = this.RootExpression;
+            copyContext.SugarContext= this.SugarContext;
             return copyContext;
         }
         #endregion

@@ -114,9 +114,9 @@ namespace SqlSugar.ClickHouse
         }
         private string GetOracleUpdateColums(int i, DbColumnInfo m, bool iswhere)
         {
-            return string.Format("\"{0}\"={1}", m.DbColumnName, base.GetDbColumn(m,FormatValue(i, m.DbColumnName, m.Value, iswhere)));
+            return string.Format("\"{0}\"={1}", m.DbColumnName, base.GetDbColumn(m,FormatValue(i, m.DbColumnName, m.Value, iswhere,m)));
         }
-        public object FormatValue(int i, string name, object value, bool iswhere)
+        public object FormatValue(int i, string name, object value, bool iswhere,DbColumnInfo dbColumnInfo)
         {
             if (value == null)
             {
@@ -125,28 +125,19 @@ namespace SqlSugar.ClickHouse
             else
             {
                 var type = UtilMethods.GetUnderType(value.GetType());
-                if (type == UtilConstants.DateType && iswhere == false)
-                {
-                    var date = value.ObjToDate();
-                    if (date < UtilMethods.GetMinDate(this.Context.CurrentConnectionConfig))
-                    {
-                        date = UtilMethods.GetMinDate(this.Context.CurrentConnectionConfig);
-                    }
-                    if (this.Context.CurrentConnectionConfig?.MoreSettings?.DisableMillisecond == true)
-                    {
-                        return "'" + date.ToString("yyyy-MM-dd HH:mm:ss") + "'";
-                    }
-                    else
-                    {
-                        return "'" + date.ToString("yyyy-MM-dd HH:mm:ss.fff") + "'";
-                    }
-                }
-                else if (type == UtilConstants.DateType && iswhere)
+                if (type == UtilConstants.DateType)
                 {
                     var parameterName = this.Builder.SqlParameterKeyWord + name + i;
                     this.Parameters.Add(new SugarParameter(parameterName, value));
+                    i++;
                     return parameterName;
                 }
+                //else if (type == UtilConstants.DateType && iswhere)
+                //{
+                //    var parameterName = this.Builder.SqlParameterKeyWord + name + i;
+                //    this.Parameters.Add(new SugarParameter(parameterName, value));
+                //    return parameterName;
+                //}
                 else if (type.IsEnum())
                 {
                     if (this.Context.CurrentConnectionConfig.MoreSettings?.TableEnumIsString == true)
@@ -157,6 +148,14 @@ namespace SqlSugar.ClickHouse
                     {
                         return Convert.ToInt64(value);
                     }
+                }
+                else if (dbColumnInfo.IsArray && value != null)
+                {
+                    return   "'" + this.Context.Utilities.SerializeObject(value) + "'";
+                }
+                else if (dbColumnInfo.IsJson && value != null)
+                {
+                    return  "'" + this.Context.Utilities.SerializeObject(value) + "'";
                 }
                 else if (type == UtilConstants.ByteArrayType)
                 {

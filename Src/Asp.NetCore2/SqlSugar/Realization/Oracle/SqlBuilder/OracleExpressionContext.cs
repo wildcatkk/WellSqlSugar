@@ -33,6 +33,10 @@ namespace SqlSugar
         }
         public override string GetTranslationColumnName(string columnName)
         {
+            if (columnName == "systimestamp") 
+            {
+                return columnName;
+            }
             if (columnName.Contains(":"))
                 return base.GetTranslationColumnName(columnName);
             else if (columnName.Contains("\".\""))
@@ -72,6 +76,28 @@ namespace SqlSugar
     }
     public partial class OracleMethod : DefaultDbMethod, IDbMethods
     {
+        public override string WeekOfYear(MethodCallExpressionModel mode)
+        {
+            var parameterNameA = mode.Args[0].MemberName;
+            return $"TO_NUMBER(TO_CHAR({parameterNameA}, 'WW')) ";
+        }
+        public override string BitwiseAnd(MethodCallExpressionModel model)
+        {
+            var parameter = model.Args[0];
+            var parameter2 = model.Args[1];
+            return string.Format(" BITAND({0},{1}) ", parameter.MemberName, parameter2.MemberName);
+        }
+        public override string BitwiseInclusiveOR(MethodCallExpressionModel model)
+        { 
+            var parameter = model.Args[0];
+            var parameter2 = model.Args[1];
+            return string.Format(" BITOR({0},{1}) ", parameter.MemberName, parameter2.MemberName);
+        }
+        public override string ParameterKeyWord { get; set; } = ":";
+        public override string Modulo(MethodCallExpressionModel model)
+        {
+            return " MOD(" + model.Args[0].MemberName+ " , " + model.Args[1].MemberName+")";
+        }
         public override string GetStringJoinSelector(string result, string separator)
         {
             return $"listagg(to_char({result}),'{separator}') within group(order by {result}) ";
@@ -243,8 +269,9 @@ namespace SqlSugar
         public override string ToDate(MethodCallExpressionModel model)
         {
             var parameter = model.Args[0];
-            return string.Format(" cast({0} as TIMESTAMP)", parameter.MemberName);
+            return string.Format(" TO_TIMESTAMP({0}, 'YYYY-MM-DD HH24:MI:SS.FF') ", parameter.MemberName);
         }
+
         public override string ToDateShort(MethodCallExpressionModel model)
         {
             var parameter = model.Args[0];
@@ -303,7 +330,7 @@ namespace SqlSugar
 
         public override string GetDate()
         {
-            return "sysdate";
+            return "systimestamp";
         }
 
         public override string GetRandom()
@@ -326,6 +353,37 @@ namespace SqlSugar
         public override string CharIndex(MethodCallExpressionModel model)
         {
             return string.Format("instr ({0},{1},1,1) ", model.Args[0].MemberName, model.Args[1].MemberName);
+        }
+        public override string TrimEnd(MethodCallExpressionModel mode)
+        {
+            var parameterNameA = mode.Args[0].MemberName;
+            var parameterNameB = mode.Args[1].MemberName;
+            return $" RTRIM({parameterNameA}, {parameterNameB}) ";
+        }
+        public override string TrimStart(MethodCallExpressionModel mode)
+        {
+
+            var parameterNameA = mode.Args[0].MemberName;
+            var parameterNameB = mode.Args[1].MemberName;
+            return $" LTRIM({parameterNameA}, {parameterNameB}) ";
+        }
+        public override string Left(MethodCallExpressionModel mode)
+        {
+            var parameterNameA = mode.Args[0].MemberName;
+            var parameterNameB = mode.Args[1].MemberName;
+            return $" SUBSTR({parameterNameA}, 1, {parameterNameB})  ";
+        }
+        public override string Right(MethodCallExpressionModel mode)
+        {
+            var parameterNameA = mode.Args[0].MemberName;
+            var parameterNameB = mode.Args[1].MemberName;
+            return $" SUBSTR({parameterNameA}, -2, {parameterNameB})  ";
+        }
+
+        public override string Ceil(MethodCallExpressionModel mode)
+        {
+            var parameterNameA = mode.Args[0].MemberName;
+            return $" CEIL({parameterNameA}) ";
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using SqlSugar;
+using SqlSugar.DbConvert;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,14 +20,31 @@ namespace OrmTest
                 InitKeyType = InitKeyType.Attribute,
                 IsAutoCloseConnection = true
             });
-            db.DbMaintenance.CreateDatabase(); 
+            db.DbMaintenance.CreateDatabase();
             db.CodeFirst.InitTables(typeof(CodeFirstTable1));//Create CodeFirstTable1 
-            db.Insertable(new CodeFirstTable1() { Name = "a", Text="a" ,CreateTime=DateTime.Now}).ExecuteCommand();
-            var list = db.Queryable<CodeFirstTable1>().ToSugarList();
+            db.Insertable(new CodeFirstTable1() { Name = "a", Text = "a", CreateTime = DateTime.Now }).ExecuteCommand();
+            var list = db.Queryable<CodeFirstTable1>().ToList();
+            db.CodeFirst.InitTables<CodeFirst3311>();
+            db.Insertable(new CodeFirst3311() { }).ExecuteCommand();
+            db.Insertable(new CodeFirst3311() { ts = DateTime.Now.TimeOfDay }).ExecuteCommand();
+            db.CodeFirst.InitTables<CodeFirstadfafaAA>();
+            db.Insertable(new CodeFirstadfafaAA() {  Name = "0" }).ExecuteCommand();
+            var list3=db.Queryable<CodeFirstadfafaAA>().ToList();
             Console.WriteLine("#### CodeFirst end ####");
         }
     }
+    public class CodeFirstadfafaAA
+    {
+        [SugarColumn(ColumnDataType = "varchar(32)", SqlParameterDbType = typeof(CommonPropertyConvert))]
+        public string Name { get; set; }
 
+        public int carry_status { get; set; }
+    }
+    public class CodeFirst3311 
+    {
+        [SugarColumn(IsNullable =true)]
+        public TimeSpan? ts { get; set; }
+    }
     public class CodeFirstTable1
     {
         [SugarColumn(IsIdentity = true, IsPrimaryKey = true)]

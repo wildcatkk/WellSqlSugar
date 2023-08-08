@@ -46,23 +46,26 @@ namespace SqlSugar
                     if (expArgs != null && expArgs.Any())
                     {
                         var meExp = expArgs[0] as LambdaExpression;
-                        var selfParameterName = meExp.Parameters.First().Name;
-                        if ((meExp.Body is BinaryExpression))
+                        if (meExp != null)
                         {
-                            context.SingleTableNameSubqueryShortName = (((meExp.Body as BinaryExpression).Left as MemberExpression)?.Expression as ParameterExpression)?.Name;
-                        }
-                        if (ExpressionTool.GetMethodName(context.Expression).IsContainsIn("ToList")&& meExp.Parameters.Any(it=>it.Name==selfParameterName)) 
-                        {
-                            if (meExp.Body is BinaryExpression)
+                            var selfParameterName = meExp.Parameters.First().Name;
+                            if ((meExp.Body is BinaryExpression))
                             {
-                                context.SingleTableNameSubqueryShortName = (((meExp.Body as BinaryExpression).Right as MemberExpression)?.Expression as ParameterExpression)?.Name;
+                                context.SingleTableNameSubqueryShortName = (((meExp.Body as BinaryExpression).Left as MemberExpression)?.Expression as ParameterExpression)?.Name;
                             }
-                        }
-                        if (context.SingleTableNameSubqueryShortName == selfParameterName)
-                        {
-                            if (meExp.Body is BinaryExpression)
+                            if (ExpressionTool.GetMethodName(context.Expression).IsContainsIn("ToList") && meExp.Parameters.Any(it => it.Name == selfParameterName))
                             {
-                                context.SingleTableNameSubqueryShortName = (((meExp.Body as BinaryExpression).Right as MemberExpression)?.Expression as ParameterExpression)?.Name;
+                                if (meExp.Body is BinaryExpression)
+                                {
+                                    context.SingleTableNameSubqueryShortName = (((meExp.Body as BinaryExpression).Right as MemberExpression)?.Expression as ParameterExpression)?.Name;
+                                }
+                            }
+                            if (context.SingleTableNameSubqueryShortName == selfParameterName)
+                            {
+                                if (meExp.Body is BinaryExpression)
+                                {
+                                    context.SingleTableNameSubqueryShortName = (((meExp.Body as BinaryExpression).Right as MemberExpression)?.Expression as ParameterExpression)?.Name;
+                                }
                             }
                         }
                     }
@@ -239,6 +242,17 @@ namespace SqlSugar
                 isubList.Add(new SubLeftBracket());
                 isubList.Add(new SubRightBracket());
                 isubList.Add(new SubSelectDefault());
+            }
+            var db = this.context?.SugarContext?.Context;
+            if (db != null&& db?.CurrentConnectionConfig?.DbType == DbType.SqlServer)
+            {
+                if (db.CurrentConnectionConfig?.MoreSettings?.IsWithNoLockSubquery == true)
+                {
+                    if (!isubList.Any(it => it is SubWithNolock))
+                    {
+                        isubList.Add(new SubWithNolock() { Context = this.context });
+                    }
+                }
             }
             isubList = isubList.OrderBy(it => it.Sort).ToList();
             var isHasWhere = isubList.Where(it => it is SubWhere).Any();

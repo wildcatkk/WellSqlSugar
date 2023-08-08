@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace SqlSugar
 {
-    public partial class UpdateableProvider<T> : IUpdateable<T> where T : class, new()
+    public partial class UpdateableProvider<T> : IUpdateable<T> where T : class, new()  
     {
         #region Property
         public SqlSugarProvider Context { get; internal set; }
@@ -64,10 +64,20 @@ namespace SqlSugar
             var sqlObj = this.ToSql();
             this.Context.Queues.Add(sqlObj.Key, sqlObj.Value);
         }
-
+        public virtual int ExecuteCommandWithOptLockIF(bool? IsVersionValidation ,bool? IsOptLock=null) 
+        {
+            if (IsOptLock==true)
+            {
+                return ExecuteCommandWithOptLock(IsVersionValidation??false);
+            }
+            else 
+            {
+                return this.ExecuteCommand();
+            }
+        }
         public virtual int ExecuteCommandWithOptLock(bool IsVersionValidation=false)
         {
-            Check.ExceptionEasy(this.UpdateBuilder.IsListUpdate==true, " OptLock can only be used on a single object, and the argument cannot be List", "乐观锁只能用于单个对象,参数不能是List,如果是一对多操作请更新主表统一用主表验证");
+            Check.ExceptionEasy(UpdateObjs?.Length>1, " OptLock can only be used on a single object, and the argument cannot be List", "乐观锁只能用于单个对象,参数不能是List,如果是一对多操作请更新主表统一用主表验证");
             var updateData = UpdateObjs.FirstOrDefault();
             if (updateData == null) return 0;
             object oldValue = null;
@@ -111,7 +121,7 @@ namespace SqlSugar
 
         public virtual async Task<int> ExecuteCommandWithOptLockAsync(bool IsVersionValidation = false)
         {
-            Check.ExceptionEasy(this.UpdateBuilder.IsListUpdate == true, " OptLock can only be used on a single object, and the argument cannot be List", "乐观锁只能用于单个对象,参数不能是List,如果是一对多操作请更新主表统一用主表验证");
+            Check.ExceptionEasy(UpdateObjs?.Length > 1, " OptLock can only be used on a single object, and the argument cannot be List", "乐观锁只能用于单个对象,参数不能是List,如果是一对多操作请更新主表统一用主表验证");
             var updateData = UpdateObjs.FirstOrDefault();
             if (updateData == null) return 0;
             object oldValue = null;
@@ -163,6 +173,15 @@ namespace SqlSugar
         #endregion
 
         #region Common
+        public IUpdateable<T, T2> InnerJoin<T2>(Expression<Func<T, T2, bool>> joinExpress) 
+        {
+            UpdateableProvider<T, T2> result = new UpdateableProvider<T, T2>();
+            result.updateableObj = this;
+            var querybale=this.Context.Queryable<T>().LeftJoin<T2>(joinExpress);
+            result.updateableObj.UpdateBuilder.JoinInfos = querybale.QueryBuilder.JoinQueryInfos;
+            result.updateableObj.UpdateBuilder.ShortName = joinExpress.Parameters.FirstOrDefault()?.Name;
+            return result;
+        }
         public IUpdateable<T> Clone() 
         {
             this.Context.SugarActionType = SugarActionType.Update;
@@ -212,6 +231,7 @@ namespace SqlSugar
         }
         public SplitTableUpdateProvider<T> SplitTable(Func<List<SplitTableInfo>, IEnumerable<SplitTableInfo>> getTableNamesFunc)
         {
+            UtilMethods.StartCustomSplitTable(this.Context, typeof(T));
             this.Context.MappingTables.Add(this.EntityInfo.EntityName, this.EntityInfo.DbTableName);
             SplitTableUpdateProvider<T> result = new SplitTableUpdateProvider<T>();
             result.Context = this.Context;
@@ -226,6 +246,7 @@ namespace SqlSugar
         }
         public SplitTableUpdateByObjectProvider<T> SplitTable()
         {
+            UtilMethods.StartCustomSplitTable(this.Context, typeof(T));
             Check.ExceptionEasy(UpdateParameterIsNull, "SplitTable() not supported db.Updateable<T>(),use db.Updateable(list)", ".SplitTable()不支持 db.Updateable<T>()方式更新,请使用 db.Updateable(list) 对象方式更新, 或者使用 .SplitTable(+1)重载");
             SplitTableUpdateByObjectProvider<T> result = new SplitTableUpdateByObjectProvider<T>();
             result.Context = this.Context;
@@ -350,7 +371,67 @@ namespace SqlSugar
                 this.UpdateBuilder.DbColumnInfoList = this.UpdateBuilder.DbColumnInfoList.Where(it => oldColumns.Contains(it.PropertyName)).ToList();
             }
             return this;
-        } 
+        }
+        public IUpdateable<T> PublicSetColumns(Expression<Func<T, object>> filedNameExpression, string computationalSymbol) 
+        {
+            if (UpdateParameterIsNull == true)
+            {
+                Check.Exception(UpdateParameterIsNull == true, ErrorMessage.GetThrowMessage("The PublicSetColumns(exp,string) overload can only be used to update entity objects: db.Updateable(object)", "PublicSetColumns(exp,string)重载只能用在实体对象更新：db.Updateable(对象)，请区分表达式更新和实体对象更不同用法 "));
+            }
+            else
+            {
+                var name = ExpressionTool.GetMemberName(filedNameExpression);
+                if (name == null)
+                {
+                    Check.ExceptionEasy(filedNameExpression + " format error ", filedNameExpression + "参数格式错误");
+                }
+                //var value = this.UpdateBuilder.GetExpressionValue(ValueExpExpression, ResolveExpressType.WhereSingle).GetResultString();
+                if (this.UpdateBuilder.ReSetValueBySqlExpList == null)
+                {
+                    this.UpdateBuilder.ReSetValueBySqlExpList = new Dictionary<string, ReSetValueBySqlExpListModel>();
+                }
+                if (!this.UpdateBuilder.ReSetValueBySqlExpList.ContainsKey(name))
+                {
+                    this.UpdateBuilder.ReSetValueBySqlExpList.Add(name, new ReSetValueBySqlExpListModel()
+                    {
+                        Type= ReSetValueBySqlExpListModelType.List,
+                        Sql = computationalSymbol,
+                        DbColumnName = this.SqlBuilder.GetTranslationColumnName(this.EntityInfo.Columns.First(it => it.PropertyName == name).DbColumnName)
+                    });  
+                }
+            }
+            return this;
+        }
+
+        public IUpdateable<T> PublicSetColumns(Expression<Func<T, object>> filedNameExpression, Expression<Func<T, object>> ValueExpExpression) 
+        {
+            if (UpdateParameterIsNull == true)
+            {
+                return SetColumns(filedNameExpression, ValueExpExpression);
+            }
+            else
+            {
+                var name = ExpressionTool.GetMemberName(filedNameExpression);
+                if (name == null)
+                {
+                    Check.ExceptionEasy(filedNameExpression + " format error ", filedNameExpression + "参数格式错误");
+                }
+                var value = this.UpdateBuilder.GetExpressionValue(ValueExpExpression, ResolveExpressType.WhereSingle).GetResultString();
+                if (this.UpdateBuilder.ReSetValueBySqlExpList == null)
+                {
+                    this.UpdateBuilder.ReSetValueBySqlExpList = new Dictionary<string, ReSetValueBySqlExpListModel>();
+                }
+                if (!this.UpdateBuilder.ReSetValueBySqlExpList.ContainsKey(name))
+                {
+                    this.UpdateBuilder.ReSetValueBySqlExpList.Add(name, new ReSetValueBySqlExpListModel()
+                    {
+                        Sql = value,
+                        DbColumnName =this.SqlBuilder.GetTranslationColumnName(this.EntityInfo.Columns.First(it => it.PropertyName == name).DbColumnName)
+                    }); ;
+                }
+            }
+            return this;
+        }
         #endregion
 
         #region Update by object
@@ -505,7 +586,15 @@ namespace SqlSugar
                 UpdateBuilder.Parameters = new List<SugarParameter>();
             }
             UpdateBuilder.Parameters.Add(new SugarParameter(parameterName, fieldValue));
-            UpdateBuilder.SetValues.Add(new KeyValuePair<string, string>(SqlBuilder.GetTranslationColumnName(fieldName), $"{SqlBuilder.GetTranslationColumnName(fieldName)}={parameterName}"));
+            if (columnInfo?.UpdateServerTime == true)
+            {
+                var nowTime= this.Context.Queryable<object>().QueryBuilder.LambdaExpressions.DbMehtods.GetDate();
+                UpdateBuilder.SetValues.Add(new KeyValuePair<string, string>(SqlBuilder.GetTranslationColumnName(fieldName), $"{SqlBuilder.GetTranslationColumnName(fieldName)}={nowTime}"));
+            }
+            else
+            {
+                UpdateBuilder.SetValues.Add(new KeyValuePair<string, string>(SqlBuilder.GetTranslationColumnName(fieldName), $"{SqlBuilder.GetTranslationColumnName(fieldName)}={parameterName}"));
+            }
             this.UpdateBuilder.DbColumnInfoList = this.UpdateBuilder.DbColumnInfoList.Where(it => (UpdateParameterIsNull == false && IsPrimaryKey(it)) || UpdateBuilder.SetValues.Any(v => SqlBuilder.GetNoTranslationColumnName(v.Key).Equals(it.DbColumnName, StringComparison.CurrentCultureIgnoreCase) || SqlBuilder.GetNoTranslationColumnName(v.Key).Equals(it.PropertyName, StringComparison.CurrentCultureIgnoreCase)) || it.IsPrimarykey == true).ToList();
             if (!this.UpdateBuilder.DbColumnInfoList.Any(it => it.DbColumnName.EqualCase(fieldName))) 
             {
@@ -530,6 +619,25 @@ namespace SqlSugar
             {
                 return this;
             }
+        }
+        public IUpdateable<T> SetColumns(Expression<Func<T, object>> filedNameExpression, Expression<Func<T, object>> valueExpression) 
+        {
+            if (valueExpression == null) 
+            {
+                return SetColumns(filedNameExpression,(object)null);
+            }
+            var name = UpdateBuilder.GetExpressionValue(filedNameExpression, ResolveExpressType.FieldSingle).GetString();
+            name = UpdateBuilder.Builder.GetNoTranslationColumnName(name);
+            var value = UpdateBuilder.GetExpressionValue(valueExpression, ResolveExpressType.FieldSingle).GetString();
+            this.UpdateBuilder.DbColumnInfoList.Add(new DbColumnInfo()
+            {
+                DbColumnName = name,
+                Value = value,
+                PropertyName = name ,
+                SqlParameterDbType=typeof(SqlSugar.DbConvert.NoParameterCommonPropertyConvert)
+            });
+            this.UpdateBuilder.SetValues.Add(new KeyValuePair<string, string>(name,value));
+            return this;
         }
         public IUpdateable<T> SetColumns(Expression<Func<T, object>> filedNameExpression, object fieldValue) 
         {
@@ -600,9 +708,9 @@ namespace SqlSugar
                     }
                 }
             }
-            if (this.EntityInfo.Columns.Any(it => it.InsertServerTime || it.UpdateSql.HasValue())) 
+            if (this.EntityInfo.Columns.Any(it => it.UpdateServerTime || it.UpdateSql.HasValue())) 
             {
-                var appendColumns = this.EntityInfo.Columns.Where(it => it.InsertServerTime || it.UpdateSql.HasValue());
+                var appendColumns = this.EntityInfo.Columns.Where(it => it.UpdateServerTime || it.UpdateSql.HasValue());
                 foreach (var item in appendColumns)
                 {
                     if (item.UpdateServerTime)
@@ -646,7 +754,7 @@ namespace SqlSugar
 
             if (columns.ToString().Contains("Subqueryable()."))
             {
-                expResult= expResult.Replace(this.SqlBuilder.SqlTranslationLeft+ (binaryExp.Left as MemberExpression).Expression+this.SqlBuilder.SqlTranslationRight+".",this.UpdateBuilder.GetTableNameString.TrimEnd()+".");
+                expResult= expResult.Replace(this.SqlBuilder.GetTranslationColumnName((binaryExp.Left as MemberExpression).Expression+"") +".",this.UpdateBuilder.GetTableNameString.TrimEnd()+".");
             }
 
             UpdateBuilder.SetValues.Add(new KeyValuePair<string, string>(SqlBuilder.GetTranslationColumnName(key), expResult));
@@ -676,12 +784,27 @@ namespace SqlSugar
             var whereString = expResult.GetResultString();
             if (expression.ToString().Contains("Subqueryable()"))
             {
-                whereString = whereString.Replace(this.SqlBuilder.GetTranslationColumnName(expression.Parameters.First().Name) + ".", this.SqlBuilder.GetTranslationTableName(this.EntityInfo.DbTableName) + ".");
+                var entityTableName = this.EntityInfo.DbTableName;
+                if (UpdateBuilder.TableName.HasValue()) 
+                {
+                    entityTableName = UpdateBuilder.TableName;
+                }
+                if (ExpressionTool.GetParameters(expression).First().Type == typeof(T))
+                {
+                    var tableName = this.SqlBuilder.GetTranslationColumnName(entityTableName);
+                    whereString = whereString.Replace(tableName, $"( SELECT * FROM {tableName})  ");
+                }
+                whereString = whereString.Replace(this.SqlBuilder.GetTranslationColumnName(expression.Parameters.First().Name) + ".", this.SqlBuilder.GetTranslationTableName(entityTableName) + ".");
             }
             else if (expResult.IsNavicate)
             {
-                whereString = whereString.Replace(expression.Parameters.First().Name + ".", this.SqlBuilder.GetTranslationTableName(this.EntityInfo.DbTableName) + ".");
-                whereString = whereString.Replace(this.SqlBuilder.GetTranslationColumnName(expression.Parameters.First().Name) + ".", this.SqlBuilder.GetTranslationTableName(this.EntityInfo.DbTableName) + ".");
+                var entityTableName2 = this.EntityInfo.DbTableName;
+                if (this.UpdateBuilder.TableName.HasValue())
+                {
+                    entityTableName2 = this.UpdateBuilder.TableName;
+                }
+                whereString = whereString.Replace(expression.Parameters.First().Name + ".", this.SqlBuilder.GetTranslationTableName(entityTableName2) + ".");
+                whereString = whereString.Replace(this.SqlBuilder.GetTranslationColumnName(expression.Parameters.First().Name) + ".", this.SqlBuilder.GetTranslationTableName(entityTableName2) + ".");
             }
             UpdateBuilder.WhereValues.Add(whereString);
             return this;

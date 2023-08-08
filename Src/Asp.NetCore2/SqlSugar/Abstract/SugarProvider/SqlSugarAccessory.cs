@@ -153,11 +153,11 @@ namespace SqlSugar
         }
         public void InitMappingInfo(Type type)
         {
-            string cacheKey = "Context.InitAttributeMappingTables" + type.FullName;
+            string cacheKey = "Context.InitAttributeMappingTables" + type.FullName+this.Context?.CurrentConnectionConfig?.ConfigId;
             var entityInfo = this.Context.Utilities.GetReflectionInoCacheInstance().GetOrCreate<EntityInfo>(cacheKey,
               () =>
               {
-                  var result = this.Context.EntityMaintenance.GetEntityInfo(type);
+                  var result = this.Context.EntityMaintenance.GetEntityInfoWithAttr(type);
                   return result;
               });
             //var copyObj = CopyEntityInfo(entityInfo);
@@ -272,6 +272,10 @@ namespace SqlSugar
             result.SqlBuilder.QueryBuilder.EntityType = typeof(T);
             result.SqlBuilder.QueryBuilder.EntityName = typeof(T).Name;
             result.SqlBuilder.QueryBuilder.LambdaExpressions = InstanceFactory.GetLambdaExpressions(CurrentConnectionConfig);
+            if (StaticConfig.CompleteQueryableFunc != null)
+            {
+                StaticConfig.CompleteQueryableFunc(result);
+            }
             return result;
         }
         protected InsertableProvider<T> CreateInsertable<T>(T[] insertObjs) where T : class, new()
@@ -288,6 +292,10 @@ namespace SqlSugar
             sqlBuilder.InsertBuilder.LambdaExpressions = InstanceFactory.GetLambdaExpressions(this.CurrentConnectionConfig);
             sqlBuilder.Context = result.SqlBuilder.InsertBuilder.Context = this;
             result.Init();
+            if (StaticConfig.CompleteInsertableFunc != null) 
+            {
+                StaticConfig.CompleteInsertableFunc(result);
+            }
             return result;
         }
         protected DeleteableProvider<T> CreateDeleteable<T>() where T : class, new()
@@ -301,6 +309,10 @@ namespace SqlSugar
             sqlBuilder.DeleteBuilder.Builder = sqlBuilder;
             sqlBuilder.DeleteBuilder.LambdaExpressions = InstanceFactory.GetLambdaExpressions(this.CurrentConnectionConfig);
             sqlBuilder.Context = result.SqlBuilder.DeleteBuilder.Context = this;
+            if (StaticConfig.CompleteDeleteableFunc != null)
+            {
+                StaticConfig.CompleteDeleteableFunc(result);
+            }
             return result;
         }
         protected UpdateableProvider<T> CreateUpdateable<T>(T[] UpdateObjs) where T : class, new()
@@ -317,6 +329,10 @@ namespace SqlSugar
             sqlBuilder.UpdateBuilder.LambdaExpressions = InstanceFactory.GetLambdaExpressions(this.CurrentConnectionConfig);
             sqlBuilder.Context = result.SqlBuilder.UpdateBuilder.Context = this;
             result.Init();
+            if (StaticConfig.CompleteUpdateableFunc != null)
+            {
+                StaticConfig.CompleteUpdateableFunc(result);
+            }
             return result;
         }
 
@@ -396,7 +412,7 @@ namespace SqlSugar
             }
             return N;
         }
-        internal bool IsVarchar()
+        public bool IsVarchar()
         {
             if (_Context.CurrentConnectionConfig.MoreSettings != null && _Context.CurrentConnectionConfig.MoreSettings.DisableNvarchar)
             {
@@ -423,10 +439,10 @@ namespace SqlSugar
                     DependencyManagement.TryPostgreSQL();
                     break;
                 case DbType.OpenGauss:
-                    Check.ExceptionEasy("Use DbType.PostgreSQL , ConnectionString add No Reset On Close=true", "OpenGausso数据库请使用DbType.PostgreSQL 并且连接字符串加上 No Reset On Close=true");
+                    config.DbType = DbType.PostgreSQL; 
                     break;
                 case DbType.HG:
-                    Check.ExceptionEasy("Use DbType.PostgreSQL", "瀚高数据库请使用DbType.PostgreSQL");
+                    InstanceFactory.CustomDllName = SugarCompatible.IsFramework ? throw new Exception("Only.NET CORE is supported") : "SqlSugar.HGCore";
                     break;
                 case DbType.Kdbndp:
                     DependencyManagement.TryKdbndb();
@@ -439,6 +455,11 @@ namespace SqlSugar
                     break;
                 case DbType.MySqlConnector:
                     InstanceFactory.CustomDllName = SugarCompatible.IsFramework?"SqlSugar.MySqlConnector": "SqlSugar.MySqlConnectorCore";
+                    if (SugarCompatible.IsFramework.ObjToBool() == false) 
+                    {
+                        config.DbType= DbType.MySql;
+                        InstanceFactory.CustomDllName = null;
+                    }
                     break;
                 case DbType.Access:
                     InstanceFactory.CustomDllName = SugarCompatible.IsFramework?"SqlSugar.Access": "SqlSugar.AccessCore";
@@ -462,6 +483,23 @@ namespace SqlSugar
                 case DbType.Odbc:
                     InstanceFactory.CustomDllName = SugarCompatible.IsFramework ? "SqlSugar.Odbc" : "SqlSugar.OdbcCore";
                     break;
+                case DbType.OceanBaseForOracle:
+                    Check.Exception(SugarCompatible.IsFramework, "OceanBaseForOracle only support .net core");
+                    InstanceFactory.CustomDllName = SugarCompatible.IsFramework ? "SqlSugar.OceanBaseForOracle" : "SqlSugar.OceanBaseForOracleCore";
+                    break;
+                case DbType.GaussDB:
+                    config.DbType = DbType.PostgreSQL; 
+                    break;
+                case DbType.OceanBase:
+                    config.DbType = DbType.MySql; 
+                    break;
+                case DbType.Tidb:
+                    config.DbType = DbType.MySql;
+                    break;
+                case DbType.TDengine:
+                    Check.Exception(SugarCompatible.IsFramework, "GBase only support .net core");
+                    InstanceFactory.CustomDllName = SugarCompatible.IsFramework ? "SqlSugar.TDengine" : "SqlSugar.TDengineCore";
+                    break;
                 default:
                     throw new Exception("ConnectionConfig.DbType is null");
             }
@@ -474,6 +512,7 @@ namespace SqlSugar
             expressionContext.MappingColumns = this.MappingColumns;
             expressionContext.MappingTables = this.MappingTables;
             expressionContext.IsSingle = false;
+            expressionContext.SugarContext = new ExpressionOutParameter() { Context=this.Context };
             if (this.Context.CurrentConnectionConfig.MoreSettings != null)
             {
                 expressionContext.PgSqlIsAutoToLower = this.Context.CurrentConnectionConfig.MoreSettings.PgSqlIsAutoToLower;

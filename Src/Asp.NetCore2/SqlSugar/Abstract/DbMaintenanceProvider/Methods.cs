@@ -454,6 +454,14 @@ namespace SqlSugar
             {
                 defaultValue = "'" + defaultValue + "'";
             }
+            if (defaultValue != null && defaultValue.EqualCase("'current_timestamp'")) 
+            {
+                defaultValue = defaultValue.TrimEnd('\'').TrimStart('\'');
+            }
+            if (defaultValue != null && defaultValue.EqualCase("'current_date'"))
+            {
+                defaultValue = defaultValue.TrimEnd('\'').TrimStart('\'');
+            }
             string sql = string.Format(AddDefaultValueSql, tableName, columnName,defaultValue);
             this.Context.Ado.ExecuteCommand(sql);
             return true;
@@ -652,6 +660,12 @@ namespace SqlSugar
             string columnName = this.SqlBuilder.GetTranslationColumnName(columnInfo.DbColumnName);
             tableName = this.SqlBuilder.GetTranslationTableName(tableName);
             string dataType = columnInfo.DataType;
+            if (dataType.EqualCase("varchar")
+                &&this.Context.CurrentConnectionConfig?.MoreSettings?.SqlServerCodeFirstNvarchar == true
+                &&this.Context.CurrentConnectionConfig?.DbType == DbType.SqlServer) 
+            {
+                dataType = "nvarchar";
+            }
             string dataSize = GetSize(columnInfo);
             string nullType = columnInfo.IsNullable ? this.CreateTableNull : CreateTableNotNull;
             string primaryKey = null;

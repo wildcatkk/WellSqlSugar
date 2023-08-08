@@ -30,11 +30,15 @@ namespace SqlSugar
         public bool IsNoUpdateNull { get; set; }
         public bool IsNoUpdateDefaultValue { get; set; }
         public List<string> PrimaryKeys { get; set; }
+        public List<string> OldPrimaryKeys { get; set; }
         public bool IsOffIdentity { get; set; }
         public bool IsWhereColumns { get; set; }
         public  bool? IsListUpdate { get; set; }
         public List<string> UpdateColumns { get; set; }
-
+        public List<JoinQueryInfo> JoinInfos { get; set; }
+        public  string ShortName { get; set; }
+        public Dictionary<string, ReSetValueBySqlExpListModel> ReSetValueBySqlExpList { get;  set; }
+        public virtual string ReSetValueBySqlExpListType { get; set; }
         public virtual string SqlTemplate
         {
             get
@@ -259,6 +263,11 @@ namespace SqlSugar
                     {
                         return setValue.First().Value;
                     }
+                    else if (JoinInfos!=null&&JoinInfos.Any()) 
+                    {
+                        setValue = SetValues.Where(sv => it.IsPrimarykey == false && (it.IsIdentity == false || (IsOffIdentity && it.IsIdentity))).Where(sv => sv.Key == Builder.GetNoTranslationColumnName(it.DbColumnName) || sv.Key == Builder.GetNoTranslationColumnName(it.PropertyName));
+                        return Builder.GetTranslationColumnName(this.ShortName)+"."+ setValue.First().Key+"="+ setValue.First().Value ;
+                    }
                 }
                 var result = Builder.GetTranslationColumnName(it.DbColumnName) + "=" + GetDbColumn(it,this.Context.Ado.SqlParameterKeyWord + it.DbColumnName);
                 return result;
@@ -294,8 +303,26 @@ namespace SqlSugar
                     whereString += Builder.GetTranslationColumnName(item) + "=" + this.Context.Ado.SqlParameterKeyWord + item;
                 }
             }
+            if (this.JoinInfos != null && this.JoinInfos.Any())
+            {
+                return GetJoinUpdate(columnsString, ref whereString);
+            }
             return string.Format(SqlTemplate, GetTableNameString, columnsString, whereString);
         }
+
+        protected virtual string GetJoinUpdate(string columnsString, ref string whereString)
+        {
+            var tableName = Builder.GetTranslationColumnName(this.TableName);
+            this.TableName = Builder.GetTranslationColumnName(this.ShortName);
+            var joinString = $" FROM {tableName} {Builder.GetTranslationColumnName(this.ShortName)} ";
+            foreach (var item in this.JoinInfos)
+            {
+                joinString += $"\r\n JOIN {Builder.GetTranslationColumnName(item.TableName)}  {Builder.GetTranslationColumnName(item.ShortName)} ON {item.JoinWhere} ";
+            }
+            whereString = joinString + "\r\n" + whereString;
+            return string.Format(SqlTemplate, GetTableNameString, columnsString, whereString);
+        }
+
         public virtual void ActionMinDate()
         {
             if (this.Parameters != null)
@@ -398,22 +425,41 @@ namespace SqlSugar
             {
                 return LambdaExpressions.DbMehtods.GetDate();
             }
+            else if (IsListSetExp(columnInfo)|| IsSingleSetExp(columnInfo))
+            {
+                if (this.ReSetValueBySqlExpList[columnInfo.PropertyName].Type == ReSetValueBySqlExpListModelType.List)
+                {
+                    return Builder.GetTranslationColumnName(columnInfo.DbColumnName)+this.ReSetValueBySqlExpList[columnInfo.PropertyName].Sql+name;
+                }
+                else
+                {
+                    return this.ReSetValueBySqlExpList[columnInfo.PropertyName].Sql;
+                }
+            }
             else if (columnInfo.UpdateSql.HasValue())
             {
                 return columnInfo.UpdateSql;
             }
-            else if (columnInfo.SqlParameterDbType  is Type) 
+            else if (columnInfo.SqlParameterDbType is Type && (Type)columnInfo.SqlParameterDbType == UtilConstants.SqlConvertType)
+            {
+                var type = columnInfo.SqlParameterDbType as Type;
+                var ParameterConverter = type.GetMethod("ParameterConverter").MakeGenericMethod(typeof(string));
+                var obj = Activator.CreateInstance(type);
+                var p = ParameterConverter.Invoke(obj, new object[] { columnInfo.Value, GetDbColumnIndex }) as SugarParameter;
+                return p.ParameterName;
+            }
+            else if (columnInfo.SqlParameterDbType is Type)
             {
                 var type = columnInfo.SqlParameterDbType as Type;
                 var ParameterConverter = type.GetMethod("ParameterConverter").MakeGenericMethod(columnInfo.PropertyType);
                 var obj = Activator.CreateInstance(type);
-                var p = ParameterConverter.Invoke(obj,new object[] { columnInfo.Value, GetDbColumnIndex }) as SugarParameter;
+                var p = ParameterConverter.Invoke(obj, new object[] { columnInfo.Value, GetDbColumnIndex }) as SugarParameter;
                 GetDbColumnIndex++;
                 //this.Parameters.RemoveAll(it => it.ParameterName == it.ParameterName);
                 this.Parameters.Add(p);
                 return p.ParameterName;
             }
-            else if (columnInfo.PropertyType!=null&&columnInfo.PropertyType.Name == "TimeOnly" && name != null && !name.ObjToString().StartsWith(Builder.SqlParameterKeyWord))
+            else if (columnInfo.PropertyType != null && columnInfo.PropertyType.Name == "TimeOnly" && name != null && !name.ObjToString().StartsWith(Builder.SqlParameterKeyWord))
             {
                 var timeSpan = UtilMethods.TimeOnlyToTimeSpan(columnInfo.Value);
                 var pname = Builder.SqlParameterKeyWord + columnInfo.DbColumnName + "_ts" + GetDbColumnIndex;
@@ -447,6 +493,17 @@ namespace SqlSugar
             {
                 return name + "";
             }
+        }
+        private bool IsSingleSetExp(DbColumnInfo columnInfo) 
+        {
+            return this.ReSetValueBySqlExpList != null && 
+                this.ReSetValueBySqlExpList.ContainsKey(columnInfo.PropertyName) && 
+                this.IsListUpdate == null&& 
+                DbColumnInfoList.GroupBy(it => it.TableId).Count()==1;
+        }
+        private bool IsListSetExp(DbColumnInfo columnInfo)
+        {
+            return this.ReSetValueBySqlExpListType != null && this.ReSetValueBySqlExpList != null && this.ReSetValueBySqlExpList.ContainsKey(columnInfo.PropertyName);
         }
         //public virtual string GetDbColumn(DbColumnInfo columnInfo, string name)
         //{

@@ -1,6 +1,10 @@
 ﻿using NET7Test;
 using SqlSugar;
+using SqlSugar.DbConvert;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
+//OracleTest();
 ServerTest();
 SqliteTest();
 MyTest();
@@ -61,6 +65,13 @@ static void ServerTest()
     {
         it.Aop.OnLogExecuting = (s, p) => Console.WriteLine(s, p);
     });
+
+    var payload = JsonSerializer.SerializeToNode(new { id = 1 });
+    var str=sqlugar.Utilities.SerializeObject(payload);
+
+    var XX=JsonSerializer.Deserialize<JsonNode>(str);
+    var node=sqlugar.Utilities.DeserializeObject<JsonNode>(str);
+
     sqlugar.DbMaintenance.CreateDatabase();
     sqlugar.CodeFirst.InitTables<UnitDate01231>();
     sqlugar.CodeFirst.InitTables<UnitDatez211afa>();
@@ -98,6 +109,16 @@ static void ServerTest()
     //测试demo3, 5.1.3.47版本不成功， 5.0.9.6版本成功
     Dictionary<string, object> data3 = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(json);
     sqlugar.Insertable(data3).AS("Userinfo021").ExecuteReturnBigIdentity();
+
+    if (sqlugar.DbMaintenance.IsAnyTable("Unitadfafa", false))
+    {
+        sqlugar.DbMaintenance.DropTable<Unitadfafa>();
+    }
+    sqlugar.CodeFirst.InitTables<Unitadfafa>();
+
+    sqlugar.Insertable(new Unitadfafa() { Id =1 }).ExecuteCommand();
+    var list2=sqlugar.Queryable<Unitadfafa>().ToList();
+
 }
 
 
@@ -126,6 +147,28 @@ static void SqliteTest()
 
     var d1 = new UnitDate01231().dateOnly;
     var d2 = new UnitDate01231().timeOnly;
+}
+static void OracleTest()
+{
+    var db = new SqlSugarClient(new ConnectionConfig()
+    {
+        DbType = DbType.Oracle,
+        IsAutoCloseConnection= true,
+        ConnectionString = "Data Source=(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)(HOST=150.158.37.115)(PORT=1521)))(CONNECT_DATA=(SERVICE_NAME=ORCL)));User Id= ;Password=Qdies123test;Pooling='true';Max Pool Size=150"
+    },
+    it =>
+    {
+        it.Aop.OnLogExecuting = (s, p) => Console.WriteLine(s, p);
+    });
+    List< (int id, string name)> x = db.SqlQueryable<object>("select id,name from  \"ORDER\"")
+        .Select<(int id, string name)>().ToList();
+}
+
+
+public class Unitadfafa 
+{
+    [SugarColumn(SqlParameterDbType =typeof(CommonPropertyConvert))]
+    public int Id { get; set; }
 }
 
 public class UnitDate01231

@@ -74,15 +74,16 @@ namespace SqlSugar
         public IDeleteable<T> AS(string tableName)
         {
             if (tableName == null) return this;
-            var entityName = typeof(T).Name;
-            IsAs = true;
-            OldMappingTableList = this.Context.MappingTables;
-            this.Context.MappingTables = this.Context.Utilities.TranslateCopy(this.Context.MappingTables);
-            if (this.Context.MappingTables.Any(it => it.EntityName == entityName))
-            {
-                this.Context.MappingTables.Add(this.Context.MappingTables.First(it => it.EntityName == entityName).DbTableName, tableName);
-            }
-            this.Context.MappingTables.Add(entityName, tableName);
+            //var entityName = typeof(T).Name;
+            //IsAs = true;
+            //OldMappingTableList = this.Context.MappingTables;
+            //this.Context.MappingTables = this.Context.Utilities.TranslateCopy(this.Context.MappingTables);
+            //if (this.Context.MappingTables.Any(it => it.EntityName == entityName))
+            //{
+            //    this.Context.MappingTables.Add(this.Context.MappingTables.First(it => it.EntityName == entityName).DbTableName, tableName);
+            //}
+            //this.Context.MappingTables.Add(entityName, tableName);
+            this.DeleteBuilder.AsName = tableName;
             return this; ;
         }
         public IDeleteable<T> EnableDiffLogEventIF(bool isEnableDiffLogEvent, object businessData = null)
@@ -129,6 +130,12 @@ namespace SqlSugar
                     var columnInfo = EntityInfo.Columns.Single(it => it.PropertyName.Equals(entityPropertyName, StringComparison.CurrentCultureIgnoreCase));
                     var value = columnInfo.PropertyInfo.GetValue(deleteObj, null);
                     value = UtilMethods.GetConvertValue(value);
+                    if (this.Context.CurrentConnectionConfig?.MoreSettings?.TableEnumIsString!=true&&
+                        columnInfo.SqlParameterDbType==null&& 
+                        columnInfo.PropertyInfo.PropertyType.IsEnum()) 
+                    {
+                        value = Convert.ToInt64(value);
+                    }
                     primaryKeyValues.Add(value);
                 }
                 if (primaryKeyValues.Count < 10000)
@@ -161,32 +168,53 @@ namespace SqlSugar
                     {
                         if (i != 0)
                             andString.Append(DeleteBuilder.WhereInAndTemplate + UtilConstants.Space);
-                        var entityPropertyName = this.Context.EntityMaintenance.GetPropertyName<T>(primaryField);
-                        var columnInfo = EntityInfo.Columns.Single(it => it.PropertyName == entityPropertyName);
+                        //var entityPropertyName = this.EntityInfo.Columns.Single(it=>it.PropertyName.EqualCase(primaryField)||it.DbColumnName.EqualCase(primaryField)).PropertyName;
+                        var columnInfo = EntityInfo.Columns.Single(t => t.PropertyName.EqualCase(primaryField) || t.DbColumnName.EqualCase(primaryField));
                         var entityValue = columnInfo.PropertyInfo.GetValue(deleteObj, null);
+                        if (this.Context.CurrentConnectionConfig?.MoreSettings?.TableEnumIsString != true &&
+                        columnInfo.SqlParameterDbType == null &&
+                        columnInfo.PropertyInfo.PropertyType.IsEnum())
+                         {
+                            entityValue = Convert.ToInt64(entityValue);
+                         }
                         var tempequals = DeleteBuilder.WhereInEqualTemplate;
                         if (this.Context.CurrentConnectionConfig.MoreSettings != null && this.Context.CurrentConnectionConfig.MoreSettings.DisableNvarchar == true)
                         {
                             tempequals = $"{SqlBuilder.SqlTranslationLeft}{{0}}{SqlBuilder.SqlTranslationRight}='{{1}}' ";
                         }
-                        if (this.Context.CurrentConnectionConfig.DbType == DbType.Oracle)
+                        if (SqlBuilder.SqlParameterKeyWord==":")
                         {
+                            var isAutoToUpper =this.Context.CurrentConnectionConfig?.MoreSettings?.IsAutoToUpper??true;
                             if (entityValue != null && UtilMethods.GetUnderType(entityValue.GetType()) == UtilConstants.DateType)
                             {
-                                andString.AppendFormat("\"{0}\"={1} ", primaryField.ToUpper(), "to_date('" + entityValue.ObjToDate().ToString("yyyy-MM-dd HH:mm:ss") + "', 'YYYY-MM-DD HH24:MI:SS') ");
+                                andString.AppendFormat("\"{0}\"={1} ", primaryField.ToUpper(isAutoToUpper), "to_date('" + entityValue.ObjToDate().ToString("yyyy-MM-dd HH:mm:ss") + "', 'YYYY-MM-DD HH24:MI:SS') ");
                             }
                             else
                             {
-                                andString.AppendFormat(tempequals, primaryField.ToUpper(), entityValue);
+                                andString.AppendFormat(tempequals.Replace("N","")+" ", primaryField.ToUpper(isAutoToUpper), entityValue);
                             }
                         }
                         else if (this.Context.CurrentConnectionConfig.DbType == DbType.PostgreSQL && (this.Context.CurrentConnectionConfig.MoreSettings == null || this.Context.CurrentConnectionConfig.MoreSettings?.PgSqlIsAutoToLower == true))
                         {
                             andString.AppendFormat("\"{0}\"={1} ", primaryField.ToLower(), new PostgreSQLExpressionContext().GetValue(entityValue));
                         }
-                        else if (this.Context.CurrentConnectionConfig.DbType == DbType.SqlServer && entityValue != null && UtilMethods.GetUnderType(entityValue.GetType()) == UtilConstants.DateType)
+                        else if ( entityValue != null &&UtilMethods.IsNumber( UtilMethods.GetUnderType(entityValue.GetType()).Name))
                         {
-                            andString.AppendFormat("\"{0}\"={1} ", primaryField, $"'{entityValue.ObjToDate().ToString("yyyy-MM-dd HH:mm:ss.fff")}'");
+                            andString.AppendFormat("{0}={1} ", this.SqlBuilder.GetTranslationColumnName(primaryField), $"{entityValue}");
+                        }
+                        else if (entityValue != null && UtilMethods.GetUnderType(entityValue.GetType()) == UtilConstants.DateType)
+                        {
+                            andString.AppendFormat("{0}={1} ", this.SqlBuilder.GetTranslationColumnName(primaryField), this.DeleteBuilder.LambdaExpressions.DbMehtods.ToDate(new MethodCallExpressionModel()
+                            {
+                                Args = new List<MethodCallExpressionArgs>()
+                             {
+                                 new MethodCallExpressionArgs()
+                                 {
+                                      IsMember=false,
+                                      MemberName="'"+entityValue.ObjToDate().ToString("yyyy-MM-dd HH:mm:ss.fff")+"'"
+                                 }
+                             }
+                            })); ;
                         }
                         else
                         {
@@ -211,12 +239,28 @@ namespace SqlSugar
             var expResult = DeleteBuilder.GetExpressionValue(expression, ResolveExpressType.WhereSingle);
             var whereString = expResult.GetResultString();
             if (expression.ToString().Contains("Subqueryable()")) {
-                whereString = whereString.Replace(this.SqlBuilder.GetTranslationColumnName(expression.Parameters.First().Name) + ".", this.SqlBuilder.GetTranslationTableName(this.EntityInfo.DbTableName) + ".");
+                var entityTableName = this.EntityInfo.DbTableName;
+                if (this.DeleteBuilder.AsName.HasValue()) 
+                {
+                    entityTableName = this.DeleteBuilder.AsName;
+                }
+                if (ExpressionTool.GetParameters(expression).First().Type == typeof(T))
+                {
+                    var tableName = this.SqlBuilder.GetTranslationColumnName(entityTableName);
+                    whereString = whereString.Replace(tableName, $"( SELECT * FROM {tableName})  ");
+                }
+                whereString = whereString.Replace(this.SqlBuilder.GetTranslationColumnName(expression.Parameters.First().Name) + ".", this.SqlBuilder.GetTranslationTableName(entityTableName) + ".");
             }
             else if (expResult.IsNavicate)
             {
-                whereString = whereString.Replace(expression.Parameters.First().Name + ".", this.SqlBuilder.GetTranslationTableName(this.EntityInfo.DbTableName) + ".");
-                whereString = whereString.Replace(this.SqlBuilder.GetTranslationColumnName(expression.Parameters.First().Name) + ".", this.SqlBuilder.GetTranslationTableName(this.EntityInfo.DbTableName) + ".");
+                var entityTableName2 = this.EntityInfo.DbTableName;
+                if (this.DeleteBuilder.AsName.HasValue())
+                {
+                    entityTableName2 = this.DeleteBuilder.AsName;
+                }
+                whereString = whereString.Replace(expression.Parameters.First().Name + ".", this.SqlBuilder.GetTranslationTableName(entityTableName2) + ".");
+                whereString = whereString.Replace(this.SqlBuilder.GetTranslationColumnName(expression.Parameters.First().Name) + ".", this.SqlBuilder.GetTranslationTableName(entityTableName2) + ".");
+               
             }
             DeleteBuilder.WhereInfos.Add(whereString);
             return this;
@@ -350,6 +394,7 @@ namespace SqlSugar
         }
         public SplitTableDeleteProvider<T> SplitTable(Func<List<SplitTableInfo>, IEnumerable<SplitTableInfo>> getTableNamesFunc) 
         {
+            UtilMethods.StartCustomSplitTable(this.Context, typeof(T));
             this.Context.MappingTables.Add(this.EntityInfo.EntityName, this.EntityInfo.DbTableName);
             SplitTableDeleteProvider<T> result = new SplitTableDeleteProvider<T>();
             result.Context = this.Context;
@@ -364,6 +409,7 @@ namespace SqlSugar
         }
         public SplitTableDeleteByObjectProvider<T> SplitTable()
         {
+            UtilMethods.StartCustomSplitTable(this.Context, typeof(T));
             SplitTableDeleteByObjectProvider<T> result = new SplitTableDeleteByObjectProvider<T>();
             result.Context = this.Context;
             Check.ExceptionEasy(this.DeleteObjects == null, "SplitTable() +0  only List<T> can be deleted", "SplitTable()无参数重载只支持根据实体集合删除");
@@ -606,7 +652,7 @@ namespace SqlSugar
         {
             List<DiffLogTableInfo> result = new List<DiffLogTableInfo>();
             var whereSql = Regex.Replace(sql, ".* WHERE ", "", RegexOptions.Singleline);
-            var dt = this.Context.Queryable<T>().Filter(null, true).Where(whereSql).AddParameters(parameters).ToDataTable();
+            var dt = this.Context.Queryable<T>().AS(this.DeleteBuilder.AsName).Filter(null, true).Where(whereSql).AddParameters(parameters).ToDataTable();
             if (dt.Rows != null && dt.Rows.Count > 0)
             {
                 foreach (DataRow row in dt.Rows)

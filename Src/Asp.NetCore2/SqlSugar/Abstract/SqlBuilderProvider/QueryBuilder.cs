@@ -34,6 +34,7 @@ namespace SqlSugar
         #endregion
 
         #region Splicing basic
+        internal AppendNavInfo AppendNavInfo { get; set; }
         public Type[] RemoveFilters { get; set; }
         public Dictionary<string, object> SubToListParameters { get; set; }
         internal List<QueryableAppendColumn> AppendColumns { get; set; }
@@ -56,6 +57,7 @@ namespace SqlSugar
         public int ExternalPageSize { get; set; }
         public int? Take { get; set; }
         public bool DisableTop { get; set; }
+        public string SampleBy { get; set; }
         public string OrderByValue { get; set; }
         public object SelectValue { get; set; }
         public string SelectCacheKey { get; set; }
@@ -137,6 +139,10 @@ namespace SqlSugar
         {
             get
             {
+                if (this.SampleBy.HasValue())
+                {
+                   return "SELECT {0} FROM {1}{2} "+ this.SampleBy + " {3}{4}";
+                }
                 return "SELECT {0} FROM {1}{2}{3}{4} ";
             }
         }
@@ -405,7 +411,7 @@ namespace SqlSugar
             Type type = item.GetType();
             PropertyInfo field = type.GetProperty("exp", flag);
             Type ChildType = item.type;
-            var entityInfo = this.Context.EntityMaintenance.GetEntityInfo(ChildType);
+            var entityInfo = this.Context.EntityMaintenance.GetEntityInfoWithAttr(ChildType);
             var exp = field.GetValue(item, null) as Expression;
             var isMain = ChildType == this.EntityType||(ChildType.IsInterface&& this.EntityType.GetInterfaces().Any(it => it == ChildType));
             var isSingle = IsSingle();
@@ -489,7 +495,8 @@ namespace SqlSugar
             {
                 var easyInfo = JoinQueryInfos.FirstOrDefault(it =>
                 it.TableName.Equals(entityInfo.DbTableName, StringComparison.CurrentCultureIgnoreCase) ||
-                it.TableName.Equals(entityInfo.EntityName, StringComparison.CurrentCultureIgnoreCase));
+                it.TableName.Equals(entityInfo.EntityName, StringComparison.CurrentCultureIgnoreCase)||
+                it.EntityType==ChildType);
                 if (easyInfo == null)
                 {
                     if (ChildType.IsInterface && JoinQueryInfos.Any(it =>it.EntityType!=null&&it.EntityType.GetInterfaces().Any(z => z == ChildType)))
@@ -523,7 +530,7 @@ namespace SqlSugar
                         var shortName = this.Builder.GetTranslationColumnName(joinInfo.ShortName.Trim()) + ".";
                         sql = sql.Replace(itName, shortName);
                     }
-                    if (isInterface||joinInfo.TableName.EqualCase(entityInfo.EntityName)|| joinInfo.TableName.EqualCase(entityInfo.DbTableName)) 
+                    if (isInterface||joinInfo.TableName.EqualCase(entityInfo.EntityName)|| joinInfo.TableName.EqualCase(entityInfo.DbTableName)||joinInfo.EntityType==ChildType) 
                     {
                         var mysql = sql;
                         if (isSameName)
@@ -547,7 +554,7 @@ namespace SqlSugar
 
         private string ReplaceFilterColumnName(string sql, Type filterType,string shortName=null)
         {
-            foreach (var column in this.Context.EntityMaintenance.GetEntityInfo(filterType).Columns.Where(it => it.IsIgnore == false))
+            foreach (var column in this.Context.EntityMaintenance.GetEntityInfoWithAttr(filterType).Columns.Where(it => it.IsIgnore == false))
             {
                 if (shortName == null)
                 {
@@ -685,7 +692,7 @@ namespace SqlSugar
             {
                 return result;
             }
-            if (this.IsSqlQuery&&this.OldSql.HasValue() && (Skip == null && Take == null) && (this.WhereInfos == null || this.WhereInfos.Count == 0))
+            if (string.IsNullOrEmpty(OrderByValue)&&this.IsSqlQuery&&this.OldSql.HasValue() && (Skip == null && Take == null) && (this.WhereInfos == null || this.WhereInfos.Count == 0))
             {
                 return this.OldSql;
             }
@@ -801,9 +808,23 @@ namespace SqlSugar
             {
                 result= GetExpressionValue(expression, this.SelectType).GetResultString();
             }
-            if (result == null)
+            if (result == null&& this.AppendNavInfo?.AppendProperties==null)
             {
                 return "*";
+            }
+            if (this.AppendNavInfo?.AppendProperties?.Any() ==true) 
+            {
+                if (result == null) 
+                {
+                    result = "*";
+                }
+                result += ",";
+                var shortName = "";
+                if (this.TableShortName.HasValue()) 
+                {
+                    shortName = $"{Builder.GetTranslationColumnName(this.TableShortName)}.";
+                }
+                result += string.Join(",",this.AppendNavInfo.AppendProperties.Select(it=> shortName+Builder.GetTranslationColumnName(it.Value)+ " AS SugarNav_" + it.Key));
             }
             if (result.Contains("/**/*")) 
             {
@@ -973,7 +994,7 @@ namespace SqlSugar
         public bool NoCheckInclude { get;  set; }
         public virtual bool IsSelectNoAll { get; set; } = false;
         public List<string> AutoAppendedColumns { get;  set; }
-        public Dictionary<string, string> MappingKeys { get;  set; }
+        public Dictionary<string, string> MappingKeys { get;  set; } 
         #endregion
 
         private string GetTableName(string entityName)

@@ -42,7 +42,7 @@ namespace SqlSugar
             }
             else
             {
-                var type = value.GetType();
+                var type = UtilMethods.GetUnderType(value.GetType());
                 if (type == UtilConstants.DateType)
                 {
                     var date = value.ObjToDate();
@@ -51,6 +51,10 @@ namespace SqlSugar
                         date = Convert.ToDateTime("1900-1-1");
                     }
                     return "'" + date.ToString("yyyy-MM-dd HH:mm:ss.fff") + "'";
+                }
+                else if (type == UtilConstants.DateTimeOffsetType)
+                {
+                    return FormatDateTimeOffset(value);
                 }
                 else if (type == UtilConstants.ByteArrayType)
                 {
@@ -178,7 +182,48 @@ namespace SqlSugar
                 batchUpdateSql.Replace("${0}", format);
                 batchUpdateSql.Append(";");
             }
+            batchUpdateSql = GetBatchUpdateSql(batchUpdateSql);
             return batchUpdateSql.ToString();
+        }
+
+        private StringBuilder GetBatchUpdateSql(StringBuilder batchUpdateSql)
+        {
+            if (ReSetValueBySqlExpListType == null && ReSetValueBySqlExpList != null)
+            {
+                var result = batchUpdateSql.ToString();
+                foreach (var item in ReSetValueBySqlExpList)
+                {
+                    var dbColumnName = item.Value.DbColumnName;
+                    if (item.Value.Type == ReSetValueBySqlExpListModelType.List)
+                    {
+                        result = result.Replace($"{dbColumnName}=T.{dbColumnName}", $"{dbColumnName}={GetTableNameString}.{dbColumnName}{item.Value.Sql}T.{dbColumnName}");
+                    }
+                    else
+                    {
+                        result = result.Replace($"{dbColumnName}=T.{dbColumnName}", $"{dbColumnName}={item.Value.Sql.Replace(dbColumnName, $"{Builder.GetTranslationColumnName(this.TableName)}.{dbColumnName}")}");
+                    }
+                    batchUpdateSql = new StringBuilder(result);
+                }
+            }
+
+            return batchUpdateSql;
+        }
+        protected override string GetJoinUpdate(string columnsString, ref string whereString)
+        {
+            var formString = $"  {Builder.GetTranslationColumnName(this.TableName)}  AS {Builder.GetTranslationColumnName(this.ShortName)} ";
+            var joinString = "";
+            foreach (var item in this.JoinInfos)
+            {
+                whereString += " AND " + item.JoinWhere;
+                joinString += $"\r\n FROM {Builder.GetTranslationColumnName(item.TableName)}  {Builder.GetTranslationColumnName(item.ShortName)} ";
+            }
+            var tableName = formString + "\r\n ";
+            columnsString = columnsString.Replace(Builder.GetTranslationColumnName(this.ShortName) + ".", "") + joinString;
+            return string.Format(SqlTemplate, tableName, columnsString, whereString);
+        }
+        public override string FormatDateTimeOffset(object value)
+        {
+            return "'" + ((DateTimeOffset)value).ToString("o") + "'";
         }
     }
 }

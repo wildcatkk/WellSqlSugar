@@ -54,6 +54,14 @@ namespace OrmTest
             db.Insertable(new BookA() { BookId = 5, Names = "js", studenId = 4 }).ExecuteCommand();
             db.Insertable(new BookA() { BookId = 6, Names = "北大jack", studenId = 1 }).ExecuteCommand();
 
+            var list1 = db.Queryable<StudentA>()
+                .Includes(it=>it.Books)
+                .Select(it => new StudentADTO() {  Books = it.Books }, true).ToList();
+
+            if (list1.First().Books.Count() == 0 || list1.First().StudentId == 0) 
+            {
+                throw new Exception("unit error");
+            }
             var list2 = db.Queryable<StudentA>()
            .Includes(x => x.SchoolA, x => x.RoomList)//2个参数就是 then Include 
            .Includes(x => x.SchoolA, x => x.TeacherList)//2个参数就是 then Include 
@@ -200,6 +208,11 @@ namespace OrmTest
                 //.Where(it=>it.Child.Any())
                 .ToList();
 
+            var xxx21 = db.QueryableByObject(typeof(Tree1))
+            .Includes("Child", "Child", "Child")
+            .Includes("Parent", "Parent", "Parent")
+            //.Where(it=>it.Child.Any())
+            .ToList();
 
             var xxx2 = db.Queryable<Tree1>()
              .Includes(it => it.Child)
@@ -258,6 +271,8 @@ namespace OrmTest
          .Includes(x => x.Books).ToList();
 
             db.Deleteable<StudentA>().Where(x => x.SchoolA.TeacherList.Any()).ExecuteCommand();
+            db.Updateable<StudentA>()
+                .SetColumns(it=>it.Name==it.Name).Where(x => x.SchoolA.TeacherList.Any()).ExecuteCommand();
             db.Deleteable<StudentA>().Where(x => x.SchoolA.School_Name=="a").ExecuteCommand();
             db.Updateable<StudentA>()
                 .SetColumns(it=>it.Name=="a").Where(x => x.SchoolA.School_Name == "a").ExecuteCommand();
@@ -374,6 +389,15 @@ namespace OrmTest
 
             db.QueryFilter.AddTableFilter<BookA>(it => it.BookId == 1);
             db.Queryable<StudentA>().Includes(it => it.Books.Where(z => z.BookId == 1).ToList()).ToList();
+
+            var data = typeof(StudentA);
+            var list101 = db.QueryableByObject(data).Includes("Books2").ToList();
+            var list102 = db.QueryableByObject(data)
+                .IncludesAllFirstLayer().ToList();
+            var list103 = db.QueryableByObject(data)
+                .IncludesAllFirstLayer("Books2").ToList();
+
+            var list104 = db.QueryableByObject(data).Includes("SchoolA", "RoomList").ToList();
         }
 
         public class UnitView01
@@ -504,6 +528,13 @@ namespace OrmTest
             public int studenId { get; set; }
         }
 
+    }
+
+    public class StudentADTO
+    {
+       public int StudentId { get; set; }
+
+        public List<UCustom012.BookA> Books { get; set; }
     }
 
     internal class DTO

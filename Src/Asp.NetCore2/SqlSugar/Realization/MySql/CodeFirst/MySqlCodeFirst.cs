@@ -115,9 +115,30 @@ namespace SqlSugar
                 else
                 {
                     result.DataType = this.Context.Ado.DbBind.GetDbTypeName(name);
+                    if (name == "Guid" && result.DataType == "varchar"&&result.Length<=1) 
+                    {
+                        result.Length = 36;
+                    }
                 }
             }
         }
 
+
+        protected override bool IsNoSamgeType(EntityColumnInfo ec, DbColumnInfo dc)
+        {
+            if (ec.UnderType==UtilConstants.BoolType && dc.DataType == "tinyint" && dc.Length == 1)
+            {
+                return false;
+            }
+            else if (ec.UnderType == UtilConstants.DobType && dc.DataType== "double")
+            {
+                return false;
+            }
+            else if (ec.UnderType == UtilConstants.DateType && dc.DataType?.StartsWith("datetime")==true)
+            {
+                return false;
+            }
+            return base.IsNoSamgeType(ec, dc);
+        }
     }
 }

@@ -210,6 +210,42 @@ namespace OrmTest
             {
                 throw new Exception("unit error");
             }
+
+            var listxxx = db.Queryable<SchoolA>()
+             .Includes(it => it.RoomList)
+            //.LeftJoin<StudentA>((x, y) => (x.SchoolId == y.SchoolId))
+            //.LeftJoin<BookA>((x, y, z) => y.SchoolId == y.SchoolId)
+            .Select(x => new SchoolA()
+            {
+                SchoolId = x.SchoolId,
+
+                RoomList = x.RoomList
+            }, true)
+            .MergeTable().Clone().ToList();
+            if (!listxxx.First().RoomList.Any()) 
+            {
+                throw new Exception("unit error");
+            }
+            var listxxxx = db.Queryable<SchoolA>()
+           .Includes(it => it.RoomList)
+           .LeftJoin<StudentA>((x, y) => (x.SchoolId == y.SchoolId))
+          //.LeftJoin<BookA>((x, y, z) => y.SchoolId == y.SchoolId)
+          .Select(x => new SchoolA()
+          {
+              SchoolId = 1,
+              SchoolName=x.SchoolName,
+              RoomList = x.RoomList
+          }).ToList();
+          if (!listxxxx.First().RoomList.Any())
+          {
+                throw new Exception("unit error");
+          }
+            var listxxxx2 = db.Queryable<SchoolA>()
+        .Includes(it => it.RoomList)
+        .LeftJoin<StudentA>((x, y) => (x.SchoolId == y.SchoolId))
+       //.LeftJoin<BookA>((x, y, z) => y.SchoolId == y.SchoolId)
+       .Sum(x=>x.SchoolId);
+
         }
 
         public class UnitView01 

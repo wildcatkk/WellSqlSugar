@@ -27,7 +27,7 @@ namespace SqlSugar
                                     TABLE_NAME as TableName, 
                                     column_name AS DbColumnName,
                                     CASE WHEN  left(COLUMN_TYPE,LOCATE('(',COLUMN_TYPE)-1)='' THEN COLUMN_TYPE ELSE  left(COLUMN_TYPE,LOCATE('(',COLUMN_TYPE)-1) END   AS DataType,
-                                    CAST(SUBSTRING(COLUMN_TYPE,LOCATE('(',COLUMN_TYPE)+1,LOCATE(')',COLUMN_TYPE)-LOCATE('(',COLUMN_TYPE)-1) AS signed) AS Length,
+                                    CAST(SUBSTRING(COLUMN_TYPE,LOCATE('(',COLUMN_TYPE)+1,LOCATE(')',COLUMN_TYPE)-LOCATE('(',COLUMN_TYPE)-1) AS  decimal(18,0) ) AS Length,
                                     column_default  AS  `DefaultValue`,
                                     column_comment  AS  `ColumnDescription`,
                                     CASE WHEN COLUMN_KEY = 'PRI'
@@ -587,10 +587,8 @@ namespace SqlSugar
             }
             if (defaultValue.ToLower().IsIn("null","now()", "current_timestamp") || defaultValue.ToLower().Contains("current_timestamp")|| defaultValue.Contains("()"))
             {
-                string template = "ALTER table {0} CHANGE COLUMN {1} {1} {3} {4} default {2} COMMENT '{5}'";
-                var dbColumnInfo = this.Context.DbMaintenance.GetColumnInfosByTableName(tableName,false).First(it => it.DbColumnName.Equals(columnName, StringComparison.CurrentCultureIgnoreCase));
-                var value = Regex.Match(defaultValue, @"\(\d\)$").Value;
-                string sql = string.Format(template, tableName, columnName, defaultValue, dbColumnInfo.DataType + value, dbColumnInfo.IsNullable ? " NULL " : " NOT NULL ", dbColumnInfo.ColumnDescription);
+                defaultValue = "("+defaultValue + ")";
+                string sql = string.Format(AddDefaultValueSql.Replace("'", ""), tableName, columnName, defaultValue);
                 this.Context.Ado.ExecuteCommand(sql);
                 return true;
             }

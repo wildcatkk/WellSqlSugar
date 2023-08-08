@@ -23,6 +23,11 @@ namespace SqlSugar
         ClickHouse,
         GBase,
         Odbc,
+        OceanBaseForOracle,
+        TDengine,
+        GaussDB,
+        OceanBase,
+        Tidb,
         Custom =900
     }
 }

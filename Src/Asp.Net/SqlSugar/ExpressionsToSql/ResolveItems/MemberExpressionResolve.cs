@@ -47,6 +47,11 @@ namespace SqlSugar
             {
                 ResolveCallValue(parameter, baseParameter, expression, isLeft, isSetTempData, isSingle);
             }
+            else if (isValue & IsNavValue(expression)) 
+            {
+                expression = expression.Expression as MemberExpression;
+                ResolveMemberValue(parameter, baseParameter, expression, isLeft, isSetTempData);
+            }
             else if (isValue)
             {
                 ResolveValue(parameter, baseParameter, expression, isLeft, isSetTempData, isSingle);
@@ -77,7 +82,15 @@ namespace SqlSugar
             }
         }
 
+
+
         #region Navigate
+        private static bool IsNavValue(MemberExpression expression)
+        {
+            var isDateMember = expression.Type == UtilConstants.DateType && expression.Expression is MemberExpression;
+            return isDateMember && 
+                (expression.Expression as MemberExpression)?.Expression is MemberExpression;
+        }
         private void DefaultOneToOneN(ExpressionParameter parameter, ExpressionParameter baseParameter, bool? isLeft, bool isSetTempData, OneToOneNavgateExpressionN navN)
         {
             var value = navN.GetMemberSql();
@@ -504,7 +517,14 @@ namespace SqlSugar
             var isConst = parameter.CommonTempData.GetType() == UtilConstants.DateType;
             if (isConst)
             {
-                AppendValue(parameter, isLeft, parameter.CommonTempData.ObjToDate().Date);
+                if (this.Context?.Case?.IsDateString==true)
+                {
+                    AppendMember(parameter, isLeft, GetToDateShort("'" + parameter.CommonTempData.ObjToDate().Date.ToString("yyyy-MM-dd") + "'"));
+                }
+                else
+                {
+                    AppendValue(parameter, isLeft, parameter.CommonTempData.ObjToDate().Date);
+                }
             }
             else
             {
@@ -605,6 +625,20 @@ namespace SqlSugar
 
         private void ResolveLength(ExpressionParameter parameter, bool? isLeft, MemberExpression expression)
         {
+             var ps=ExpressionTool.GetParameters(expression);
+            if (expression.Expression!=null&&ps.Count == 0)
+            {
+                var p = base.AppendParameter(ExpressionTool.DynamicInvoke(expression.Expression));
+                var methodParamter2 = new MethodCallExpressionArgs() { IsMember =true, MemberName =p, MemberValue = null };
+                var result2 = this.Context.DbMehtods.Length(new MethodCallExpressionModel()
+                {
+                    Args = new List<MethodCallExpressionArgs>() {
+                      methodParamter2
+                  }
+                });
+                base.AppendMember(parameter, isLeft, result2);
+                return;
+            }
             if (parameter.Context.ResolveType == ResolveExpressType.FieldSingle)
             {
                 parameter.Context.ResolveType = ResolveExpressType.WhereSingle;
@@ -638,6 +672,16 @@ namespace SqlSugar
 
         private static bool IsDateDiff(MemberExpression expression)
         {
+            if (expression.Expression != null &&
+                expression.Expression is BinaryExpression)
+            {
+                var binExp = (expression.Expression as BinaryExpression);
+                var nodeType= binExp.NodeType;
+                if (nodeType == ExpressionType.Subtract&& binExp.Left.Type==UtilConstants.DateType && binExp.Right.Type == UtilConstants.DateType) 
+                {
+                    return true;
+                }
+            }
             return
                 expression.Expression!=null&&
                 expression.Expression is BinaryExpression &&

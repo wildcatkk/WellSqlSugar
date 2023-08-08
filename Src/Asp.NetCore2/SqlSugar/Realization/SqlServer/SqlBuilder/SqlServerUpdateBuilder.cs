@@ -42,7 +42,7 @@ namespace SqlSugar
                     {
                         updateTable.Append(SqlTemplateBatchUnion);
                     }
-                    updateTable.Append("\r\n SELECT " + string.Join(",", columns.Select(it => string.Format(base.SqlTemplateBatchSelect,base.GetDbColumn(it,GetValue(it)), Builder.GetTranslationColumnName(it.DbColumnName)))));
+                    updateTable.Append("\r\n SELECT " + string.Join(",", columns.Select(it => string.Format(base.SqlTemplateBatchSelect, base.GetDbColumn(it, GetValue(it)), Builder.GetTranslationColumnName(it.DbColumnName)))));
                     ++i;
                 }
                 pageIndex++;
@@ -68,7 +68,31 @@ namespace SqlSugar
                 }
                 batchUpdateSql.AppendFormat(SqlTemplateJoin, updateTable, whereString);
             }
+            batchUpdateSql = GetBatchUpdateSql(batchUpdateSql);
             return batchUpdateSql.ToString();
+        }
+
+        private StringBuilder GetBatchUpdateSql(StringBuilder batchUpdateSql)
+        {
+            if (ReSetValueBySqlExpListType == null && ReSetValueBySqlExpList != null)
+            {
+                var result = batchUpdateSql.ToString();
+                foreach (var item in ReSetValueBySqlExpList)
+                {
+                    var dbColumnName = item.Value.DbColumnName;
+                    if (item.Value.Type==ReSetValueBySqlExpListModelType.List)
+                    { 
+                        result = result.Replace($"T.{dbColumnName}", $" S.{dbColumnName}{item.Value.Sql}T.{dbColumnName}");
+                    }
+                    else
+                    {
+                        result = result.Replace($"T.{dbColumnName}", item.Value.Sql.Replace(dbColumnName, "S." + dbColumnName));
+                    }
+                    batchUpdateSql = new StringBuilder(result);
+                }
+            }
+
+            return batchUpdateSql;
         }
 
         private object GetValue(DbColumnInfo it)

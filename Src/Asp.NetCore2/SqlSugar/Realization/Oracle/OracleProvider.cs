@@ -13,42 +13,42 @@ namespace SqlSugar
     {
         public OracleProvider()
         {
-            this.FormatSql = sql =>
-            {
-                sql = sql.Replace("+@", "+:");
-                if (sql.HasValue()&&sql.Contains("@")) {
-                    var exceptionalCaseInfo = Regex.Matches(sql, @"\'[^\=]*?\@.*?\'|[\.,\w]+\@[\.,\w]+ | [\.,\w]+\@[\.,\w]+|[\.,\w]+\@[\.,\w]+ |\d+\@\d|\@\@|\w{1,25}\.""\w{1,25}""\@\w{1,25}");
-                    if (exceptionalCaseInfo != null) {
-                        foreach (var item in exceptionalCaseInfo.Cast<Match>())
-                        {
-                            if (item.Value != null && item.Value.IndexOf(",") == 1&&Regex.IsMatch(item.Value, @"^ \,\@\w+$")) 
-                            {
-                                continue;
-                            }
-                            else if (item.Value != null &&Regex.IsMatch(item.Value.Trim(), @"^\w+\,\@\w+\,$"))
-                            {
-                                continue;
-                            }
-                            else if (item.Value != null &&  item.Value.ObjToString().Contains("||") && Regex.IsMatch(item.Value.Replace(" ","").Trim(), @"\|\|@\w+\|\|"))
-                            {
-                                continue;
-                            }
-                            else if (item.Value != null&& Regex.IsMatch(item.Value.Replace(" ", "").Trim(), @"\(\@\w+\,"))
-                            {
-                                continue;
-                            }
-                            else if (item.Value != null &&item.Value.Contains("=")&& Regex.IsMatch(item.Value, @"\w+ \@\w+[ ]{0,1}\=[ ]{0,1}\'"))
-                            {
-                                continue;
-                            }
-                            sql = sql.Replace(item.Value, item.Value.Replace("@", UtilConstants.ReplaceKey));
-                        }
-                    }
-                    sql = sql .Replace("@",":");
-                    sql = sql.Replace(UtilConstants.ReplaceKey, "@");
-                }
-                return sql;
-            };
+            //this.FormatSql = sql =>
+            //{
+            //    sql = sql.Replace("+@", "+:");
+            //    if (sql.HasValue()&&sql.Contains("@")) {
+            //        var exceptionalCaseInfo = Regex.Matches(sql, @"\'[^\=]*?\@.*?\'|[\.,\w]+\@[\.,\w]+ | [\.,\w]+\@[\.,\w]+|[\.,\w]+\@[\.,\w]+ |\d+\@\d|\@\@|\w{1,25}\.""\w{1,25}""\@\w{1,25}");
+            //        if (exceptionalCaseInfo != null) {
+            //            foreach (var item in exceptionalCaseInfo.Cast<Match>())
+            //            {
+            //                if (item.Value != null && item.Value.IndexOf(",") == 1&&Regex.IsMatch(item.Value, @"^ \,\@\w+$")) 
+            //                {
+            //                    continue;
+            //                }
+            //                else if (item.Value != null &&Regex.IsMatch(item.Value.Trim(), @"^\w+\,\@\w+\,$"))
+            //                {
+            //                    continue;
+            //                }
+            //                else if (item.Value != null &&  item.Value.ObjToString().Contains("||") && Regex.IsMatch(item.Value.Replace(" ","").Trim(), @"\|\|@\w+\|\|"))
+            //                {
+            //                    continue;
+            //                }
+            //                else if (item.Value != null&& Regex.IsMatch(item.Value.Replace(" ", "").Trim(), @"\(\@\w+\,"))
+            //                {
+            //                    continue;
+            //                }
+            //                else if (item.Value != null &&item.Value.Contains("=")&& Regex.IsMatch(item.Value, @"\w+ \@\w+[ ]{0,1}\=[ ]{0,1}\'"))
+            //                {
+            //                    continue;
+            //                }
+            //                sql = sql.Replace(item.Value, item.Value.Replace("@", UtilConstants.ReplaceKey));
+            //            }
+            //        }
+            //        sql = sql .Replace("@",":");
+            //        sql = sql.Replace(UtilConstants.ReplaceKey, "@");
+            //    }
+            //    return sql;
+            //};
         }
         public override string SqlParameterKeyWord
         {
@@ -121,22 +121,24 @@ namespace SqlSugar
             CheckConnection();
             return sqlCommand;
         }
-        private static string[] KeyWord = new string[] { "@order", ":order", "@user", "@level", ":user", ":level", ":type", "@type" };
+        private static string[] KeyWord = new string[] { ":index","@index","@order", ":order", "@user", "@level", ":user", ":level", ":type", "@type" };
         private static string ReplaceKeyWordParameterName(string sql, SugarParameter[] parameters)
         {
+            sql = ReplaceKeyWordWithAd(sql, parameters);
             if (parameters.HasValue())
             {
-                foreach (var Parameter in parameters)
+                foreach (var Parameter in parameters.OrderByDescending(x=>x.ParameterName?.Length))
                 {
-                    if (Parameter.ParameterName != null && Parameter.ParameterName.ToLower().IsIn(KeyWord))
+                    if (Parameter.ParameterName != null && Parameter.ParameterName.ToLower().IsContainsStartWithIn(KeyWord))
                     {
                         if (parameters.Count(it => it.ParameterName.StartsWith(Parameter.ParameterName)) == 1)
                         {
                             var newName = Parameter.ParameterName + "_01";
-                            sql = sql.Replace(Parameter.ParameterName, newName);
+                            newName = newName.Insert(1, "KW");
+                            sql = Regex.Replace(sql, Parameter.ParameterName, newName, RegexOptions.IgnoreCase);
                             Parameter.ParameterName = newName;
                         }
-                        else
+                        else if(Parameter.ParameterName.ToLower().IsContainsIn(KeyWord))
                         {
                             Check.ExceptionEasy($" {Parameter.ParameterName} is key word", $"{Parameter.ParameterName}是关键词");
                         }
@@ -146,12 +148,34 @@ namespace SqlSugar
 
             return sql;
         }
-        public override Action<SqlSugarException> ErrorEvent => it => {
 
+        private static string ReplaceKeyWordWithAd(string sql, SugarParameter[] parameters)
+        {
+            if (parameters != null && sql != null&&sql.Contains("@"))
+            {
+                foreach (var item in parameters.OrderByDescending(it => it.ParameterName.Length))
+                {
+                    if (item.ParameterName.StartsWith("@")) 
+                    {
+                        item.ParameterName = ":"+item.ParameterName.TrimStart('@');
+                    }
+                    sql = Regex.Replace(sql,"@" + item.ParameterName.TrimStart(':'),item.ParameterName,RegexOptions.IgnoreCase);
+                }
+            }
+
+            return sql;
+        }
+
+        public override Action<SqlSugarException> ErrorEvent => it =>
+        {
+            if (base.ErrorEvent != null)
+            {
+                base.ErrorEvent(it);
+            }
             if (it.Message != null && it.Message.Contains("无效的主机/绑定变量名"))
             {
                 Check.ExceptionEasy(it.Message, $"错误：{it.Message}，出现这个错的原因： 1.可能是参数名为关键词（例如 @user ）2. SQL错误。");
-            }
+            } 
         };
         public override void SetCommandToAdapter(IDataAdapter dataAdapter, DbCommand command)
         {
@@ -194,6 +218,11 @@ namespace SqlSugar
                 if (parameter.IsClob)
                 {
                     sqlParameter.OracleDbType = OracleDbType.Clob;
+                    sqlParameter.Value = parameter.Value;
+                }
+                if (parameter.IsNClob)
+                {
+                    sqlParameter.OracleDbType = OracleDbType.NClob;
                     sqlParameter.Value = parameter.Value;
                 }
                 if (parameter.IsArray)
@@ -264,7 +293,7 @@ namespace SqlSugar
                 if (isVarchar && sqlParameter.DbType == System.Data.DbType.String)
                 {
                     sqlParameter.DbType = System.Data.DbType.AnsiString;
-                }
+                } 
                 ++index;
             }
             return result;
