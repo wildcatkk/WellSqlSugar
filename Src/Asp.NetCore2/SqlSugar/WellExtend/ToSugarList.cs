@@ -17,9 +17,7 @@ namespace SqlSugar
         public async Task<List<T>> ToSugarListAsync()
         {
             InitMapping();
-            var list = await _ToListAsync<T>();
-
-            return AttributeProvider.Process(Context, list);
+            return await _ToListAsync<T>();
         }
 
     }

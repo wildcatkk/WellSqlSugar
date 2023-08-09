@@ -88,9 +88,10 @@ namespace SqlSugar
             propValue = default;
             bool re = false;
 
+            propName = propName.Trim().ToLower();
             foreach (KeyValuePair<string, object> prop in obj)
             {
-                if (prop.Key == propName)
+                if (prop.Key.Trim().ToLower() == propName)
                 {
                     if (prop.Value is T)
                     {
