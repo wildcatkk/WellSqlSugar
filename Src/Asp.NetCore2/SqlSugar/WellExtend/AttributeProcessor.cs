@@ -253,7 +253,8 @@ namespace SqlSugar
                         if (info.ForeignValue.IsId)
                         {
                             string idStr = propValue.ToString();
-                            if (string.IsNullOrEmpty(idStr) || Convert.ToInt64(idStr) <= 0) continue;
+                            
+                            if (string.IsNullOrEmpty(idStr) || !long.TryParse(idStr, out var id) || id <= 0) continue;
                         }
 
                         propValues.Add(new SingleKey(info.ForeignValue.TableColumn, propValue));
@@ -538,7 +539,7 @@ namespace SqlSugar
                             //对于Id，需要做额外的判断
                             if (info.ForeignListValue.IsId)
                             {
-                                if (Convert.ToInt64(propValue) <= 0) continue;
+                                if (!long.TryParse(propValue, out var id) || id <= 0) continue;
                             }
 
                             propValues.Add(new SingleKey(info.ForeignListValue.TableColumn, propValue));
