@@ -400,24 +400,25 @@ namespace SqlSugar
                         condiModels.Add(WhereType.And, info.SubForeignValue.TableColumn, propValue);
 
                         tableInfo.ConditionalModels.Add(SugarConditional.CreateWhere(condiModels));
-
-                        // 组装复合Select条件
-                        if (!fieldNames.Contains(info.SubForeignValue.ParentColumn))
-                        {
-                            fieldNames.Add(info.SubForeignValue.ParentColumn);
-                            tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.SubForeignValue.ParentColumn, AsName = info.SubForeignValue.ParentColumn });
-                        }
-                        if (!fieldNames.Contains(info.SubForeignValue.TableColumn))
-                        {
-                            fieldNames.Add(info.SubForeignValue.TableColumn);
-                            tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.SubForeignValue.TableColumn, AsName = info.SubForeignValue.TableColumn });
-                        }
-                        if (!fieldNames.Contains(info.SubForeignValue.TargetColumn))
-                        {
-                            fieldNames.Add(info.SubForeignValue.TargetColumn);
-                            tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.SubForeignValue.TargetColumn, AsName = info.SubForeignValue.TargetColumn });
-                        }
                     }
+
+                    // 组装复合Select条件
+                    if (!fieldNames.Contains(info.SubForeignValue.ParentColumn))
+                    {
+                        fieldNames.Add(info.SubForeignValue.ParentColumn);
+                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.SubForeignValue.ParentColumn, AsName = info.SubForeignValue.ParentColumn });
+                    }
+                    if (!fieldNames.Contains(info.SubForeignValue.TableColumn))
+                    {
+                        fieldNames.Add(info.SubForeignValue.TableColumn);
+                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.SubForeignValue.TableColumn, AsName = info.SubForeignValue.TableColumn });
+                    }
+                    if (!fieldNames.Contains(info.SubForeignValue.TargetColumn))
+                    {
+                        fieldNames.Add(info.SubForeignValue.TargetColumn);
+                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.SubForeignValue.TargetColumn, AsName = info.SubForeignValue.TargetColumn });
+                    }
+
                 }
             }
 
