@@ -126,6 +126,15 @@ namespace SqlSugar
             Dictionary<object, string> enumCache = new Dictionary<object, string>();
             foreach (var info in enumInfoes)
             {
+                Type enumType = info.KeyPropInfo.PropertyType;
+                if (info.KeyPropInfo.PropertyType.IsGenericType)
+                {
+                    if (info.KeyPropInfo.PropertyType.GenericTypeArguments.Length > 0)
+                    {
+                        enumType = info.KeyPropInfo.PropertyType.GenericTypeArguments[0];
+                    }
+                }
+
                 foreach (var t in list)
                 {
                     var enumValue = info.KeyPropInfo.GetValue(t);
@@ -141,14 +150,15 @@ namespace SqlSugar
                     else
                     {
                         //先尝试获取Description
-                        if (info.KeyPropInfo.PropertyType.GetField(enumValue.ToString()).TryGetAtrribute(out DescriptionAttribute descrip)
-                            && !string.IsNullOrWhiteSpace(descrip.Description))
+                        DescriptionAttribute descrip = null;
+                        if (enumType.GetField(enumValue.ToString())?.TryGetAtrribute(out descrip) ?? false
+                            && !string.IsNullOrWhiteSpace(descrip?.Description))
                         {
                             enumStr = descrip.Description;
                         }
                         else
                         {
-                            enumStr = Enum.GetName(info.KeyPropInfo.PropertyType, enumValue) ?? "";
+                            enumStr = Enum.GetName(enumType, enumValue) ?? "";
                         }
 
                         enumCache.Add(enumValue, enumStr);
@@ -198,12 +208,18 @@ namespace SqlSugar
                     var infoValue = item.KeyPropInfo.GetValue(t);
                     if (infoValue is null) continue;
 
+                    string infoValueStr;
+                    if (infoValue is Enum)
+                        infoValueStr = ((int)infoValue).ToString();
+                    else
+                        infoValueStr = infoValue.ToString();
+
                     dynamic firstObj = null;
                     foreach (var data in dataSet)
                     {
                         if (DynamicExtensions.TryGetDynamicValue(data, item.ForeignValue.TableColumn, out object columnValue)
                             && columnValue != null
-                            && columnValue.ToString() == infoValue.ToString()
+                            && columnValue.ToString() == infoValueStr
                          )
                         {
                             firstObj = data;
@@ -263,18 +279,24 @@ namespace SqlSugar
                         //对于非bool类型条件，可以将多个Or合并为一个In
                         if (info.KeyPropInfo.PropertyType != typeof(bool))
                         {
+                            string propValueStr;
+                            if (propValue is Enum)
+                                propValueStr = ((int)propValue).ToString();
+                            else
+                                propValueStr = propValue.ToString();
+
                             ConditionMerge merge = merges.FirstOrDefault(p => p.Column == info.ForeignValue.TableColumn);
                             if (merge != null)
                             {
                                 //二次匹配，表示有多个，从Equal=>In
                                 string columnValue = merge.Value;
 
-                                merge.Value += "," + propValue.ToString();
+                                merge.Value += "," + propValueStr;
                                 merge.CondiType = ConditionalType.In;
                             }
                             else
                             {
-                                merges.Add(new ConditionMerge(ConditionalType.Equal, info.ForeignValue.TableColumn, propValue.ToString()));
+                                merges.Add(new ConditionMerge(ConditionalType.Equal, info.ForeignValue.TableColumn, propValueStr));
                             }
                         }
                         else
@@ -344,13 +366,19 @@ namespace SqlSugar
                     var infoValue = info.KeyPropInfo.GetValue(t);
                     if (infoValue is null) continue;
 
+                    string infoValueStr;
+                    if (infoValue is Enum)
+                        infoValueStr = ((int)infoValue).ToString();
+                    else
+                        infoValueStr = infoValue.ToString();
+
                     dynamic firstObj = null;
                     foreach (var data in dataSet)
                     {
                         //比较复合主键以查找返回的数据，这里仅匹配第一个
                         if (DynamicExtensions.TryGetDynamicValue(data, info.SubForeignValue.TableColumn, out object columnValue)
                             && columnValue != null
-                            && columnValue.ToString() == infoValue.ToString()
+                            && columnValue.ToString() == infoValueStr
                          )
                         {
                             if (DynamicExtensions.TryGetDynamicValue(data, info.SubForeignValue.ParentColumn, out object parentValue)
@@ -394,10 +422,16 @@ namespace SqlSugar
 
                         propValues.Add(new DoubleKey(info.SubForeignValue.ParentColumn, info.SubForeignValue.ParentKey, info.SubForeignValue.TableColumn, propValue));
 
+                        string propValueStr;
+                        if (propValue is Enum)
+                            propValueStr = ((int)propValue).ToString();
+                        else
+                            propValueStr = propValue.ToString();
+
                         // 组装复合查询条件
                         var condiModels = new List<KeyValuePair<WhereType, ConditionalModel>>();
                         condiModels.Add(WhereType.Or, info.SubForeignValue.ParentColumn, info.SubForeignValue.ParentKey);
-                        condiModels.Add(WhereType.And, info.SubForeignValue.TableColumn, propValue);
+                        condiModels.Add(WhereType.And, info.SubForeignValue.TableColumn, propValueStr);
 
                         tableInfo.ConditionalModels.Add(SugarConditional.CreateWhere(condiModels));
                     }
