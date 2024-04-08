@@ -1,4 +1,4 @@
-set version=1.0.7
+set version=1.0.8
 
 dotnet build "../../SqlSugar.csproj" -p:PackageVersion=%version%
 
