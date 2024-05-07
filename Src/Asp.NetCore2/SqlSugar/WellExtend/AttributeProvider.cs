@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Dynamic;
@@ -13,14 +14,48 @@ namespace SqlSugar
     /// </summary>
     public class AttributeProvider
     {
+
+        public static T Process<T>(ISqlSugarClient db, T obj)
+        {
+            Process(db, new List<T> { obj }, typeof(T));
+
+            return obj;
+        }
+
+        public static object Process(ISqlSugarClient db, object obj)
+        {
+            if (obj is IEnumerable)
+                throw new Exception("类型异常，函数AttributeProvider.Process(ISqlSugarClient db, object obj)，参数obj不支持IEnumerable类型。");
+
+            Process(db, new List<object> { obj }, obj.GetType());
+
+            return obj;
+        }
+
+        public static object Process(ISqlSugarClient db, object obj, Type objType)
+        {
+            if (obj is IEnumerable)
+                throw new Exception("类型异常，函数AttributeProvider.Process(ISqlSugarClient db, object obj, Type objType)，参数obj不支持IEnumerable类型。");
+
+            Process(db, new List<object> { obj }, objType);
+
+            return obj;
+        }
+
         public static List<T> Process<T>(ISqlSugarClient db, List<T> list)
+        {
+            Process(db, list, typeof(T));
+
+            return list;
+        }
+
+        public static ICollection Process(ISqlSugarClient db, ICollection list, Type type)
         {
             if (list is null || list.Count == 0)
             {
                 return list;
             }
 
-            Type type = typeof(T);
             //if (!type.IsDefined(typeof(SugarTable)))
             //{
             //    return list;
@@ -103,25 +138,25 @@ namespace SqlSugar
             // 3、[ForeignValue] 处理
             if (foreignInfoes.Count > 0)
             {
-                ForeignValueProcess(db, list, type, foreignInfoes);
+                ForeignValueProcess(db, list,foreignInfoes);
             }
 
             // 4、[SubForeignValue] 处理
             if (subForeignInfoes.Count > 0)
             {
-                SubForeignValueProcess(db, list, type, subForeignInfoes);
+                SubForeignValueProcess(db, list, subForeignInfoes);
             }
 
             // 5、[ForeignListValue] 处理
             if (foreignListInfoes.Count > 0)
             {
-                ForeignListValueProcess(db, list, type, foreignListInfoes);
+                ForeignListValueProcess(db, list, foreignListInfoes);
             }
 
             return list;
         }
 
-        private static void EnumNameProcess<T>(List<T> list, List<EnumNameInfo> enumInfoes)
+        private static void EnumNameProcess(ICollection list, List<EnumNameInfo> enumInfoes)
         {
             Dictionary<object, string> enumCache = new Dictionary<object, string>();
             foreach (var info in enumInfoes)
@@ -171,7 +206,7 @@ namespace SqlSugar
             }
         }
 
-        private static void ForeignValueProcess<T>(ISqlSugarClient db, List<T> list, Type type, List<ForeignValueInfo> foreignInfoes)
+        private static void ForeignValueProcess(ISqlSugarClient db, ICollection list, List<ForeignValueInfo> foreignInfoes)
         {
             // 获取所有表名
             var tableNames = new List<string>();
@@ -187,7 +222,7 @@ namespace SqlSugar
             foreach (var tableName in tableNames)
             {
                 //根据数据集组装id条件
-                var tableInfo = GetForeignCondModel(list, type, tableName, foreignInfoes);
+                var tableInfo = GetForeignCondModel(list, tableName, foreignInfoes);
 
                 //查询数据库获取结果
                 tableInfo.TableList = db.Queryable<dynamic>().AS(tableName).Where(tableInfo.ConditionalModels).Select(tableInfo.SelectModels).ToSugarList();
@@ -245,7 +280,7 @@ namespace SqlSugar
         /// <param name="tableInfo"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        private static EntityTableInfo GetForeignCondModel<T>(List<T> list, Type type, string tableName, List<ForeignValueInfo> foreignInfoes)
+        private static EntityTableInfo GetForeignCondModel(ICollection list, string tableName, List<ForeignValueInfo> foreignInfoes)
         {
             EntityTableInfo tableInfo = new EntityTableInfo(tableName);
 
@@ -329,7 +364,7 @@ namespace SqlSugar
             return tableInfo;
         }
 
-        private static void SubForeignValueProcess<T>(ISqlSugarClient db, List<T> list, Type type, List<SubForeignValueInfo> subForeignInfoes)
+        private static void SubForeignValueProcess(ISqlSugarClient db, ICollection list, List<SubForeignValueInfo> subForeignInfoes)
         {
             // 获取所有表名
             var tableNames = new List<string>();
@@ -345,7 +380,7 @@ namespace SqlSugar
             foreach (var tableName in tableNames)
             {
                 //根据数据集组装id条件
-                var tableInfo = GetSubForeignCondModel(list, type, tableName, subForeignInfoes);
+                var tableInfo = GetSubForeignCondModel(list, tableName, subForeignInfoes);
 
                 //查询数据库获取结果
                 tableInfo.TableList = db.Queryable<dynamic>().AS(tableName).Where(tableInfo.ConditionalModels).Select(tableInfo.SelectModels).ToSugarList();
@@ -403,7 +438,7 @@ namespace SqlSugar
             }
         }
 
-        private static EntityTableInfo GetSubForeignCondModel<T>(List<T> list, Type type, string tableName, List<SubForeignValueInfo> subForeignInfoes)
+        private static EntityTableInfo GetSubForeignCondModel(ICollection list, string tableName, List<SubForeignValueInfo> subForeignInfoes)
         {
             EntityTableInfo tableInfo = new EntityTableInfo(tableName);
 
@@ -459,7 +494,7 @@ namespace SqlSugar
             return tableInfo;
         }
 
-        private static void ForeignListValueProcess<T>(ISqlSugarClient db, List<T> list, Type type, List<ForeignListValueInfo> foreignInfoes)
+        private static void ForeignListValueProcess(ISqlSugarClient db, ICollection list, List<ForeignListValueInfo> foreignInfoes)
         {
             // 获取所有表名
             var tableNames = new List<string>();
@@ -475,7 +510,7 @@ namespace SqlSugar
             foreach (var tableName in tableNames)
             {
                 //根据数据集组装id条件
-                var tableInfo = GetForeignListCondModel(list, type, tableName, foreignInfoes);
+                var tableInfo = GetForeignListCondModel(list, tableName, foreignInfoes);
 
                 //查询数据库获取结果
                 tableInfo.TableList = db.Queryable<dynamic>().AS(tableName).Where(tableInfo.ConditionalModels).Select(tableInfo.SelectModels).ToSugarList();
@@ -540,7 +575,7 @@ namespace SqlSugar
             }
         }
 
-        private static EntityTableInfo GetForeignListCondModel<T>(List<T> list, Type type, string tableName, List<ForeignListValueInfo> foreignInfoes)
+        private static EntityTableInfo GetForeignListCondModel(ICollection list, string tableName, List<ForeignListValueInfo> foreignInfoes)
         {
             EntityTableInfo tableInfo = new EntityTableInfo(tableName);
 
