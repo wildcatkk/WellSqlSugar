@@ -31,6 +31,11 @@ namespace SqlSugar
             }
             return result;
         }
+        public override string JsonField(MethodCallExpressionModel model)
+        {
+            model.Parameters.RemoveAll(item=>item.ParameterName== model.Args[1].MemberName+"");
+            return " json_extract("+ model.Args[0].MemberName + ",'$." + model.Args[1].MemberValue + "') ";
+        }
         public override string GetStringJoinSelector(string result, string separator)
         {
             return $"group_concat({result},'{separator}') ";
@@ -212,7 +217,7 @@ namespace SqlSugar
                     Check.ThrowNotSupportedException(typeName);
                     break;
             }
-            return string.Format(" CAST(STRFTIME('{1}', DATETIME(DATETIME({0}), 'LOCALTIME')) AS INTEGER)", parameter.MemberName, parameter2);
+            return string.Format(" CAST(STRFTIME('{1}',  DATETIME({0}) ) AS INTEGER)", parameter.MemberName, parameter2);
         }
 
         public override string DateIsSameDay(MethodCallExpressionModel model)
@@ -318,6 +323,11 @@ namespace SqlSugar
             var parameterNameA = mode.Args[0].MemberName;
             var parameterNameB = mode.Args[1].MemberName;
             return $" SUBSTR({parameterNameA}, -2, {parameterNameB})  ";
+        }
+
+        public override string NewUid(MethodCallExpressionModel mode)
+        {
+            return " substr(upper(hex(randomblob(4))), 1, 8) || '-' ||\r\n    substr(upper(hex(randomblob(2))), 1, 4) || '-' ||\r\n    '4' || substr(upper(hex(randomblob(2))), 2, 3) || '-' ||\r\n    substr('89ab', 1 + (abs(random()) % 4), 1) || substr(upper(hex(randomblob(2))), 2, 3) || '-' ||\r\n    substr(upper(hex(randomblob(6))), 1, 12) ";
         }
     }
 }

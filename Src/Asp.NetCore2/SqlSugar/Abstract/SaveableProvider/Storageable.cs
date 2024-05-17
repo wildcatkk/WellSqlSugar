@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SqlSugar
@@ -83,12 +85,48 @@ namespace SqlSugar
             this.lockType = dbLockType;
             return this;
         }
+        public IStorageable<T> TranLock(DbLockType? LockType)
+        {
+            if (LockType!=null)
+            {
+                this.lockType = LockType;
+                return this;
+            }
+            else
+            {
+                return this;
+            }
+        }
         public IStorageable<T> SplitOther(Func<StorageableInfo<T>, bool> conditions, string message = null)
         {
             whereFuncs.Add(new KeyValuePair<StorageType, Func<StorageableInfo<T>, bool>, string>(StorageType.Other, conditions, message));
             return this;
         }
-
+        public StorageablePage<T> PageSize(int PageSize,Action<int> ActionCallBack=null) 
+        {
+            if (PageSize > 10000) 
+            {
+                Check.ExceptionEasy("Advanced save page Settings should not exceed 10,000, and the reasonable number of pages is about 2000", "高级保存分页设置不要超过1万，合理分页数在2000左右");
+            }
+            StorageablePage<T> page = new StorageablePage<T>();
+            page.Context = this.Context;
+            page.PageSize = PageSize;
+            page.Data = this.allDatas.Select(it => it.Item).ToList();
+            page.ActionCallBack = ActionCallBack;
+            page.TableName = this.asname;
+            page.whereExpression = this.whereExpression;
+            page.lockType = this.lockType;
+            return page;
+        }
+        public StorageableSplitProvider<T> SplitTable() 
+        {
+            StorageableSplitProvider<T> result = new StorageableSplitProvider<T>();
+            result.Context = this.Context;
+            result.SaveInfo = this;
+            result.List = allDatas.Select(it=>it.Item).ToList();
+            result.EntityInfo = this.Context.EntityMaintenance.GetEntityInfoWithAttr(typeof(T));
+            return result;
+        }
         public IStorageable<T> DefaultAddElseUpdate() 
         {
             var column = this.Context.EntityMaintenance.GetEntityInfo<T>().Columns.FirstOrDefault(it=>it.IsPrimarykey);
@@ -113,12 +151,52 @@ namespace SqlSugar
             result += updateRow;
             return result;
         }
+        public T ExecuteReturnEntity() 
+        { 
+            var x = this.ToStorage();
+            if (x.InsertList?.Any()==true)
+            {
+                var data = x.AsInsertable.ExecuteReturnEntity();
+                x.AsUpdateable.ExecuteCommand();
+                return data;
+            }
+            else
+            {
+                x.AsInsertable.ExecuteCommand();
+                x.AsUpdateable.ExecuteCommand();
+                return x.UpdateList.FirstOrDefault()?.Item;
+            }
+        }
+        public async Task<T> ExecuteReturnEntityAsync() 
+        {
+            var x = this.ToStorage();
+            if (x.InsertList.Any())
+            {
+                var data = await  x.AsInsertable.ExecuteReturnEntityAsync();
+                await x.AsUpdateable.ExecuteCommandAsync();
+                return data;
+            }
+            else
+            {
+                await x.AsInsertable.ExecuteCommandAsync();
+                await x.AsUpdateable.ExecuteCommandAsync();
+                return x.UpdateList.FirstOrDefault()?.Item;
+            }
+        }
+        public Task<int> ExecuteCommandAsync(CancellationToken cancellationToken) 
+        {
+            this.Context.Ado.CancellationToken=cancellationToken;
+            return ExecuteCommandAsync();
+        }
         public async Task<int> ExecuteCommandAsync()
         {
             var result = 0;
             var x = await this.ToStorageAsync();
             result +=await x.AsInsertable.ExecuteCommandAsync();
-            result +=await x.AsUpdateable.ExecuteCommandAsync();
+            var updateCount=await x.AsUpdateable.ExecuteCommandAsync();
+            if (updateCount < 0) 
+                updateCount = 0;
+            result += updateCount;
             return result;
         }
         public int ExecuteSqlBulkCopy()
@@ -207,7 +285,14 @@ namespace SqlSugar
                 result.AsUpdateable.WhereColumns(whereExpression);
                 result.AsDeleteable.WhereColumns(update.Select(it => it.Item).ToList(),whereExpression);
             }
-            result.AsDeleteable.Where(delete.Select(it => it.Item).ToList());
+            if (this.whereExpression != null)
+            {
+                result.AsDeleteable.WhereColumns(delete.Select(it => it.Item).ToList(), whereExpression);
+            }
+            else
+            {
+                result.AsDeleteable.Where(delete.Select(it => it.Item).ToList());
+            }
             return result;
         }
 
@@ -393,8 +478,14 @@ namespace SqlSugar
         }
         public IStorageable<T> WhereColumns(Expression<Func<T, object>> columns)
         {
+
             if (columns == null)
                 return this;
+            else if (asname == null && typeof(T).GetCustomAttribute<SplitTableAttribute>() != null)
+            {
+                whereExpression = columns;
+                return this;
+            }
             else
             {
                 List<string> list = GetExpressionValue(columns, ResolveExpressType.ArraySingle).GetResultArray().Select(it => Builder.GetNoTranslationColumnName(it)).ToList();
@@ -419,7 +510,7 @@ namespace SqlSugar
                             var addItem = this.Context.Queryable<T>().AS(asname)
                             .Filter(null, this.isDisableFilters)
                             .TranLock(this.lockType)
-                            .Where(conditList).ToList();
+                            .Where(conditList,true).ToList();
                             this.dbDataList.AddRange(addItem);
                         });
                     }
@@ -469,6 +560,15 @@ namespace SqlSugar
                         {
                             value = Convert.ToInt64(value);
                         }
+                    }
+                    if (item.SqlParameterDbType != null && item.SqlParameterDbType is Type && UtilMethods.HasInterface((Type)item.SqlParameterDbType, typeof(ISugarDataConverter)))
+                    {
+                        var columnInfo = item;
+                        var type = columnInfo.SqlParameterDbType as Type;
+                        var ParameterConverter = type.GetMethod("ParameterConverter").MakeGenericMethod(columnInfo.PropertyInfo.PropertyType);
+                        var obj = Activator.CreateInstance(type);
+                        var p = ParameterConverter.Invoke(obj, new object[] { value, 100 }) as SugarParameter;
+                        value = p.Value;
                     }
                     condition.ConditionalList.Add(new KeyValuePair<WhereType, ConditionalModel>(i==0?WhereType.Or :WhereType.And, new ConditionalModel()
                     {

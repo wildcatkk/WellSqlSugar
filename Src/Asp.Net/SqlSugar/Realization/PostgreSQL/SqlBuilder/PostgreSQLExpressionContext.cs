@@ -137,6 +137,10 @@ namespace SqlSugar
         {
             return string.Format(" (strpos ({1},{0})-1)", model.Args[0].MemberName, model.Args[1].MemberName);
         }
+        public override string CharIndexNew(MethodCallExpressionModel model)
+        {
+            return string.Format(" (strpos ({0},{1}))", model.Args[0].MemberName, model.Args[1].MemberName);
+        }
         public override string TrueValue()
         {
             return "true";
@@ -216,6 +220,10 @@ namespace SqlSugar
             if (parameter2.MemberValue.ObjToString() == DateType.Millisecond.ToString())
             {
                 format = "ms";
+            }
+            if (parameter2.MemberValue.ObjToString() == DateType.Quarter.ToString())
+            {
+                format = "q";
             }
             if (parameter2.MemberValue.ObjToString() == DateType.Weekday.ToString())
             {
@@ -365,9 +373,24 @@ namespace SqlSugar
             var parameter = model.Args[0];
             return string.Format(" LENGTH({0})", parameter.MemberName);
         }
+        public override string IsNullOrEmpty(MethodCallExpressionModel model)
+        {
+            if (model.Conext?.SugarContext?.Context?.CurrentConnectionConfig?.MoreSettings?.DatabaseModel == DbType.OpenGauss ||
+                model.Conext?.SugarContext?.Context?.CurrentConnectionConfig?.MoreSettings?.DatabaseModel == DbType.Vastbase||
+                model.Conext?.SugarContext?.Context?.CurrentConnectionConfig?.MoreSettings?.DatabaseModel == DbType.GaussDB)
+            {
+                var parameter = model.Args[0];
+                return string.Format("( {0} IS NULL )", parameter.MemberName);
+            }
+            else
+            {
+                return base.IsNullOrEmpty(model);
+            }
+        }
         public override string MergeString(params string[] strings)
         {
-            return " concat("+string.Join(",", strings).Replace("+", "") + ") ";
+            var key = Guid.NewGuid() + "";
+            return " concat("+string.Join(",", strings.Select(it=>it?.Replace("+", key))).Replace("+", "").Replace(key, "+") + ") ";
         }
         public override string IsNull(MethodCallExpressionModel model)
         {

@@ -133,6 +133,11 @@ namespace SqlSugar
                 if (sqlParameter.Direction == 0)
                 {
                     sqlParameter.Direction = ParameterDirection.Input;
+                } 
+                if (parameter.IsRefCursor)
+                {
+                    sqlParameter.KdbndpDbType = KdbndpDbType.Refcursor;
+                    sqlParameter.Direction = ParameterDirection.Output;
                 }
                 result[index] = sqlParameter;
                 if (sqlParameter.Direction.IsIn(ParameterDirection.Output, ParameterDirection.InputOutput, ParameterDirection.ReturnValue))
@@ -141,11 +146,26 @@ namespace SqlSugar
                     this.OutputParameters.RemoveAll(it => it.ParameterName == sqlParameter.ParameterName);
                     this.OutputParameters.Add(sqlParameter);
                 }
+                //人大金仓MYSQL模式下json字段类型处理
+                if (sqlParameter.KdbndpDbType == KdbndpDbType.Json&&this.Context?.CurrentConnectionConfig?.MoreSettings?.DatabaseModel == DbType.MySql)
+                {
+                     sqlParameter.KdbndpDbType = KdbndpDbType.Varchar;
+                }
                 ++index;
             }
             return result;
         }
-
+        public override Action<SqlSugarException> ErrorEvent => it =>
+        {
+            if (base.ErrorEvent != null)
+            {
+                base.ErrorEvent(it);
+            }
+            if (it.Message != null && it.Message.StartsWith("42883: function uuid_generate_v4() does not exist"))
+            {
+                Check.ExceptionEasy(it.Message, $"使用uuid_generate_v4()函数需要创建 CREATE EXTENSION IF NOT EXISTS kbcrypto;CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\" ");
+            }
+        };
 
         static readonly Dictionary<Type, KdbndpDbType> ArrayMapping = new Dictionary<Type, KdbndpDbType>()
         {

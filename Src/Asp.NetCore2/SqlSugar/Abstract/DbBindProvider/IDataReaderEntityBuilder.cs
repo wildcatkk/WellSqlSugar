@@ -112,6 +112,10 @@ namespace SqlSugar
                 {
                     continue;
                 }
+                else if (columnInfo.ForOwnsOnePropertyInfo!=null) 
+                {
+                    continue;
+                }
                 if (columnInfo != null && columnInfo.PropertyInfo.GetSetMethod(true) != null)
                 {
                     var isGemo = columnInfo.PropertyInfo?.PropertyType?.FullName=="NetTopologySuite.Geometries.Geometry";
@@ -415,6 +419,10 @@ namespace SqlSugar
                     if (bindPropertyType == UtilConstants.IntType)
                     {
                         method = isNullableType ? getOtherNull.MakeGenericMethod(bindPropertyType) : getOther.MakeGenericMethod(bindPropertyType);
+                    }
+                    if (bindProperyTypeName == "string") 
+                    {
+                        method = null;
                     }
                     break;
                 case CSharpDataType.Guid:

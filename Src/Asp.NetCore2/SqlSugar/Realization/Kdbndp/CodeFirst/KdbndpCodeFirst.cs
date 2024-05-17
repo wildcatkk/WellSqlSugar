@@ -24,6 +24,7 @@ namespace SqlSugar
                     columns = columns.OrderBy(c => c.CreateTableFieldSort).ToList();
                 }
             }
+            columns = columns.OrderBy(it => it.IsPrimarykey ? 0 : 1).ToList();
             this.Context.DbMaintenance.CreateTable(tableName, columns,true);
         }
         protected override DbColumnInfo EntityColumnToDbColumn(EntityInfo entityInfo, string tableName, EntityColumnInfo item)
@@ -40,7 +41,9 @@ namespace SqlSugar
                 DefaultValue = item.DefaultValue,
                 ColumnDescription = item.ColumnDescription,
                 Length = item.Length,
-                CreateTableFieldSort = item.CreateTableFieldSort
+                CreateTableFieldSort = item.CreateTableFieldSort,
+                DecimalDigits = item.DecimalDigits,
+                Scale = item.DecimalDigits
             };
             GetDbType(item, propertyType, result);
             if (result.DataType.Equals("varchar", StringComparison.CurrentCultureIgnoreCase) && result.Length == 0)

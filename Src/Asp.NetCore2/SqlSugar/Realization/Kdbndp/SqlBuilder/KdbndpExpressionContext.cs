@@ -47,6 +47,14 @@ namespace SqlSugar
             else if (isMapping)
             {
                 var mappingInfo = this.MappingTables.FirstOrDefault(it => it.EntityName.Equals(entityName, StringComparison.CurrentCultureIgnoreCase));
+
+                var tableName = mappingInfo?.DbTableName + "";
+                if (tableName.Contains("."))
+                {
+                    tableName = string.Join(UtilConstants.Dot, tableName.Split(UtilConstants.DotChar).Select(it => GetTranslationText(it)));
+                    return tableName;
+                }
+
                 return SqlTranslationLeft + (mappingInfo == null ? entityName : mappingInfo.DbTableName).ToUpper(IsUpper) + SqlTranslationRight;
             }
             else if (isComplex)
@@ -104,6 +112,10 @@ namespace SqlSugar
     }
     public class KdbndpMethod : DefaultDbMethod, IDbMethods
     {
+        public override string CharIndexNew(MethodCallExpressionModel model)
+        {
+            return string.Format(" (strpos ({0},{1}))", model.Args[0].MemberName, model.Args[1].MemberName);
+        }
         public override string CharIndex(MethodCallExpressionModel model)
         {
             return string.Format(" (strpos ({1},{0})-1)", model.Args[0].MemberName, model.Args[1].MemberName);
@@ -134,7 +146,7 @@ namespace SqlSugar
                 case DateType.Minute:
                     return $" ( ( ( DATE_PART('day', {end} - {begin}) ) * 24 + DATE_PART('hour', {end} - {begin} ) ) * 60 + DATE_PART('minute', {end} - {begin} ) )";
                 case DateType.Second:
-                    return $" ( ( ( DATE_PART('day', {end} - {begin}) ) * 24 + DATE_PART('hour', {end} - {begin} ) ) * 60 + DATE_PART('minute', {end} - {begin} ) ) * 60 + DATE_PART('minute', {end} - {begin} )";
+                    return $" ( ( ( DATE_PART('day', {end} - {begin}) ) * 24 + DATE_PART('hour', {end} - {begin} ) ) * 60 + DATE_PART('minute', {end} - {begin} ) ) * 60 + DATE_PART('second', {end} - {begin} )";
                 case DateType.Millisecond:
                     break;
                 default:
@@ -187,6 +199,10 @@ namespace SqlSugar
             if (parameter2.MemberValue.ObjToString() == DateType.Millisecond.ToString())
             {
                 format = "ms";
+            }
+            if (parameter2.MemberValue.ObjToString() == DateType.Quarter.ToString())
+            {
+                format = "q";
             }
             if (parameter2.MemberValue.ObjToString() == DateType.Weekday.ToString())
             {
@@ -338,7 +354,8 @@ namespace SqlSugar
         }
         public override string MergeString(params string[] strings)
         {
-            return " concat(" + string.Join(",", strings).Replace("+", "") + ") ";
+            var key = Guid.NewGuid() + "";
+            return " concat(" + string.Join(",", strings.Select(it => it?.Replace("+", key))).Replace("+", "").Replace(key, "+") + ") ";
         }
         public override string IsNull(MethodCallExpressionModel model)
         {

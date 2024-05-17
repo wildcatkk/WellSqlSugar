@@ -66,6 +66,10 @@ namespace SqlSugar
         public virtual KeyValuePair<string, List<SugarParameter>> ToSql()
         {
             InsertBuilder.IsReturnIdentity = true;
+            if (this.SqlBuilder.SqlParameterKeyWord == ":" && !this.EntityInfo.Columns.Any(it => it.IsIdentity))
+            {
+                InsertBuilder.IsReturnIdentity = false;
+            }
             PreToSql();
             AutoRemoveDataCache();
             string sql = InsertBuilder.ToSqlString();
@@ -162,7 +166,7 @@ namespace SqlSugar
             }
             else
             {
-                result = Convert.ToInt64(Ado.GetScalar(sql, InsertBuilder.Parameters == null ? null : InsertBuilder.Parameters.ToArray()));
+                result = (Ado.GetScalar(sql, InsertBuilder.Parameters == null ? null : InsertBuilder.Parameters.ToArray())).ObjToLong();
             }
             After(sql, result);
             return result;
@@ -367,10 +371,34 @@ namespace SqlSugar
             After(sql, result);
             return result;
         }
+        public T ExecuteReturnEntity(bool isIncludesAllFirstLayer)
+        {
+            var data =  ExecuteReturnEntity();
+            if (this.InsertBuilder.IsWithAttr)
+            {
+                return this.Context.Root.QueryableWithAttr<T>().WhereClassByPrimaryKey(data).IncludesAllFirstLayer().First();
+            }
+            else
+            {
+                return this.Context.Queryable<T>().WhereClassByPrimaryKey(data).IncludesAllFirstLayer().First();
+            }
+        }
         public async Task<T> ExecuteReturnEntityAsync()
         {
             await ExecuteCommandIdentityIntoEntityAsync();
             return InsertObjs.First();
+        }
+        public async Task<T> ExecuteReturnEntityAsync(bool isIncludesAllFirstLayer)
+        {
+            var data = await ExecuteReturnEntityAsync();
+            if (this.InsertBuilder.IsWithAttr)
+            {
+                return await this.Context.Root.QueryableWithAttr<T>().WhereClassByPrimaryKey(data).IncludesAllFirstLayer().FirstAsync();
+            }
+            else
+            {
+                return await this.Context.Queryable<T>().WhereClassByPrimaryKey(data).IncludesAllFirstLayer().FirstAsync();
+            }
         }
         public async Task<bool> ExecuteCommandIdentityIntoEntityAsync()
         {
@@ -456,7 +484,7 @@ namespace SqlSugar
             }
             else
             {
-                result = Convert.ToInt64(await Ado.GetScalarAsync(sql, InsertBuilder.Parameters == null ? null : InsertBuilder.Parameters.ToArray()));
+                result = (await Ado.GetScalarAsync(sql, InsertBuilder.Parameters == null ? null : InsertBuilder.Parameters.ToArray())).ObjToLong();
             }
             After(sql, result);
             return result;
@@ -465,7 +493,20 @@ namespace SqlSugar
         #endregion
 
         #region Setting
-
+        public InsertablePage<T> PageSize(int pageSize) 
+        {
+            InsertablePage<T> result = new InsertablePage<T>();
+            result.PageSize = pageSize;
+            result.Context = this.Context;
+            result.DataList = this.InsertObjs;
+            result.TableName = this.InsertBuilder.AsName;
+            result.IsEnableDiffLogEvent = this.IsEnableDiffLogEvent;
+            result.DiffModel = this.diffModel;
+            result.IsOffIdentity = this.InsertBuilder.IsOffIdentity;
+            if(this.InsertBuilder.DbColumnInfoList.Any())
+              result.InsertColumns = this.InsertBuilder.DbColumnInfoList.GroupBy(it => it.TableId).First().Select(it=>it.DbColumnName).ToList();
+            return result;
+        }
         public IParameterInsertable<T> UseParameter()
         {
             var result = new ParameterInsertable<T>();
@@ -499,6 +540,16 @@ namespace SqlSugar
             return this;
         }
 
+        public IInsertable<T> IgnoreColumnsNull(bool isIgnoreNull = true) 
+        {
+            if (isIgnoreNull) 
+            {
+                Check.Exception(this.InsertObjs.Count() > 1 , ErrorMessage.GetThrowMessage("ignoreNullColumn NoSupport batch insert, use .PageSize(1).IgnoreColumnsNull().ExecuteCommand()", "ignoreNullColumn 不支持批量操作,你可以用PageSzie(1).IgnoreColumnsNull().ExecuteCommand()"));
+                this.InsertBuilder.IsNoInsertNull = true;
+            }
+            return this;
+        }
+
         public IInsertable<T> MySqlIgnore() 
         {
             this.InsertBuilder.MySqlIgnore = true; 
@@ -526,6 +577,17 @@ namespace SqlSugar
                 this.InsertBuilder.TableWithString = lockString;
             return this;
         }
+        public IInsertable<T> OffIdentity(bool isSetOn) 
+        {
+            if (isSetOn)
+            {
+                return this.OffIdentity();
+            }
+            else
+            {
+                return this;
+            }
+        }
         public IInsertable<T> OffIdentity() 
         {
             this.IsOffIdentity = true;
@@ -533,7 +595,7 @@ namespace SqlSugar
             return this;
         }
         public IInsertable<T> IgnoreColumns(bool ignoreNullColumn, bool isOffIdentity = false) {
-            Check.Exception(this.InsertObjs.Count() > 1&& ignoreNullColumn, ErrorMessage.GetThrowMessage("ignoreNullColumn NoSupport batch insert", "ignoreNullColumn 不支持批量操作"));
+            Check.Exception(this.InsertObjs.Count() > 1&& ignoreNullColumn, ErrorMessage.GetThrowMessage("ignoreNullColumn NoSupport batch insert, use .PageSize(1).IgnoreColumnsNull().ExecuteCommand()", "ignoreNullColumn 不支持批量操作, 你可以使用 .PageSize(1).IgnoreColumnsNull().ExecuteCommand()"));
             this.IsOffIdentity = isOffIdentity;
             this.InsertBuilder.IsOffIdentity = isOffIdentity;
             if (this.InsertBuilder.LambdaExpressions == null)
@@ -692,7 +754,7 @@ namespace SqlSugar
             UtilMethods.StartCustomSplitTable(this.Context, typeof(T));
             var splitTableAttribute = typeof(T).GetCustomAttribute<SplitTableAttribute>();
             if (splitTableAttribute != null)
-            {
+            { 
                 return SplitTable((splitTableAttribute as SplitTableAttribute).SplitType);
             }
             else 

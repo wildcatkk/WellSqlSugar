@@ -86,6 +86,10 @@ namespace SqlSugar
             {
                 result = result + TranLock;
             }
+            //if (result.Contains("uuid_generate_v4()")) 
+            //{
+            //    result=" CREATE EXTENSION IF NOT EXISTS pgcrypto;CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"; "+ result;
+            //}
             return result;
         }
 
@@ -109,7 +113,7 @@ namespace SqlSugar
                 {
                     this.SelectCacheKey = this.SelectCacheKey + string.Join("-", this.JoinQueryInfos.Select(it => it.TableName));
                 }
-                if (IsDistinct) 
+                if (IsDistinct&&result?.TrimStart()?.StartsWith("distinct ")!=true) 
                 {
                     result = "distinct "+result;
                 }

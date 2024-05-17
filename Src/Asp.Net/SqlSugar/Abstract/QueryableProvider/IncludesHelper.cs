@@ -18,6 +18,7 @@ namespace SqlSugar
             navigat.Context = this.Context;
             navigat.IsCrossQueryWithAttr = this.QueryBuilder.IsCrossQueryWithAttr;
             navigat.CrossQueryItems = this.QueryBuilder.CrossQueryItems;
+            navigat.QueryBuilder = this.QueryBuilder;
             if (this.QueryBuilder.Includes == null) this.QueryBuilder.Includes = new List<object>();
             this.QueryBuilder.Includes.Add(navigat);
         }
@@ -32,6 +33,7 @@ namespace SqlSugar
             navigat.CrossQueryItems = this.QueryBuilder.CrossQueryItems;
             navigat.Expressions = expressions;
             navigat.Context = this.Context;
+            navigat.QueryBuilder = this.QueryBuilder;
             if (this.QueryBuilder.Includes == null) this.QueryBuilder.Includes = new List<object>();
             this.QueryBuilder.Includes.Add(navigat);
         }
@@ -48,6 +50,7 @@ namespace SqlSugar
             navigat.CrossQueryItems = this.QueryBuilder.CrossQueryItems;
             navigat.Expressions = expressions;
             navigat.Context = this.Context;
+            navigat.QueryBuilder = this.QueryBuilder;
             if (this.QueryBuilder.Includes == null) this.QueryBuilder.Includes = new List<object>();
             this.QueryBuilder.Includes.Add(navigat);
         }
@@ -66,6 +69,7 @@ namespace SqlSugar
             navigat.IsCrossQueryWithAttr = this.QueryBuilder.IsCrossQueryWithAttr;
             navigat.CrossQueryItems = this.QueryBuilder.CrossQueryItems;
             navigat.Context = this.Context;
+            navigat.QueryBuilder = this.QueryBuilder;
             if (this.QueryBuilder.Includes == null) this.QueryBuilder.Includes = new List<object>();
             this.QueryBuilder.Includes.Add(navigat);
         }
@@ -86,6 +90,7 @@ namespace SqlSugar
             navigat.IsCrossQueryWithAttr = this.QueryBuilder.IsCrossQueryWithAttr;
             navigat.CrossQueryItems = this.QueryBuilder.CrossQueryItems;
             navigat.Context = this.Context;
+            navigat.QueryBuilder = this.QueryBuilder;
             if (this.QueryBuilder.Includes == null) this.QueryBuilder.Includes = new List<object>();
             this.QueryBuilder.Includes.Add(navigat);
         }
@@ -102,6 +107,54 @@ namespace SqlSugar
             result.QueryBuilder = clone.QueryBuilder;
             return result;
         }
+        private ISugarQueryable<T> GetManyQueryable<TReturn1>(Expression<Func<T, TReturn1>> include1)
+        {
+            ISugarQueryable<T> result = null;
+            var isManyMembers = IsMembers(include1);
+            if (isManyMembers)
+            {
+                var array = ExpressionTool.ExtractMemberNames(include1);
+                if (array.Count > 1)
+                {
+
+                    if (array.Count == 2)
+                    {
+                        result = this.IncludesByNameString(array[0], array[1]);
+                    }
+                    else if (array.Count == 3)
+                    {
+                        result = this.IncludesByNameString(array[0], array[1], array[2]);
+                    }
+                    else if (array.Count == 4)
+                    {
+                        result = this.IncludesByNameString(array[0], array[1], array[2], array[3]);
+                    }
+                    else if (array.Count == 5)
+                    {
+                        result = this.IncludesByNameString(array[0], array[1], array[2], array[3], array[4]);
+                    }
+                    else if (array.Count == 6)
+                    {
+                        throw new Exception("Multiple levels of expression exceeded the upper limit");
+                    }
+                }
+            }
+            return result;
+        }
+        private static bool IsMembers<TReturn1>(Expression<Func<T, TReturn1>> include1)
+        {
+            var isManyMembers = false;
+            var x = ((include1 as LambdaExpression).Body as MemberExpression)?.Expression;
+            if (x is MemberExpression)
+            {
+                var exp = (x as MemberExpression)?.Expression;
+                if (exp != null)
+                {
+                    isManyMembers = true;
+                }
+            }
+            return isManyMembers;
+        }
 
     }
     public partial class NavQueryableProvider<T> : QueryableProvider<T>, NavISugarQueryable<T>
@@ -115,6 +168,7 @@ namespace SqlSugar
             navigat.Context = this.Context;
             navigat.IsCrossQueryWithAttr = this.QueryBuilder.IsCrossQueryWithAttr;
             navigat.CrossQueryItems = this.QueryBuilder.CrossQueryItems;
+            navigat.QueryBuilder = this.QueryBuilder;
             if (this.QueryBuilder.Includes == null) this.QueryBuilder.Includes = new List<object>();
             this.QueryBuilder.Includes.Add(navigat);
         }
@@ -129,6 +183,7 @@ namespace SqlSugar
             navigat.IsCrossQueryWithAttr = this.QueryBuilder.IsCrossQueryWithAttr;
             navigat.CrossQueryItems = this.QueryBuilder.CrossQueryItems;
             navigat.Context = this.Context;
+            navigat.QueryBuilder = this.QueryBuilder;
             if (this.QueryBuilder.Includes == null) this.QueryBuilder.Includes = new List<object>();
             this.QueryBuilder.Includes.Add(navigat);
         }
@@ -145,6 +200,7 @@ namespace SqlSugar
             navigat.IsCrossQueryWithAttr = this.QueryBuilder.IsCrossQueryWithAttr;
             navigat.CrossQueryItems = this.QueryBuilder.CrossQueryItems;
             navigat.Context = this.Context;
+            navigat.QueryBuilder = this.QueryBuilder;
             if (this.QueryBuilder.Includes == null) this.QueryBuilder.Includes = new List<object>();
             this.QueryBuilder.Includes.Add(navigat);
         }
@@ -163,6 +219,7 @@ namespace SqlSugar
             navigat.IsCrossQueryWithAttr = this.QueryBuilder.IsCrossQueryWithAttr;
             navigat.CrossQueryItems = this.QueryBuilder.CrossQueryItems;
             navigat.Context = this.Context;
+            navigat.QueryBuilder = this.QueryBuilder;
             if (this.QueryBuilder.Includes == null) this.QueryBuilder.Includes = new List<object>();
             this.QueryBuilder.Includes.Add(navigat);
         }
@@ -183,6 +240,7 @@ namespace SqlSugar
             navigat.IsCrossQueryWithAttr = this.QueryBuilder.IsCrossQueryWithAttr;
             navigat.CrossQueryItems = this.QueryBuilder.CrossQueryItems;
             navigat.Context = this.Context;
+            navigat.QueryBuilder = this.QueryBuilder;
             if (this.QueryBuilder.Includes == null) this.QueryBuilder.Includes = new List<object>();
             this.QueryBuilder.Includes.Add(navigat);
         }
@@ -205,6 +263,7 @@ namespace SqlSugar
             navigat.IsCrossQueryWithAttr = this.QueryBuilder.IsCrossQueryWithAttr;
             navigat.CrossQueryItems = this.QueryBuilder.CrossQueryItems;
             navigat.Context = this.Context;
+            navigat.QueryBuilder = this.QueryBuilder;
             if (this.QueryBuilder.Includes == null) this.QueryBuilder.Includes = new List<object>();
             this.QueryBuilder.Includes.Add(navigat);
         }
@@ -226,11 +285,14 @@ namespace SqlSugar
             navigat.SelectR6 = SelectR6;
             navigat.SelectR7 = SelectR7;
             navigat.Expressions = expressions;
+            navigat.QueryBuilder = this.QueryBuilder;
             navigat.IsCrossQueryWithAttr = this.QueryBuilder.IsCrossQueryWithAttr;
             navigat.CrossQueryItems = this.QueryBuilder.CrossQueryItems;
             navigat.Context = this.Context;
             if (this.QueryBuilder.Includes == null) this.QueryBuilder.Includes = new List<object>();
             this.QueryBuilder.Includes.Add(navigat);
         }
+
+
     }
 }

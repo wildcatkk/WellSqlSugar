@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 namespace SqlSugar
 {
@@ -20,6 +21,7 @@ namespace SqlSugar
         IStorageable<T> SplitIgnore(Func<StorageableInfo<T>, bool> conditions, string message = null);
         IStorageable<T> DisableFilters();
         IStorageable<T> TranLock(DbLockType LockType = DbLockType.Wait);
+        IStorageable<T> TranLock(DbLockType? LockType);
         IStorageable<T> SplitDelete(Func<StorageableInfo<T>, bool> conditions, string message = null);
         IStorageable<T> SplitOther(Func<StorageableInfo<T>, bool> conditions, string message = null);
         StorageableResult<T> ToStorage();
@@ -27,10 +29,15 @@ namespace SqlSugar
         Task<StorageableResult<T>> ToStorageAsync();
         IStorageable<T> As(string tableName);
         int ExecuteCommand();
+        T ExecuteReturnEntity();
+        Task<T> ExecuteReturnEntityAsync();
         Task<int> ExecuteCommandAsync();
+        Task<int> ExecuteCommandAsync(CancellationToken cancellationToken);
         int ExecuteSqlBulkCopy();
         Task<int> ExecuteSqlBulkCopyAsync();
         IStorageable<T> DefaultAddElseUpdate();
+        StorageableSplitProvider<T> SplitTable();
+        StorageablePage<T> PageSize(int PaegSize, Action<int> ActionCallBack = null);
     }
 
     public class StorageableInfo<T> where T : class, new()

@@ -9,11 +9,23 @@ namespace SqlSugar
     { }
     public class Subqueryable<T1, T2, T3, T4, T5, T6, T7, T8, T9> : Subqueryable<T1> where T1 : class, new()
     {
+        public new Subqueryable<T1, T2, T3, T4, T5, T6, T7, T8,T9> AsWithAttr()
+        {
+            return this;
+        }
         public Subqueryable<T1, T2, T3, T4, T5, T6, T7, T8, T9, JoinType> InnerJoin<JoinType>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, JoinType, bool> expression)
         {
             return new Subqueryable<T1, T2, T3, T4, T5, T6, T7, T8, T9, JoinType>();
         }
         public Subqueryable<T1, T2, T3, T4, T5, T6, T7, T8, T9, JoinType> LeftJoin<JoinType>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, JoinType, bool> expression)
+        {
+            return new Subqueryable<T1, T2, T3, T4, T5, T6, T7, T8, T9, JoinType>();
+        }
+        public Subqueryable<T1, T2, T3, T4, T5, T6, T7, T8, T9, JoinType> InnerJoin<JoinType>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, JoinType, bool> expression,string tableName)
+        {
+            return new Subqueryable<T1, T2, T3, T4, T5, T6, T7, T8, T9, JoinType>();
+        }
+        public Subqueryable<T1, T2, T3, T4, T5, T6, T7, T8, T9, JoinType> LeftJoin<JoinType>(Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, JoinType, bool> expression,string tableName)
         {
             return new Subqueryable<T1, T2, T3, T4, T5, T6, T7, T8, T9, JoinType>();
         }
@@ -60,11 +72,23 @@ namespace SqlSugar
     }
     public class Subqueryable<T1, T2, T3, T4, T5, T6, T7, T8> : Subqueryable<T1> where T1 : class, new()
     {
+        public new Subqueryable<T1, T2, T3, T4, T5, T6, T7,T8> AsWithAttr()
+        {
+            return this;
+        }
         public Subqueryable<T1, T2, T3, T4, T5, T6, T7, T8, JoinType> InnerJoin<JoinType>(Func<T1, T2, T3, T4, T5, T6, T7, T8, JoinType, bool> expression)
         {
             return new Subqueryable<T1, T2, T3, T4, T5, T6, T7, T8, JoinType>();
         }
         public Subqueryable<T1, T2, T3, T4, T5, T6, T7, T8, JoinType> LeftJoin<JoinType>(Func<T1, T2, T3, T4, T5, T6, T7, T8, JoinType, bool> expression)
+        {
+            return new Subqueryable<T1, T2, T3, T4, T5, T6, T7, T8, JoinType>();
+        }
+        public Subqueryable<T1, T2, T3, T4, T5, T6, T7, T8, JoinType> InnerJoin<JoinType>(Func<T1, T2, T3, T4, T5, T6, T7, T8, JoinType, bool> expression,string tableName)
+        {
+            return new Subqueryable<T1, T2, T3, T4, T5, T6, T7, T8, JoinType>();
+        }
+        public Subqueryable<T1, T2, T3, T4, T5, T6, T7, T8, JoinType> LeftJoin<JoinType>(Func<T1, T2, T3, T4, T5, T6, T7, T8, JoinType, bool> expression,string tableName)
         {
             return new Subqueryable<T1, T2, T3, T4, T5, T6, T7, T8, JoinType>();
         }
@@ -107,11 +131,23 @@ namespace SqlSugar
     }
     public class Subqueryable<T1, T2, T3, T4, T5, T6, T7> : Subqueryable<T1> where T1 : class, new()
     {
+        public new Subqueryable<T1, T2, T3, T4, T5, T6,T7> AsWithAttr()
+        {
+            return this;
+        }
         public Subqueryable<T1, T2, T3, T4, T5, T6, T7, JoinType> InnerJoin<JoinType>(Func<T1, T2, T3, T4, T5, T6, T7, JoinType, bool> expression)
         {
             return new Subqueryable<T1, T2, T3, T4, T5, T6, T7, JoinType>();
         }
         public Subqueryable<T1, T2, T3, T4, T5, T6, T7, JoinType> LeftJoin<JoinType>(Func<T1, T2, T3, T4, T5, T6, T7, JoinType, bool> expression)
+        {
+            return new Subqueryable<T1, T2, T3, T4, T5, T6, T7, JoinType>();
+        }
+        public Subqueryable<T1, T2, T3, T4, T5, T6, T7, JoinType> InnerJoin<JoinType>(Func<T1, T2, T3, T4, T5, T6, T7, JoinType, bool> expression,string tableName)
+        {
+            return new Subqueryable<T1, T2, T3, T4, T5, T6, T7, JoinType>();
+        }
+        public Subqueryable<T1, T2, T3, T4, T5, T6, T7, JoinType> LeftJoin<JoinType>(Func<T1, T2, T3, T4, T5, T6, T7, JoinType, bool> expression,string tableName)
         {
             return new Subqueryable<T1, T2, T3, T4, T5, T6, T7, JoinType>();
         }
@@ -150,6 +186,14 @@ namespace SqlSugar
     }
     public class Subqueryable<T1, T2, T3, T4, T5, T6> : Subqueryable<T1> where T1 : class, new()
     {
+        public string SelectStringJoin(Func<T1, T2, T3, T4, T5,T6, string> expression, string separator)
+        {
+            return default(string);
+        }
+        public new Subqueryable<T1, T2, T3, T4, T5,T6> AsWithAttr()
+        {
+            return this;
+        }
         public new Subqueryable<T1, T2, T3, T4, T5, T6> Where(List<IConditionalModel> conditionals)
         {
             return this;
@@ -159,6 +203,15 @@ namespace SqlSugar
             return new Subqueryable<T1, T2, T3, T4, T5, T6, JoinType>();
         }
         public Subqueryable<T1, T2, T3, T4, T5, T6, JoinType> LeftJoin<JoinType>(Func<T1, T2, T3, T4, T5, T6, JoinType, bool> expression)
+        {
+            return new Subqueryable<T1, T2, T3, T4, T5, T6, JoinType>();
+        }
+
+        public Subqueryable<T1, T2, T3, T4, T5, T6, JoinType> InnerJoin<JoinType>(Func<T1, T2, T3, T4, T5, T6, JoinType, bool> expression,string tableName)
+        {
+            return new Subqueryable<T1, T2, T3, T4, T5, T6, JoinType>();
+        }
+        public Subqueryable<T1, T2, T3, T4, T5, T6, JoinType> LeftJoin<JoinType>(Func<T1, T2, T3, T4, T5, T6, JoinType, bool> expression,string tableName)
         {
             return new Subqueryable<T1, T2, T3, T4, T5, T6, JoinType>();
         }
@@ -193,6 +246,14 @@ namespace SqlSugar
     }
     public class Subqueryable<T1, T2, T3, T4, T5> : Subqueryable<T1> where T1 : class, new()
     {
+        public string SelectStringJoin(Func<T1, T2, T3, T4,T5, string> expression, string separator)
+        {
+            return default(string);
+        }
+        public new Subqueryable<T1, T2, T3, T4,T5> AsWithAttr()
+        {
+            return this;
+        }
         public new Subqueryable<T1, T2, T3, T4,T5> Where(List<IConditionalModel> conditionals)
         {
             return this;
@@ -202,6 +263,15 @@ namespace SqlSugar
             return new Subqueryable<T1, T2, T3, T4, T5, JoinType>();
         }
         public Subqueryable<T1, T2, T3, T4, T5, JoinType> LeftJoin<JoinType>(Func<T1, T2, T3, T4, T5, JoinType, bool> expression)
+        {
+            return new Subqueryable<T1, T2, T3, T4, T5, JoinType>();
+        }
+
+        public Subqueryable<T1, T2, T3, T4, T5, JoinType> InnerJoin<JoinType>(Func<T1, T2, T3, T4, T5, JoinType, bool> expression,string tableName)
+        {
+            return new Subqueryable<T1, T2, T3, T4, T5, JoinType>();
+        }
+        public Subqueryable<T1, T2, T3, T4, T5, JoinType> LeftJoin<JoinType>(Func<T1, T2, T3, T4, T5, JoinType, bool> expression,string tableName)
         {
             return new Subqueryable<T1, T2, T3, T4, T5, JoinType>();
         }
@@ -232,6 +302,10 @@ namespace SqlSugar
     }
     public class Subqueryable<T1, T2, T3, T4> : Subqueryable<T1> where T1 : class, new()
     {
+        public new Subqueryable<T1, T2, T3,T4> AsWithAttr()
+        {
+            return this;
+        }
         public new Subqueryable<T1, T2, T3,T4> Where(List<IConditionalModel> conditionals)
         {
             return this;
@@ -241,6 +315,14 @@ namespace SqlSugar
             return new Subqueryable<T1, T2, T3, T4, JoinType>();
         }
         public Subqueryable<T1, T2, T3, T4, JoinType> LeftJoin<JoinType>(Func<T1, T2, T3, T4, JoinType, bool> expression)
+        {
+            return new Subqueryable<T1, T2, T3, T4, JoinType>();
+        }
+        public Subqueryable<T1, T2, T3, T4, JoinType> InnerJoin<JoinType>(Func<T1, T2, T3, T4, JoinType, bool> expression,string tableName)
+        {
+            return new Subqueryable<T1, T2, T3, T4, JoinType>();
+        }
+        public Subqueryable<T1, T2, T3, T4, JoinType> LeftJoin<JoinType>(Func<T1, T2, T3, T4, JoinType, bool> expression,string tableName)
         {
             return new Subqueryable<T1, T2, T3, T4, JoinType>();
         }
@@ -336,6 +418,10 @@ namespace SqlSugar
     }
     public class Subqueryable<T1, T2, T3> : Subqueryable<T1> where T1 : class, new()
     {
+        public new Subqueryable<T1, T2,T3> AsWithAttr()
+        {
+            return this;
+        }
         public new Subqueryable<T1, T2,T3> Where(List<IConditionalModel> conditionals)
         {
             return this;
@@ -368,11 +454,35 @@ namespace SqlSugar
         {
             return this;
         }
+        public Subqueryable<T1, T2, T3> OrderBy(Func<T1, T2, object> expression)
+        {
+            return this;
+        }
+        public new Subqueryable<T1, T2, T3> OrderBy(Func<T1,  object> expression)
+        {
+            return this;
+        }
         public Subqueryable<T1, T2,T3> OrderByDesc(Func<T1, T2,T3, object> expression)
         {
             return this;
         }
+        public Subqueryable<T1, T2, T3> OrderByDesc(Func<T1, T2, object> expression)
+        {
+            return this;
+        }
+        public new Subqueryable<T1, T2, T3> OrderByDesc(Func<T1,object> expression)
+        {
+            return this;
+        }
         public Subqueryable<T1, T2,T3> GroupBy(Func<T1, T2,T3, object> expression)
+        {
+            return this;
+        }
+        public Subqueryable<T1, T2, T3> GroupBy(Func<T1, T2, object> expression)
+        {
+            return this;
+        }
+        public new Subqueryable<T1, T2, T3> GroupBy(Func<T1,object> expression)
         {
             return this;
         }
@@ -436,6 +546,10 @@ namespace SqlSugar
     }
     public class Subqueryable<T1, T2> : Subqueryable<T1> where T1 : class, new()
     {
+        public new Subqueryable<T1,T2> AsWithAttr()
+        {
+            return this;
+        }
         public new Subqueryable<T1,T2> Where(List<IConditionalModel> conditionals)
         {
             return this;
@@ -445,6 +559,14 @@ namespace SqlSugar
             return new Subqueryable<T1, T2, JoinType>();
         }
         public Subqueryable<T1, T2, JoinType> LeftJoin<JoinType>(Func<T1, T2, JoinType, bool> expression)
+        {
+            return new Subqueryable<T1, T2, JoinType>();
+        }
+        public Subqueryable<T1, T2, JoinType> InnerJoin<JoinType>(Func<T1, T2, JoinType, bool> expression,string tableName)
+        {
+            return new Subqueryable<T1, T2, JoinType>();
+        }
+        public Subqueryable<T1, T2, JoinType> LeftJoin<JoinType>(Func<T1, T2, JoinType, bool> expression, string tableName)
         {
             return new Subqueryable<T1, T2, JoinType>();
         }
@@ -460,11 +582,23 @@ namespace SqlSugar
         {
             return this;
         }
+        public new Subqueryable<T1, T2> OrderBy(Func<T1,object> expression)
+        {
+            return this;
+        }
         public Subqueryable<T1,T2> OrderByDesc(Func<T1,T2, object> expression)
         {
             return this;
         }
+        public new Subqueryable<T1, T2> OrderByDesc(Func<T1,object> expression)
+        {
+            return this;
+        }
         public Subqueryable<T1,T2> GroupBy(Func<T1,T2, object> expression)
+        {
+            return this;
+        }
+        public new  Subqueryable<T1, T2> GroupBy(Func<T1, object> expression)
         {
             return this;
         }

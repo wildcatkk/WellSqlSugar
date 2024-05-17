@@ -18,31 +18,36 @@ namespace SqlSugar
         }
         public EntityInfo GetEntityInfoWithAttr(Type type)
         {
-            var attr = type?.GetCustomAttribute<TenantAttribute>();
-            if (attr == null)
-            {
-                return GetEntityInfo(type);
-            }
-            else if (attr.configId.ObjToString() == this.Context?.CurrentConnectionConfig?.ConfigId+"")
-            {
-                return GetEntityInfo(type);
-            }
-            else if (this.Context.Root == null)
-            {
-                return GetEntityInfo(type);
-            }
-            else if (!this.Context.Root.IsAnyConnection(attr.configId))
-            {
-                return GetEntityInfo(type);
-            }
-            else 
-            {
-                return this.Context.Root.GetConnection(attr.configId).EntityMaintenance.GetEntityInfo(type);
-            }
+            return GetEntityInfo(type);
         }
         public EntityInfo GetEntityInfo(Type type)
         {
-            string cacheKey = "GetEntityInfo" + type.GetHashCode() + type.FullName+this.Context?.CurrentConnectionConfig?.ConfigId;
+            var attr = type?.GetCustomAttribute<TenantAttribute>();
+            if (attr == null)
+            {
+                return _GetEntityInfo(type);
+            }
+            else if (attr.configId.ObjToString() == this.Context?.CurrentConnectionConfig?.ConfigId + "")
+            {
+                return _GetEntityInfo(type);
+            }
+            else if (this.Context.Root == null)
+            {
+                return _GetEntityInfo(type);
+            }
+            else if (!this.Context.Root.IsAnyConnection(attr.configId))
+            {
+                return _GetEntityInfo(type);
+            }
+            else
+            {
+                return this.Context.Root.GetConnection(attr.configId).EntityMaintenance._GetEntityInfo(type);
+            }
+        }
+
+        private EntityInfo _GetEntityInfo(Type type)
+        {
+            string cacheKey = "GetEntityInfo" + type.GetHashCode() + type.FullName + this.Context?.CurrentConnectionConfig?.ConfigId;
             return this.Context.Utilities.GetReflectionInoCacheInstance().GetOrCreate(cacheKey,
             () =>
             {
@@ -123,6 +128,14 @@ namespace SqlSugar
                 return mappingInfo == null ? tableName : mappingInfo.EntityName;
             }
         }
+        public string GetEntityName<T>()
+        {
+            return this.Context.EntityMaintenance.GetEntityInfo<T>().EntityName;
+        }
+        public string GetEntityName(Type type)
+        {
+            return this.Context.EntityMaintenance.GetEntityInfo(type).EntityName;
+        }
         public string GetDbColumnName<T>(string propertyName)
         {
             return GetDbColumnName(propertyName, typeof(T));
@@ -146,6 +159,11 @@ namespace SqlSugar
         }
         public string GetPropertyName<T>(string dbColumnName)
         {
+            var columnInfo=this.Context.EntityMaintenance.GetEntityInfo<T>().Columns.FirstOrDefault(it=>it.DbColumnName.EqualCase(dbColumnName));
+            if (columnInfo != null) 
+            {
+                return columnInfo.PropertyName;
+            }
             var typeName = typeof(T).Name;
             if (this.Context.MappingColumns == null || this.Context.MappingColumns.Count == 0) return dbColumnName;
             else
@@ -156,6 +174,11 @@ namespace SqlSugar
         }
         public string GetPropertyName(string dbColumnName, Type entityType)
         {
+            var columnInfo = this.Context.EntityMaintenance.GetEntityInfo(entityType).Columns.FirstOrDefault(it => it.DbColumnName.EqualCase(dbColumnName));
+            if (columnInfo != null)
+            {
+                return columnInfo.PropertyName;
+            }
             var typeName = entityType.Name;
             if (this.Context.MappingColumns == null || this.Context.MappingColumns.Count == 0) return dbColumnName;
             else
@@ -300,6 +323,10 @@ namespace SqlSugar
                 column.PropertyName = property.Name;
                 column.PropertyInfo = property;
                 column.UnderType = UtilMethods.GetUnderType(column.PropertyInfo.PropertyType);
+                if (sugarColumn?.IsOwnsOne==true)
+                {
+                    SetValueObjectColumns(result, property, column);
+                }
                 if (sugarColumn.IsNullOrEmpty())
                 {
                     column.DbColumnName = property.Name;
@@ -338,6 +365,8 @@ namespace SqlSugar
                         column.InsertSql = sugarColumn.InsertSql;
                         column.UpdateServerTime= sugarColumn.UpdateServerTime;
                         column.UpdateSql= sugarColumn.UpdateSql;
+                        column.IsDisabledAlterColumn = sugarColumn.IsDisabledAlterColumn;
+                        column.QuerySql = sugarColumn.QuerySql;
                         if (sugarColumn.IsJson && String.IsNullOrEmpty(sugarColumn.ColumnDataType))
                         {
                             if (this.Context.CurrentConnectionConfig.DbType == DbType.PostgreSQL)
@@ -360,6 +389,10 @@ namespace SqlSugar
                             {
                                 column.Length = 200;
                             }
+                        }
+                        if (column.IsPrimarykey && column.IsOnlyIgnoreUpdate) 
+                        {
+                            column.IsOnlyIgnoreUpdate = false;
                         }
                     }
                     else
@@ -386,7 +419,8 @@ namespace SqlSugar
                 }
                 if (this.Context.CurrentConnectionConfig.ConfigureExternalServices != null && this.Context.CurrentConnectionConfig.ConfigureExternalServices.EntityService != null)
                 {
-                    if (!column.EntityName.ObjToString().StartsWith("<>f__AnonymousType"))
+                    if (!column.EntityName.ObjToString().StartsWith("<>f__AnonymousType")
+                        &&column.PropertyInfo?.ReflectedType!=typeof(DbTableInfo))
                     {
                         this.Context.CurrentConnectionConfig.ConfigureExternalServices.EntityService(property, column);
                     }
@@ -417,6 +451,24 @@ namespace SqlSugar
                     column.OracleSequenceName = null;
                 }
                 result.Columns.Add(column);
+            }
+        }
+
+        private void SetValueObjectColumns(EntityInfo result, PropertyInfo property, EntityColumnInfo column)
+        {
+            column.IsIgnore = true;
+            column.IsOwnsOne = true;
+            Check.ExceptionEasy(property.PropertyType.IsClass() == false, column.PropertyName + " IsOwnsOne必须用在类上面", column.PropertyName + "IsOwnsOne must be used on the class");
+            Check.ExceptionEasy(property.PropertyType.FullName.IsCollectionsList() == true, column.PropertyName + " IsOwnsOne必须用在类上面", column.PropertyName + "IsOwnsOne must be used on the class");
+            var ownsOne = this.GetEntityInfoNoCache(property.PropertyType);
+            foreach (var item in ownsOne.Columns)
+            {
+                if (result.Columns.Any(it => it.PropertyName.EqualCase(item.PropertyName) || it.DbColumnName.EqualCase(item.DbColumnName)))
+                {
+                    Check.ExceptionEasy($" {result.EntityName} "+ item.PropertyName+ " 存在重复定义 (IsOwnsOne) ", $" {result.EntityName} " + item.PropertyName + " Duplicate definition exists (IsOwnsOne)");
+                }
+                item.ForOwnsOnePropertyInfo = column.PropertyInfo;
+                result.Columns.Add(item);
             }
         }
         #endregion

@@ -121,7 +121,7 @@ namespace SqlSugar
         }
         private void UpdateRoot(bool isRoot, EntityColumnInfo nav)
         {
-            if (isRoot && nav.Navigat.NavigatType != NavigateType.ManyToMany)
+            if (isRoot && nav.Navigat.NavigatType != NavigateType.ManyToMany&&_RootOptions?.IsDisableUpdateRoot!=true)
             {
                 UpdateRoot();
             }
@@ -168,7 +168,12 @@ namespace SqlSugar
                         }
                         else
                         {
-                            x.AsUpdateable.EnableDiffLogEventIF(_RootOptions.IsDiffLogEvent, _RootOptions.DiffLogBizData).ExecuteCommandWithOptLockIF(_RootOptions?.IsOptLock, _RootOptions?.IsOptLock);
+                            x.AsUpdateable
+                                .EnableDiffLogEventIF(_RootOptions.IsDiffLogEvent, _RootOptions.DiffLogBizData)
+                                .UpdateColumns(_RootOptions.UpdateColumns)
+                                .IgnoreColumns(_RootOptions.IgnoreColumns)
+                                .IgnoreNullColumns(_RootOptions.IsIgnoreAllNullColumns)
+                                .ExecuteCommandWithOptLockIF(_RootOptions?.IsOptLock, _RootOptions?.IsOptLock);
                             newRoots.Add(item);
                         }
                     }
@@ -180,6 +185,7 @@ namespace SqlSugar
                         .EnableDiffLogEventIF(_RootOptions.IsDiffLogEvent,_RootOptions.DiffLogBizData)
                         .UpdateColumns(_RootOptions.UpdateColumns)
                         .IgnoreColumns(_RootOptions.IgnoreColumns)
+                        .IgnoreNullColumns(_RootOptions.IsIgnoreAllNullColumns)
                         .ExecuteCommandWithOptLockIF(_RootOptions?.IsOptLock, _RootOptions?.IsOptLock);
                 }
             }

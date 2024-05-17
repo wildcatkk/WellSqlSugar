@@ -31,7 +31,10 @@ namespace OrmTest
             var db = GetInstance();
             var dbTime = db.GetDate();
             var getAll = db.Queryable<Order>().ToList();
+            var first = db.Queryable<Order>().First();
+            var first2 = db.Queryable<Order>().Where(it=>it.Id>2).First();
             var getpage = db.Queryable<Order>().ToPageList(0,5);
+            var getpage1 = db.Queryable<Order>().ToPageList(1, 1);
             var getpage2 = db.Queryable<Order>().ToOffsetPage(0,5);
             int count= 0;
             var getpage3 = db.Queryable<Order>().ToOffsetPage(0, 5,ref count);
@@ -80,9 +83,10 @@ namespace OrmTest
             var Ids2 = db.Queryable<Order>().Where(it => ids.Contains(it.Name)).ToList();
             var test10 = db.Queryable<Order>().Select(it => new
             {
-                names = $"as{it.Id}fd{it.Id}a"
+                names = $"as{it.Id}fd{it.Id}a",
+                id=SqlFunc.NewUid()
             })
-           .ToList();
+           .ToList(); 
             var xx =DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff");
             var test11= db.Queryable<Order>().Select(it =>   Convert.ToDateTime(xx)).ToList();
             Console.WriteLine("#### Examples End ####");

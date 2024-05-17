@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 namespace SqlSugar
 {
@@ -28,6 +30,13 @@ namespace SqlSugar
         #endregion
 
         #region abstract Methods
+
+        public virtual bool SupportReadToken { get; set; }
+
+        public virtual Task<bool> GetReaderByToken(IDataReader dataReader, CancellationToken cancellationToken)
+        {
+            return ((DbDataReader)dataReader).ReadAsync();
+        }
         public virtual void ChangeJsonType(SugarParameter paramter) 
         {
 
@@ -99,6 +108,11 @@ namespace SqlSugar
                name=name.Split('=').First();
             }
             if (!name.Contains(SqlTranslationLeft)) return name;
+            if (!name.Contains(".")&& name.StartsWith(SqlTranslationLeft) && name.EndsWith(SqlTranslationRight)) 
+            {
+                var result= name.TrimStart(Convert.ToChar(SqlTranslationLeft)).TrimEnd(Convert.ToChar(SqlTranslationRight));
+                return result;
+            }
             return name == null ? string.Empty : Regex.Match(name, @".*" + "\\" + SqlTranslationLeft + "(.*?)" + "\\" + SqlTranslationRight + "").Groups[1].Value;
         }
         public virtual string GetPackTable(string sql, string shortName)
@@ -113,7 +127,7 @@ namespace SqlSugar
 
         public string GetWhere(string fieldName,string conditionalType,int? parameterIndex=null)
         {
-            return string.Format(" {0} {1} {2}{3} ",this.GetTranslationColumnName(fieldName),conditionalType,this.SqlParameterKeyWord,fieldName+ parameterIndex);
+            return string.Format(" {0} {1} {2}{3} ",this.GetTranslationColumnName(fieldName),conditionalType,this.SqlParameterKeyWord,fieldName.Replace(".","_")+ parameterIndex);
         }
         public virtual string GetUnionAllSql(List<string> sqlList)
         {
@@ -155,6 +169,13 @@ namespace SqlSugar
             {
                 return item.FieldValue;
             }
+        }
+        public virtual void FormatSaveQueueSql(StringBuilder sqlBuilder)
+        {
+        }
+        public virtual string RemoveN(string sql) 
+        {
+            return sql;
         }
         #endregion
 

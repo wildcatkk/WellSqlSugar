@@ -151,12 +151,13 @@ namespace SqlSugar
             var parameter2 = model.Args[1];
             return string.Format(" ({0}~{1} ) ", parameter.MemberName, parameter2.MemberName);
         }
+        
         public override string DateDiff(MethodCallExpressionModel model)
         {
             var parameter = model.Args[0];
             var parameter2 = model.Args[1];
             var parameter3 = model.Args[2];
-            return string.Format(" DATEDIFF('{0}',{1},{2}) ", parameter.MemberValue.ObjToString().First(), parameter2.MemberName, parameter3.MemberName);
+            return string.Format(" DATEDIFF('{0}',{1},{2}) ", parameter.MemberValue.ObjToString().ToLower().First(), parameter2.MemberName, parameter3.MemberName);
         }
         public override string TrueValue()
         {
@@ -210,7 +211,7 @@ namespace SqlSugar
             var parameter = model.Args[0];
             var parameter2 = model.Args[1];
             var format = parameter2.MemberValue.ObjToString();
-            return string.Format("  {0}({1})  ) ", format, parameter.MemberName);
+            return string.Format("  {0}({1})   ", format, parameter.MemberName);
         }
  
 
@@ -291,26 +292,26 @@ namespace SqlSugar
             var parameter = model.Args[0];
             var parameter2 = model.Args[1];
             var parameter3 = model.Args[2];
-            return string.Format(" ({1} +  ({2}||'{0}')::INTERVAL) ", parameter3.MemberValue, parameter.MemberName, parameter2.MemberName);
+            return string.Format(" (DATEADD('{0}',{2}, {1})) ", parameter3.MemberValue.ObjToString().ToLower().First(), parameter.MemberName, parameter2.MemberValue);
         }
-
+        
         public override string DateAddDay(MethodCallExpressionModel model)
         {
             var parameter = model.Args[0];
             var parameter2 = model.Args[1];
-            return string.Format(" ({0} + ({1}||'day')::INTERVAL) ", parameter.MemberName, parameter2.MemberName);
+            return string.Format(" (DATEADD('d',{1}, {0}))  ", parameter.MemberName, parameter2.MemberName);
         }
 
         public override string ToInt32(MethodCallExpressionModel model)
         {
             var parameter = model.Args[0];
-            return string.Format(" CAST({0} AS INT4)", parameter.MemberName);
+            return string.Format(" CAST({0} AS INT)", parameter.MemberName);
         }
 
         public override string ToInt64(MethodCallExpressionModel model)
         {
             var parameter = model.Args[0];
-            return string.Format(" CAST({0} AS INT8)", parameter.MemberName);
+            return string.Format(" CAST({0} AS long)", parameter.MemberName);
         }
 
         public override string ToString(MethodCallExpressionModel model)
@@ -328,7 +329,7 @@ namespace SqlSugar
         public override string ToDouble(MethodCallExpressionModel model)
         {
             var parameter = model.Args[0];
-            return string.Format(" CAST({0} AS DECIMAL(18,4))", parameter.MemberName);
+            return string.Format(" CAST({0} AS double )", parameter.MemberName);
         }
 
         public override string ToBool(MethodCallExpressionModel model)
@@ -340,7 +341,7 @@ namespace SqlSugar
         public override string ToDecimal(MethodCallExpressionModel model)
         {
             var parameter = model.Args[0];
-            return string.Format(" CAST({0} AS DECIMAL(18,4))", parameter.MemberName);
+            return string.Format(" CAST({0} AS double )", parameter.MemberName);
         }
 
         public override string Length(MethodCallExpressionModel model)

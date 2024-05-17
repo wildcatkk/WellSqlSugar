@@ -145,31 +145,28 @@ namespace SqlSugar.TDengine
         {
             return "false";
         }
+
+        public override string Substring(MethodCallExpressionModel model)
+        {
+            var parameter = model.Args[0];
+            var parameter2 = model.Args[1];
+            var parameter3 = model.Args[2];
+            if (parameter2.MemberValue is int&& parameter3.MemberValue is int)
+            {
+                model.Parameters.RemoveAll(it => it.ParameterName.Equals(parameter2.MemberName) || it.ParameterName.Equals(parameter3.MemberName));
+                return string.Format("SUBSTR({0},{1},{2})", parameter.MemberName, Convert.ToInt32(parameter2.MemberValue) + 1, parameter3.MemberValue);
+            }
+            else
+            {
+                return string.Format("SUBSTR({0},{1},{2})", parameter.MemberName, parameter2.MemberName, parameter3.MemberName);
+            }
+        }
         public override string DateDiff(MethodCallExpressionModel model)
         {
-            var parameter = (DateType)(Enum.Parse(typeof(DateType), model.Args[0].MemberValue.ObjToString()));
-            var begin = model.Args[1].MemberName;
-            var end = model.Args[2].MemberName;
-            switch (parameter)
-            {
-                case DateType.Year:
-                    return $" ( DATE_PART('Year',  {end}   ) - DATE_PART('Year',  {begin}) )";
-                case DateType.Month:
-                    return $" (  ( DATE_PART('Year',  {end}   ) - DATE_PART('Year',  {begin}) ) * 12 + (DATE_PART('month', {end}) - DATE_PART('month', {begin})) )";
-                case DateType.Day:
-                    return $" ( DATE_PART('day', {end} - {begin}) )";
-                case DateType.Hour:
-                    return $" ( ( DATE_PART('day', {end} - {begin}) ) * 24 + DATE_PART('hour', {end} - {begin} ) )";
-                case DateType.Minute:
-                    return $" ( ( ( DATE_PART('day', {end} - {begin}) ) * 24 + DATE_PART('hour', {end} - {begin} ) ) * 60 + DATE_PART('minute', {end} - {begin} ) )";
-                case DateType.Second:
-                    return $" ( ( ( DATE_PART('day', {end} - {begin}) ) * 24 + DATE_PART('hour', {end} - {begin} ) ) * 60 + DATE_PART('minute', {end} - {begin} ) ) * 60 + DATE_PART('second', {end} - {begin} )";
-                case DateType.Millisecond:
-                    break;
-                default:
-                    break;
-            }
-            throw new Exception(parameter + " datediff no support");
+            var parameter = model.Args[0];
+            var parameter2 = model.Args[1];
+            var parameter3 = model.Args[2];
+            return string.Format(" TIMEDIFF({1},{2},1{0}) ", parameter.MemberValue.ObjToString().ToLower().First(), parameter2.MemberName, parameter3.MemberName);
         }
         public override string IIF(MethodCallExpressionModel model)
         {
@@ -188,62 +185,29 @@ namespace SqlSugar.TDengine
         {
             var parameter = model.Args[0];
             var parameter2 = model.Args[1];
-            var format = "dd";
-            if (parameter2.MemberValue.ObjToString() == DateType.Year.ToString())
-            {
-                format = "yyyy";
-            }
-            if (parameter2.MemberValue.ObjToString() == DateType.Month.ToString())
-            {
-                format = "MM";
-            }
-            if (parameter2.MemberValue.ObjToString() == DateType.Day.ToString())
-            {
-                format = "dd";
-            }
-            if (parameter2.MemberValue.ObjToString() == DateType.Hour.ToString())
-            {
-                format = "hh";
-            }
-            if (parameter2.MemberValue.ObjToString() == DateType.Minute.ToString())
-            {
-                format = "mi";
-            }
-            if (parameter2.MemberValue.ObjToString() == DateType.Second.ToString())
-            {
-                format = "ss";
-            }
-            if (parameter2.MemberValue.ObjToString() == DateType.Millisecond.ToString())
-            {
-                format = "ms";
-            }
-            if (parameter2.MemberValue.ObjToString() == DateType.Weekday.ToString())
-            {
-                return $"  extract(DOW FROM cast({parameter.MemberName} as TIMESTAMP)) ";
-            }
- 
-            return string.Format(" cast( to_char({1},'{0}')as integer ) ", format, parameter.MemberName);
+            var format = parameter2.MemberValue.ObjToString();
+            return string.Format("  {0}({1})   ", format, parameter.MemberName);
         }
 
         public override string Contains(MethodCallExpressionModel model)
         {
             var parameter = model.Args[0];
             var parameter2 = model.Args[1];
-            return string.Format(" ({0} like concat('%',{1},'%')) ", parameter.MemberName, parameter2.MemberName  );
+            return string.Format(" ({0} like  {1}  ) ", parameter.MemberName, ("%"+parameter2.MemberValue+"%").ToSqlValue()  );
         }
 
         public override string StartsWith(MethodCallExpressionModel model)
         {
             var parameter = model.Args[0];
             var parameter2 = model.Args[1];
-            return string.Format(" ({0} like concat({1},'%')) ", parameter.MemberName, parameter2.MemberName);
+            return string.Format(" ({0} like  {1}  ) ", parameter.MemberName, ("%" + parameter2.MemberValue  ).ToSqlValue());
         }
 
         public override string EndsWith(MethodCallExpressionModel model)
         {
             var parameter = model.Args[0];
             var parameter2 = model.Args[1];
-            return string.Format(" ({0} like concat('%',{1}))", parameter.MemberName,parameter2.MemberName);
+            return string.Format("({0} like  {1}  ) ", parameter.MemberName, (  parameter2.MemberValue + "%").ToSqlValue());
         }
 
         public override string DateIsSameDay(MethodCallExpressionModel model)
@@ -303,13 +267,19 @@ namespace SqlSugar.TDengine
             var parameter = model.Args[0];
             return string.Format(" CAST({0} AS timestamp)", parameter.MemberName);
         }
+        public override string ToDateShort(MethodCallExpressionModel model)
+        {
+            var parameter = model.Args[0];
+            return string.Format("  CAST( SUBSTR(TO_ISO8601({0}),1,10) AS timestamp)", parameter.MemberName);
+        }
         public override string DateAddByType(MethodCallExpressionModel model)
         {
             var parameter = model.Args[0];
             var parameter2 = model.Args[1];
             var parameter3 = model.Args[2];
-            return string.Format(" ({1} +  ({2}||'{0}')::INTERVAL) ", parameter3.MemberValue, parameter.MemberName, parameter2.MemberName);
+            return string.Format(" {1}+{2}{0} ", parameter3.MemberValue.ObjToString().ToLower().First(), parameter.MemberName, parameter2.MemberValue);
         }
+
 
         public override string DateAddDay(MethodCallExpressionModel model)
         {

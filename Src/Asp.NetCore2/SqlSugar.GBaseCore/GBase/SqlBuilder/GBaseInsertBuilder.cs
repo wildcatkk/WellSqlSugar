@@ -41,6 +41,10 @@ namespace SqlSugar.GBase
             get
             {
                 var result = Builder.GetTranslationTableName(EntityInfo.EntityName);
+                if (this.AsName.HasValue()) 
+                {
+                    return Builder.GetTranslationTableName(this.AsName);
+                }
                 result += UtilConstants.Space;
                 if (this.TableWithString.HasValue())
                 {
@@ -132,7 +136,7 @@ namespace SqlSugar.GBase
                 }
                 else if (type == UtilConstants.BoolType)
                 {
-                    return value.ObjToBool() ? "1" : "0";
+                    return string.Format("CAST({0} AS boolean)", value.ObjToBool()?1:0) ;
                 }
                 else
                 {
