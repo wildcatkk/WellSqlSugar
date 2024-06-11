@@ -37,3 +37,28 @@ public virtual List<T> ToList()
 3
 C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar\WellExtend
 整个文件夹
+
+4
+C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar\Utilities\UtilMethods.cs
+
+将
+public static object ConvertDataByTypeName(string ctypename,string value)
+{
+......
+    else if (item.CSharpTypeName.EqualCase(UtilConstants.DateTimeOffsetType.Name))
+    {
+        return UtilMethods.GetDateTimeOffsetByDateTime(Convert.ToDateTime(item.FieldValue));
+    }
+......
+}
+
+改为
+public static object ConvertDataByTypeName(string ctypename,string value)
+{
+......
+    else if (item.CSharpTypeName.EqualCase(UtilConstants.DateTimeOffsetType.Name))
+    {
+        return DateTimeOffset.Parse(item.FieldValue);
+    }
+......
+}
