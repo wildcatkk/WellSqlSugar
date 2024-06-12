@@ -1318,9 +1318,12 @@ namespace SqlSugar
             }
             else if (item.CSharpTypeName.EqualCase(UtilConstants.DateTimeOffsetType.Name))
             {
-                //TODO Wellthinic edit
-                return DateTimeOffset.Parse(item.FieldValue);
-                //return UtilMethods.GetDateTimeOffsetByDateTime(Convert.ToDateTime(item.FieldValue));
+                DateTimeOffset dt;
+                if (DateTimeOffset.TryParse(item.FieldValue, out dt))
+                {
+                    return dt;
+                }
+                return UtilMethods.GetDateTimeOffsetByDateTime(Convert.ToDateTime(item.FieldValue));
             }
             else if (item.CSharpTypeName.EqualCase(UtilConstants.GuidType.Name))
             {

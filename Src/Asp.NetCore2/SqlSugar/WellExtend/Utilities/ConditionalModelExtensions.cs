@@ -1,104 +1,85 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace SqlSugar
 {
     public static class ConditionalModelExtensions
     {
-        public static void Add(this List<IConditionalModel> conditions, string fieldName, object fieldValue, ConditionalType conditionalType = ConditionalType.Equal)
+        public static void Add(this List<IConditionalModel> conditions, string fieldName, string fieldValue, Type fieldType, ConditionalType conditionalType = ConditionalType.Equal)
         {
             if (conditions is null)
             {
                 conditions = new List<IConditionalModel>();
             }
 
-            conditions.Add(SugarConditional.CreateOne(fieldName, fieldValue, conditionalType));
+            conditions.Add(SugarConditional.CreateModel(fieldName, fieldValue, fieldType, conditionalType));
         }
 
-        public static void Add(this List<ConditionalModel> conditions, string fieldName, object fieldValue, ConditionalType conditionalType = ConditionalType.Equal)
+        public static void Add(this List<ConditionalModel> conditions, string fieldName, string fieldValue, Type fieldType, ConditionalType conditionalType = ConditionalType.Equal)
         {
             if (conditions is null)
             {
                 conditions = new List<ConditionalModel>();
             }
 
-            conditions.Add(SugarConditional.CreateOne(fieldName, fieldValue, conditionalType));
+            conditions.Add(SugarConditional.CreateModel(fieldName, fieldValue, fieldType, conditionalType));
         }
 
-        public static void Add(this List<KeyValuePair<WhereType, ConditionalModel>> conditions, WhereType whereType, string fieldName, object fieldValue, ConditionalType conditionalType = ConditionalType.Equal)
+        public static void Add(this List<KeyValuePair<WhereType, ConditionalModel>> conditions, WhereType whereType, string fieldName, string fieldValue, Type fieldType, ConditionalType conditionalType = ConditionalType.Equal)
         {
             if (conditions is null)
             {
                 conditions = new List<KeyValuePair<WhereType, ConditionalModel>>();
             }
 
-            conditions.Add(SugarConditional.CreateOne(whereType, fieldName, fieldValue, conditionalType));
+            conditions.Add(SugarConditional.CreateModel(whereType, fieldName, fieldValue, fieldType, conditionalType));
         }
     }
 
     public static class SugarConditional
     {
-        private static ConditionalModel CreateConditionalModel(string fieldName, object fieldValue, ConditionalType conditionalType = ConditionalType.Equal)
+        public static List<IConditionalModel> Create(string fieldName, string fieldValue, Type fieldType, ConditionalType conditionalType = ConditionalType.Equal)
         {
-            ConditionalModel condi = new ConditionalModel();
-
-            if (fieldValue is bool)
+            List<IConditionalModel> conditions = new List<IConditionalModel>
             {
-                if (fieldValue is null)
-                {
-                    fieldValue = false;
-                }
+                { fieldName, fieldValue, fieldType, conditionalType }
+            };
 
-                condi.FieldName = fieldName;
-                condi.FieldValue = fieldValue.ToString()?.ToLower();
-                condi.CSharpTypeName = "bool";
-                condi.ConditionalType = conditionalType;
-            }
-            else
+            return conditions;
+        }
+
+        public static List<IConditionalModel> Create(List<KeyValuePair<WhereType, ConditionalModel>> list)
+            => new List<IConditionalModel> { new ConditionalCollections { ConditionalList = list } };
+
+        public static ConditionalModel CreateModel(string fieldName, string fieldValue, Type fieldType, ConditionalType conditionalType = ConditionalType.Equal)
+        {
+            ConditionalModel condi = new ConditionalModel
             {
-                if (fieldValue is null)
-                {
-                    fieldValue = "";
-                }
-
-                condi.FieldName = fieldName;
-                condi.FieldValue = fieldValue.ToString();
-                condi.ConditionalType = conditionalType;
-            }
+                FieldValue = fieldValue,
+                FieldName = fieldName,
+                CSharpTypeName = (Nullable.GetUnderlyingType(fieldType) ?? fieldType).Name,
+                ConditionalType = conditionalType
+            };
 
             return condi;
         }
 
-        public static List<IConditionalModel> Create(string fieldName, object fieldValue, ConditionalType conditionalType = ConditionalType.Equal)
-        {
-            List<IConditionalModel> conditions = new List<IConditionalModel>
-            {
-                { fieldName, fieldValue, conditionalType }
-            };
+        public static KeyValuePair<WhereType, ConditionalModel> CreateModel(WhereType whereType, string fieldName, string fieldValue, Type fieldType, ConditionalType conditionalType = ConditionalType.Equal)
+            => new KeyValuePair<WhereType, ConditionalModel>(whereType, CreateModel(fieldName, fieldValue, fieldType, conditionalType));
 
-            return conditions;
-        }
-
-        public static List<KeyValuePair<WhereType, ConditionalModel>> Create(WhereType whereType, string fieldName, object fieldValue, ConditionalType conditionalType = ConditionalType.Equal)
+        public static List<KeyValuePair<WhereType, ConditionalModel>> CreateModels(WhereType whereType, string fieldName, string fieldValue, Type fieldType, ConditionalType conditionalType = ConditionalType.Equal)
         {
             List<KeyValuePair<WhereType, ConditionalModel>> conditions = new List<KeyValuePair<WhereType, ConditionalModel>>
             {
-                { whereType, fieldName, fieldValue, conditionalType }
+                { whereType, fieldName, fieldValue, fieldType, conditionalType }
             };
 
             return conditions;
         }
 
-        public static ConditionalModel CreateOne(string fieldName, object fieldValue, ConditionalType conditionalType = ConditionalType.Equal)
-            => CreateConditionalModel(fieldName, fieldValue, conditionalType);
-
-        public static KeyValuePair<WhereType, ConditionalModel> CreateOne(WhereType whereType, string fieldName, object fieldValue, ConditionalType conditionalType = ConditionalType.Equal)
-            => new KeyValuePair<WhereType, ConditionalModel>(whereType, CreateOne(fieldName, fieldValue, conditionalType));
-
-        public static ConditionalCollections CreateWhere(List<KeyValuePair<WhereType, ConditionalModel>> list)
-            => new ConditionalCollections { ConditionalList = list } ;
-
-        public static List<IConditionalModel> CreateList(List<KeyValuePair<WhereType, ConditionalModel>> list)
-            => new List<IConditionalModel> { new ConditionalCollections { ConditionalList = list } };
+        public static ConditionalCollections CreateList(List<KeyValuePair<WhereType, ConditionalModel>> list)
+            => new ConditionalCollections { ConditionalList = list };
 
     }
 }

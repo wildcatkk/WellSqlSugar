@@ -66,19 +66,16 @@ namespace SqlSugar
         private static ConditionalModel GetConditionalModel(JToken value, Type tableType)
         {
             var filedName = value["FieldName"] + "";
+            string? csharpTypeName = value["CSharpTypeName"].ObjToString();
 
-            var csharpTypeValue = value["CSharpTypeName"].ObjToString();
-            string? csharpTypeName = null;
-            if (csharpTypeValue.IsNullOrEmpty())
+            if (csharpTypeName.IsNullOrEmpty())
             {
                 var prop = tableType.GetProperty(filedName);
                 if (prop != null)
-                {
                     csharpTypeName = (Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType).Name;
-                }
+                else
+                    csharpTypeName = null;
             }
-            else
-                csharpTypeName = csharpTypeValue;
 
             return new ConditionalModel()
             {

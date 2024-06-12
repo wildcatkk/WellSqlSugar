@@ -161,14 +161,14 @@ namespace SqlSugar
             Dictionary<object, string> enumCache = new Dictionary<object, string>();
             foreach (var info in enumInfoes)
             {
-                Type enumType = info.KeyPropInfo.PropertyType;
-                if (info.KeyPropInfo.PropertyType.IsGenericType)
-                {
-                    if (info.KeyPropInfo.PropertyType.GenericTypeArguments.Length > 0)
-                    {
-                        enumType = info.KeyPropInfo.PropertyType.GenericTypeArguments[0];
-                    }
-                }
+                Type enumType = info.KeyPropType;
+                //if (info.KeyPropInfo.PropertyType.IsGenericType)
+                //{
+                //    if (info.KeyPropInfo.PropertyType.GenericTypeArguments.Length > 0)
+                //    {
+                //        enumType = info.KeyPropInfo.PropertyType.GenericTypeArguments[0];
+                //    }
+                //}
 
                 foreach (var t in list)
                 {
@@ -311,15 +311,15 @@ namespace SqlSugar
                         propValues.Add(new SingleKey(info.ForeignValue.TableColumn, propValue));
 
                         // 组装查询条件
-                        //对于非bool类型条件，可以将多个Or合并为一个In
-                        if (info.KeyPropInfo.PropertyType != typeof(bool))
-                        {
-                            string propValueStr;
-                            if (propValue is Enum)
-                                propValueStr = ((int)propValue).ToString();
-                            else
-                                propValueStr = propValue.ToString();
+                        string propValueStr;
+                        if (propValue is Enum)
+                            propValueStr = ((int)propValue).ToString();
+                        else
+                            propValueStr = propValue.ToString();
 
+                        //对于非bool类型条件，可以将多个Or合并为一个In
+                        if (info.KeyPropType != typeof(bool))
+                        {
                             ConditionMerge merge = merges.FirstOrDefault(p => p.Column == info.ForeignValue.TableColumn);
                             if (merge != null)
                             {
@@ -331,12 +331,12 @@ namespace SqlSugar
                             }
                             else
                             {
-                                merges.Add(new ConditionMerge(ConditionalType.Equal, info.ForeignValue.TableColumn, propValueStr));
+                                merges.Add(new ConditionMerge(ConditionalType.Equal, info.ForeignValue.TableColumn, propValueStr, info.KeyPropType));
                             }
                         }
                         else
                         {
-                            condiModels.Add(WhereType.Or, info.ForeignValue.TableColumn, propValue);
+                            condiModels.Add(WhereType.Or, info.ForeignValue.TableColumn, propValueStr, info.KeyPropType);
                         }
                     }
 
@@ -356,10 +356,10 @@ namespace SqlSugar
 
             foreach (var merge in merges)
             {
-                condiModels.Add(WhereType.Or, merge.Column, merge.Value, merge.CondiType);
+                condiModels.Add(WhereType.Or, merge.Column, merge.Value, merge.ValueType, merge.CondiType);
             }
 
-            tableInfo.ConditionalModels = SugarConditional.CreateList(condiModels);
+            tableInfo.ConditionalModels = SugarConditional.Create(condiModels);
 
             return tableInfo;
         }
@@ -465,10 +465,10 @@ namespace SqlSugar
 
                         // 组装复合查询条件
                         var condiModels = new List<KeyValuePair<WhereType, ConditionalModel>>();
-                        condiModels.Add(WhereType.Or, info.SubForeignValue.ParentColumn, info.SubForeignValue.ParentKey);
-                        condiModels.Add(WhereType.And, info.SubForeignValue.TableColumn, propValueStr);
+                        condiModels.Add(WhereType.Or, info.SubForeignValue.ParentColumn, info.SubForeignValue.ParentKey, info.KeyPropType);
+                        condiModels.Add(WhereType.And, info.SubForeignValue.TableColumn, propValueStr, info.KeyPropType);
 
-                        tableInfo.ConditionalModels.Add(SugarConditional.CreateWhere(condiModels));
+                        tableInfo.ConditionalModels.Add(SugarConditional.CreateList(condiModels));
                     }
 
                     // 组装复合Select条件
@@ -616,7 +616,7 @@ namespace SqlSugar
 
                             // 组装查询条件
                             //对于非bool类型条件，可以将多个Or合并为一个In
-                            if (info.KeyPropInfo.PropertyType != typeof(bool))
+                            if (info.KeyPropType != typeof(bool))
                             {
                                 ConditionMerge merge = merges.FirstOrDefault(p => p.Column == info.ForeignListValue.TableColumn);
                                 if (merge != null)
@@ -629,12 +629,12 @@ namespace SqlSugar
                                 }
                                 else
                                 {
-                                    merges.Add(new ConditionMerge(ConditionalType.Equal, info.ForeignListValue.TableColumn, propValue));
+                                    merges.Add(new ConditionMerge(ConditionalType.Equal, info.ForeignListValue.TableColumn, propValue, info.KeyPropType));
                                 }
                             }
                             else
                             {
-                                condiModels.Add(WhereType.Or, info.ForeignListValue.TableColumn, propValue);
+                                condiModels.Add(WhereType.Or, info.ForeignListValue.TableColumn, propValue, info.KeyPropType);
                             }
                         }
                     }
@@ -655,10 +655,10 @@ namespace SqlSugar
 
             foreach (var merge in merges)
             {
-                condiModels.Add(WhereType.Or, merge.Column, merge.Value, merge.CondiType);
+                condiModels.Add(WhereType.Or, merge.Column, merge.Value, merge.ValueType, merge.CondiType);
             }
 
-            tableInfo.ConditionalModels = SugarConditional.CreateList(condiModels);
+            tableInfo.ConditionalModels = SugarConditional.Create(condiModels);
 
             return tableInfo;
         }
@@ -672,11 +672,15 @@ namespace SqlSugar
             PropInfo = propInfo;
             EnumName = enumName;
             KeyPropInfo = type.GetProperty(enumName.Property);
+            if (KeyPropInfo != null)
+                KeyPropType = Nullable.GetUnderlyingType(KeyPropInfo.PropertyType) ?? KeyPropInfo.PropertyType;
         }
 
         public PropertyInfo PropInfo { get; set; }
 
         public PropertyInfo KeyPropInfo { get; set; }
+
+        public Type KeyPropType { get; set; }
 
         public EnumName EnumName { get; set; }
     }
@@ -688,11 +692,15 @@ namespace SqlSugar
             PropInfo = propInfo;
             ForeignValue = foreign;
             KeyPropInfo = type.GetProperty(foreign.Property);
+            if (KeyPropInfo != null)
+                KeyPropType = Nullable.GetUnderlyingType(KeyPropInfo.PropertyType) ?? KeyPropInfo.PropertyType;
         }
 
         public PropertyInfo PropInfo { get; set; }
 
         public PropertyInfo KeyPropInfo { get; set; }
+
+        public Type KeyPropType { get; set; }
 
         public ForeignValue ForeignValue { get; set; }
     }
@@ -704,22 +712,27 @@ namespace SqlSugar
             PropInfo = propInfo;
             ForeignListValue = foreign;
             KeyPropInfo = type.GetProperty(foreign.Property);
+            if (KeyPropInfo != null)
+                KeyPropType = Nullable.GetUnderlyingType(KeyPropInfo.PropertyType) ?? KeyPropInfo.PropertyType;
         }
 
         public PropertyInfo PropInfo { get; set; }
 
         public PropertyInfo KeyPropInfo { get; set; }
 
+        public Type KeyPropType { get; set; }
+
         public ForeignListValue ForeignListValue { get; set; }
     }
 
     internal class ConditionMerge
     {
-        public ConditionMerge(ConditionalType condiType, string column, string value)
+        public ConditionMerge(ConditionalType condiType, string column, string value, Type valueType)
         {
             CondiType = condiType;
             Column = column;
             Value = value;
+            ValueType = valueType;
         }
 
         public ConditionalType CondiType { get; set; }
@@ -727,6 +740,8 @@ namespace SqlSugar
         public string Column { get; set; }
 
         public string Value { get; set; }
+
+        public Type ValueType { get; set; }
     }
 
     internal class SubForeignValueInfo
@@ -736,11 +751,15 @@ namespace SqlSugar
             PropInfo = propInfo;
             SubForeignValue = foreign;
             KeyPropInfo = type.GetProperty(foreign.Property);
+            if (KeyPropInfo != null)
+                KeyPropType = Nullable.GetUnderlyingType(KeyPropInfo.PropertyType) ?? KeyPropInfo.PropertyType;
         }
 
         public PropertyInfo PropInfo { get; set; }
 
         public PropertyInfo KeyPropInfo { get; set; }
+
+        public Type KeyPropType { get; set; }
 
         public SubForeignValue SubForeignValue { get; set; }
     }
