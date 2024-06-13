@@ -5,41 +5,37 @@ namespace SqlSugar
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
     public class ForeignListValue : Attribute
     {
-        public readonly string TableName;
-
-        public readonly string TableColumn;
-
-        public readonly string TargetColumn;
-
-        public readonly string Property;
-
+        public readonly string ForeignTable;
+        public readonly string ForeignColumn;
+        public readonly string ResultColumn;
+        public readonly string ValueColumn;
         public readonly bool IsId;
 
-        public ForeignListValue(string tableName, string property)
+        public ForeignListValue(string foreignTable, string valueColumn)
         {
-            TableName = tableName;
-            TableColumn = "Id";
-            TargetColumn = "Name";
+            ForeignTable = foreignTable;
+            ForeignColumn = "Id";
+            ResultColumn = "Name";
             IsId = true;
-            Property = property;
+            ValueColumn = valueColumn;
         }
 
-        public ForeignListValue(string tableName, string tableColumn, string property)
+        public ForeignListValue(string foreignTable, string foreignColumn, string valueColumn)
         {
-            TableName = tableName;
-            TableColumn = tableColumn;
-            IsId = "Id".Equals(tableColumn);
-            TargetColumn = "Name";
-            Property = property;
+            ForeignTable = foreignTable;
+            ForeignColumn = foreignColumn;
+            IsId = "Id".Equals(foreignColumn);
+            ResultColumn = "Name";
+            ValueColumn = valueColumn;
         }
 
-        public ForeignListValue(string tableName, string tableColumn, string property, string targetColumn)
+        public ForeignListValue(string foreignTable, string foreignColumn, string valueColumn, string resultColumn)
         {
-            TableName = tableName;
-            TableColumn = tableColumn;
-            IsId = "Id".Equals(tableColumn);
-            TargetColumn = targetColumn;
-            Property = property;
+            ForeignTable = foreignTable;
+            ForeignColumn = foreignColumn;
+            IsId = "Id".Equals(foreignColumn);
+            ResultColumn = resultColumn;
+            ValueColumn = valueColumn;
         }
     }
 }

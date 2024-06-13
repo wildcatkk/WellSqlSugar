@@ -3,51 +3,53 @@
 namespace SqlSugar
 {
     /// <summary>
-    /// 自定义特性，用于标记外键表(子表)字段（双主键）
+    /// 自定义特性，用于标记外键表指定列（双主键）
     /// </summary>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
     public class SubForeignValue : Attribute
     {
-        public readonly string TableName;
-        public readonly string ParentColumn;
-        public readonly string ParentKey;
-        public readonly string TableColumn;
-        public readonly string TargetColumn;
-        public readonly string Property;
+        public readonly string ForeignTable;
+        public readonly string ForeignColumn1;
+        public readonly string ForeignValue1;
+        public readonly string ForeignColumn2;
+        public readonly string ResultColumn;
+        public readonly string Value2Column;
 
         /// <summary>
-        /// tableColumn => "Name"
+        /// ForeignColumn1 + ForeignColumn2 => "Name"
         /// </summary>
-        /// <param name="tableName">外表名称</param>
-        /// <param name="parentKey">父表主键值</param>
-        /// <param name="tableColumn">外键表(逻辑)复合主键列</param>
-        /// <param name="property">当前表查询值字段</param>
-        public SubForeignValue(string tableName, string parentColumn, string parentKey, string tableColumn, string property)
+        /// <param name="foreignTable">外键表名称</param>
+        /// <param name="foreignColumn1">外键表主键列1</param>
+        /// <param name="foreignValue1">外键表主键列1的值</param>
+        /// <param name="foreignColumn2">外键表主键列2</param>
+        /// <param name="values2Column">外键表主键列2的值 —— 当前表某个列</param>
+        public SubForeignValue(string foreignTable, string foreignColumn1, string foreignValue1, string foreignColumn2, string values2Column)
         {
-            TableName = tableName;
-            ParentColumn = parentColumn;
-            ParentKey = parentKey;
-            TableColumn = tableColumn;
-            TargetColumn = "Name";
-            Property = property;
+            ForeignTable = foreignTable;
+            ForeignColumn1 = foreignColumn1;
+            ForeignValue1 = foreignValue1;
+            ForeignColumn2 = foreignColumn2;
+            Value2Column = values2Column;
+            ResultColumn = "Name";
         }
 
         /// <summary>
-        /// tableColumn => targetColumn
+        /// ForeignColumn1 + ForeignColumn2 => ResultColumn
         /// </summary>
-        /// <param name="tableName">外表名称</param>
-        /// <param name="parentKey">父表主键值</param>
-        /// <param name="tableColumn">外键表(逻辑)复合主键列</param>
-        /// <param name="property">当前表查询值字段</param>
-        /// <param name="targetColumn">外键表目标字段</param>
-        public SubForeignValue(string tableName, string parentColumn, string parentKey, string tableColumn, string property, string targetColumn)
+        /// <param name="foreignTable">外键表名称</param>
+        /// <param name="foreignColumn1">外键表主键列1</param>
+        /// <param name="foreignValue1">外键表主键列1的值</param>
+        /// <param name="foreignColumn2">外键表主键列2</param>
+        /// <param name="values2Column">外键表主键列2的值 —— 当前表某个列</param>
+        /// <param name="resultColumn">外键表结果列</param>
+        public SubForeignValue(string foreignTable, string foreignColumn1, string foreignValue1, string foreignColumn2, string values2Column, string resultColumn)
         {
-            TableName = tableName;
-            ParentColumn = parentColumn;
-            ParentKey = parentKey;
-            TableColumn = tableColumn;
-            TargetColumn = targetColumn;
-            Property = property;
+            ForeignTable = foreignTable;
+            ForeignColumn1 = foreignColumn1;
+            ForeignValue1 = foreignValue1;
+            ForeignColumn2 = foreignColumn2;
+            Value2Column = values2Column;
+            ResultColumn = resultColumn;
         }
     }
 }

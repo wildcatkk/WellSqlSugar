@@ -8,11 +8,11 @@ namespace SqlSugar
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, Inherited = true)]
     public class EnumName : Attribute
     {
-        public EnumName(string property)
+        public EnumName(string valueColumn)
         {
-            Property = property;
+            ValueColumn = valueColumn;
         }
 
-        public string Property { get; set; }
+        public string ValueColumn { get; set; }
     }
 }

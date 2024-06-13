@@ -62,70 +62,70 @@ namespace SqlSugar
             //}
 
             //1、反射收集特性
-            PropertyInfo[] props = type.GetProperties();
+            var tableType = type.GetTable();
             List<EnumNameInfo> enumInfoes = new List<EnumNameInfo>();
             List<ForeignValueInfo> foreignInfoes = new List<ForeignValueInfo>();
             List<SubForeignValueInfo> subForeignInfoes = new List<SubForeignValueInfo>();
             List<ForeignListValueInfo> foreignListInfoes = new List<ForeignListValueInfo>();
-            foreach (PropertyInfo prop in props)
+            foreach (var prop in tableType.Properties)
             {
                 //枚举特性
-                if (prop.TryGetAtrribute(out EnumName enumAttr))
+                if (prop.Info.TryGetAtrribute(out EnumName enumAttr))
                 {
-                    if (prop.PropertyType != typeof(string))
+                    if (prop.Type != typeof(string))
                     {
-                        throw new Exception($"特性EnumName({type.Name}.{prop.Name})仅支持string类型的属性。");
+                        throw new Exception($"特性EnumName({tableType.Type.Name}.{prop.Info.Name})仅支持string类型的属性。");
                     }
-                    EnumNameInfo enumInfo = new EnumNameInfo(prop, enumAttr, type);
+                    EnumNameInfo enumInfo = new EnumNameInfo(prop, enumAttr, tableType);
 
-                    if (enumInfo.KeyPropInfo != null) enumInfoes.Add(enumInfo);
+                    if (enumInfo.ValueProperty != null) enumInfoes.Add(enumInfo);
                 }
                 //字典类型特性（转换为ForeignValue处理）
-                else if (prop.TryGetAtrribute(out DictTypeValue dictTypeAttr))
+                else if (prop.Info.TryGetAtrribute(out DictTypeValue dictTypeAttr))
                 {
-                    ForeignValue foreignAttr = new ForeignValue("SysDictType", "Code", dictTypeAttr.CodeProperty, dictTypeAttr.TargetColumn);
-                    var foreignInfo = new ForeignValueInfo(prop, foreignAttr, type);
+                    ForeignValue foreignAttr = new ForeignValue("SysDictType", "Code", dictTypeAttr.CodeColumn, dictTypeAttr.ResultColumn);
+                    var foreignInfo = new ForeignValueInfo(prop, foreignAttr, tableType);
 
-                    if (foreignInfo.KeyPropInfo != null) foreignInfoes.Add(foreignInfo);
+                    if (foreignInfo.ValueProperty != null) foreignInfoes.Add(foreignInfo);
                 }
                 //字典项特性（转换为SubForeignValue处理）
-                else if (prop.TryGetAtrribute(out DictItemValue dictItemAttr))
+                else if (prop.Info.TryGetAtrribute(out DictItemValue dictItemAttr))
                 {
-                    SubForeignValue foreignAttr = new SubForeignValue("SysDictItem", "ParentCode", dictItemAttr.ParentCode, "Code", dictItemAttr.CodeProperty, dictItemAttr.TargetColumn);
-                    var subForeignInfo = new SubForeignValueInfo(prop, foreignAttr, type);
+                    SubForeignValue foreignAttr = new SubForeignValue("SysDictItem", "ParentCode", dictItemAttr.ParentCode, "Code", dictItemAttr.CodeColumn, dictItemAttr.ResultColumn);
+                    var subForeignInfo = new SubForeignValueInfo(prop, foreignAttr, tableType);
 
-                    if (subForeignInfo.KeyPropInfo != null) subForeignInfoes.Add(subForeignInfo);
+                    if (subForeignInfo.Value2Property != null) subForeignInfoes.Add(subForeignInfo);
                 }
                 //外键表特性（单主键）
-                else if (prop.TryGetAtrribute(out ForeignValue foreignAttr))
+                else if (prop.Info.TryGetAtrribute(out ForeignValue foreignAttr))
                 {
-                    if (foreignAttr.IsId && prop.PropertyType != typeof(string))
+                    if (foreignAttr.IsId && prop.Type != typeof(string))
                     {
-                        throw new Exception($"特性ForeignValue({type.Name}.{prop.Name})仅支持string类型的属性。");
+                        throw new Exception($"特性ForeignValue({tableType.Type.Name}.{prop.Info.Name})仅支持string类型的属性。");
                     }
 
-                    var foreignInfo = new ForeignValueInfo(prop, foreignAttr, type);
+                    var foreignInfo = new ForeignValueInfo(prop, foreignAttr, tableType);
 
-                    if (foreignInfo.KeyPropInfo != null) foreignInfoes.Add(foreignInfo);
+                    if (foreignInfo.ValueProperty != null) foreignInfoes.Add(foreignInfo);
                 }
                 //外键表特性（复合主键）
-                else if (prop.TryGetAtrribute(out SubForeignValue subForeignAttr))
+                else if (prop.Info.TryGetAtrribute(out SubForeignValue subForeignAttr))
                 {
-                    var subForeignInfo = new SubForeignValueInfo(prop, subForeignAttr, type);
+                    var subForeignInfo = new SubForeignValueInfo(prop, subForeignAttr, tableType);
 
-                    if (subForeignInfo.KeyPropInfo != null) subForeignInfoes.Add(subForeignInfo);
+                    if (subForeignInfo.Value2Property != null) subForeignInfoes.Add(subForeignInfo);
                 }
                 //外键表特性（单主键）
-                else if (prop.TryGetAtrribute(out ForeignListValue foreignListAttr))
+                else if (prop.Info.TryGetAtrribute(out ForeignListValue foreignListAttr))
                 {
-                    if (foreignListAttr.IsId && prop.PropertyType != typeof(string))
+                    if (foreignListAttr.IsId && prop.Type != typeof(string))
                     {
-                        throw new Exception($"特性ForeignListValue({type.Name}.{prop.Name})仅支持string类型的属性。");
+                        throw new Exception($"特性ForeignListValue({tableType.Type.Name} . {prop.Info.Name})仅支持string类型的属性。");
                     }
 
-                    var foreignInfo = new ForeignListValueInfo(prop, foreignListAttr, type);
+                    var foreignInfo = new ForeignListValueInfo(prop, foreignListAttr, tableType);
 
-                    if (foreignInfo.KeyPropInfo != null) foreignListInfoes.Add(foreignInfo);
+                    if (foreignInfo.ValueProperty != null) foreignListInfoes.Add(foreignInfo);
                 }
             }
 
@@ -161,18 +161,9 @@ namespace SqlSugar
             Dictionary<object, string> enumCache = new Dictionary<object, string>();
             foreach (var info in enumInfoes)
             {
-                Type enumType = info.KeyPropType;
-                //if (info.KeyPropInfo.PropertyType.IsGenericType)
-                //{
-                //    if (info.KeyPropInfo.PropertyType.GenericTypeArguments.Length > 0)
-                //    {
-                //        enumType = info.KeyPropInfo.PropertyType.GenericTypeArguments[0];
-                //    }
-                //}
-
                 foreach (var t in list)
                 {
-                    var enumValue = info.KeyPropInfo.GetValue(t);
+                    var enumValue = info.ValueProperty.Info.GetValue(t);
 
                     if (enumValue is null) continue;
 
@@ -186,20 +177,20 @@ namespace SqlSugar
                     {
                         //先尝试获取Description
                         DescriptionAttribute descrip = null;
-                        if (enumType.GetField(enumValue.ToString())?.TryGetAtrribute(out descrip) ?? false
+                        if (info.ValueProperty.Type.GetField(enumValue.ToString())?.TryGetAtrribute(out descrip) ?? false
                             && !string.IsNullOrWhiteSpace(descrip?.Description))
                         {
                             enumStr = descrip.Description;
                         }
                         else
                         {
-                            enumStr = Enum.GetName(enumType, enumValue) ?? "";
+                            enumStr = Enum.GetName(info.ValueProperty.Type, enumValue) ?? "";
                         }
 
                         enumCache.Add(enumValue, enumStr);
                     }
 
-                    info.PropInfo.SetValue(t, enumStr);
+                    info.AttributeProperty.Info.SetValue(t, enumStr);
 
                 }
 
@@ -212,9 +203,9 @@ namespace SqlSugar
             var tableNames = new List<string>();
             foreach (ForeignValueInfo info in foreignInfoes)
             {
-                if (string.IsNullOrEmpty(info.ForeignValue.TableName) || tableNames.Contains(info.ForeignValue.TableName)) continue;
+                if (string.IsNullOrEmpty(info.Attribute.ForeignTable) || tableNames.Contains(info.Attribute.ForeignTable)) continue;
 
-                tableNames.Add(info.ForeignValue.TableName);
+                tableNames.Add(info.Attribute.ForeignTable);
             }
 
             // 根据表名分组查询
@@ -236,11 +227,11 @@ namespace SqlSugar
                 foreach (var item in foreignInfoes)
                 {
                     //数据库数据集
-                    var dataSet = tableInfoes.FirstOrDefault(x => x.TableName == item.ForeignValue.TableName)?.TableList;
+                    var dataSet = tableInfoes.FirstOrDefault(x => x.TableName == item.Attribute.ForeignTable)?.TableList;
                     if (dataSet is null || dataSet.Count == 0) continue;
 
                     //当前行数据
-                    var infoValue = item.KeyPropInfo.GetValue(t);
+                    var infoValue = item.ValueProperty.Info.GetValue(t);
                     if (infoValue is null) continue;
 
                     string infoValueStr;
@@ -252,7 +243,7 @@ namespace SqlSugar
                     dynamic firstObj = null;
                     foreach (var data in dataSet)
                     {
-                        if (DynamicExtensions.TryGetDynamicValue(data, item.ForeignValue.TableColumn, out object columnValue)
+                        if (DynamicExtensions.TryGetDynamicValue(data, item.Attribute.ForeignColumn, out object columnValue)
                             && columnValue != null
                             && columnValue.ToString() == infoValueStr
                          )
@@ -264,10 +255,10 @@ namespace SqlSugar
                     if (firstObj is null) continue;
 
                     // 给当前属性赋值
-                    if (DynamicExtensions.TryGetDynamicValue(firstObj, item.ForeignValue.TargetColumn, out object targetValue)
+                    if (DynamicExtensions.TryGetDynamicValue(firstObj, item.Attribute.ResultColumn, out object targetValue)
                         && targetValue != null)
                     {
-                        item.PropInfo.SetValue(t, targetValue);
+                        item.AttributeProperty.Info.SetValue(t, targetValue);
                     }
                 }
             }
@@ -292,23 +283,23 @@ namespace SqlSugar
             foreach (var info in foreignInfoes)
             {
                 // 分组条件
-                if (info.ForeignValue.TableName == tableName)
+                if (info.Attribute.ForeignTable == tableName)
                 {
                     foreach (var t in list)
                     {
                         // 查询条件去重
-                        object propValue = info.KeyPropInfo.GetValue(t);
-                        if (propValue is null || propValues.Exists(p => p.KeyColumn == info.ForeignValue.TableColumn && p.Key.ToString() == propValue.ToString())) continue;
+                        object propValue = info.ValueProperty.Info.GetValue(t);
+                        if (propValue is null || propValues.Exists(p => p.KeyColumn == info.Attribute.ForeignColumn && p.Key.ToString() == propValue.ToString())) continue;
 
                         //对于Id，需要做额外的判断
-                        if (info.ForeignValue.IsId)
+                        if (info.Attribute.IsId)
                         {
                             string idStr = propValue.ToString();
                             
                             if (string.IsNullOrEmpty(idStr) || !long.TryParse(idStr, out var id)) continue;
                         }
 
-                        propValues.Add(new SingleKey(info.ForeignValue.TableColumn, propValue));
+                        propValues.Add(new SingleKey(info.Attribute.ForeignColumn, propValue));
 
                         // 组装查询条件
                         string propValueStr;
@@ -318,9 +309,9 @@ namespace SqlSugar
                             propValueStr = propValue.ToString();
 
                         //对于非bool类型条件，可以将多个Or合并为一个In
-                        if (info.KeyPropType != typeof(bool))
+                        if (info.ValueProperty.Type != typeof(bool))
                         {
-                            ConditionMerge merge = merges.FirstOrDefault(p => p.Column == info.ForeignValue.TableColumn);
+                            ConditionMerge merge = merges.FirstOrDefault(p => p.Column == info.Attribute.ForeignColumn);
                             if (merge != null)
                             {
                                 //二次匹配，表示有多个，从Equal=>In
@@ -331,25 +322,25 @@ namespace SqlSugar
                             }
                             else
                             {
-                                merges.Add(new ConditionMerge(ConditionalType.Equal, info.ForeignValue.TableColumn, propValueStr, info.KeyPropType));
+                                merges.Add(new ConditionMerge(ConditionalType.Equal, info.Attribute.ForeignColumn, propValueStr, info.ForeignProperty.Type));
                             }
                         }
                         else
                         {
-                            condiModels.Add(WhereType.Or, info.ForeignValue.TableColumn, propValueStr, info.KeyPropType);
+                            condiModels.Add(WhereType.Or, info.Attribute.ForeignColumn, propValueStr, info.ForeignProperty.Type);
                         }
                     }
 
                     // 组装Select条件
-                    if (!fieldNames.Contains(info.ForeignValue.TableColumn))
+                    if (!fieldNames.Contains(info.Attribute.ForeignColumn))
                     {
-                        fieldNames.Add(info.ForeignValue.TableColumn);
-                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.ForeignValue.TableColumn, AsName = info.ForeignValue.TableColumn });
+                        fieldNames.Add(info.Attribute.ForeignColumn);
+                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.Attribute.ForeignColumn, AsName = info.Attribute.ForeignColumn });
                     }
-                    if (!fieldNames.Contains(info.ForeignValue.TargetColumn))
+                    if (!fieldNames.Contains(info.Attribute.ResultColumn))
                     {
-                        fieldNames.Add(info.ForeignValue.TargetColumn);
-                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.ForeignValue.TargetColumn, AsName = info.ForeignValue.TargetColumn });
+                        fieldNames.Add(info.Attribute.ResultColumn);
+                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.Attribute.ResultColumn, AsName = info.Attribute.ResultColumn });
                     }
                 }
             }
@@ -370,9 +361,9 @@ namespace SqlSugar
             var tableNames = new List<string>();
             foreach (var info in subForeignInfoes)
             {
-                if (string.IsNullOrEmpty(info.SubForeignValue.TableName) || tableNames.Contains(info.SubForeignValue.TableName)) continue;
+                if (string.IsNullOrEmpty(info.Attribute.ForeignTable) || tableNames.Contains(info.Attribute.ForeignTable)) continue;
 
-                tableNames.Add(info.SubForeignValue.TableName);
+                tableNames.Add(info.Attribute.ForeignTable);
             }
 
             // 根据表名分组查询
@@ -394,11 +385,11 @@ namespace SqlSugar
                 foreach (var info in subForeignInfoes)
                 {
                     //数据库数据集
-                    var dataSet = tableInfoes.FirstOrDefault(x => x.TableName == info.SubForeignValue.TableName)?.TableList;
+                    var dataSet = tableInfoes.FirstOrDefault(x => x.TableName == info.Attribute.ForeignTable)?.TableList;
                     if (dataSet is null || dataSet.Count == 0) continue;
 
                     //当前行数据
-                    var infoValue = info.KeyPropInfo.GetValue(t);
+                    var infoValue = info.Value2Property.Info.GetValue(t);
                     if (infoValue is null) continue;
 
                     string infoValueStr;
@@ -411,14 +402,14 @@ namespace SqlSugar
                     foreach (var data in dataSet)
                     {
                         //比较复合主键以查找返回的数据，这里仅匹配第一个
-                        if (DynamicExtensions.TryGetDynamicValue(data, info.SubForeignValue.TableColumn, out object columnValue)
+                        if (DynamicExtensions.TryGetDynamicValue(data, info.Attribute.ForeignColumn2, out object columnValue)
                             && columnValue != null
                             && columnValue.ToString() == infoValueStr
                          )
                         {
-                            if (DynamicExtensions.TryGetDynamicValue(data, info.SubForeignValue.ParentColumn, out object parentValue)
+                            if (DynamicExtensions.TryGetDynamicValue(data, info.Attribute.ForeignColumn1, out object parentValue)
                                 && parentValue != null
-                                && parentValue.ToString() == info.SubForeignValue.ParentKey
+                                && parentValue.ToString() == info.Attribute.ForeignValue1
                              )
                             {
                                 firstObj = data;
@@ -429,10 +420,10 @@ namespace SqlSugar
                     if (firstObj is null) continue;
 
                     // 给当前属性赋值
-                    if (DynamicExtensions.TryGetDynamicValue(firstObj, info.SubForeignValue.TargetColumn, out object targetValue)
+                    if (DynamicExtensions.TryGetDynamicValue(firstObj, info.Attribute.ResultColumn, out object targetValue)
                         && targetValue != null)
                     {
-                        info.PropInfo.SetValue(t, targetValue);
+                        info.AttributeProperty.Info.SetValue(t, targetValue);
                     }
                 }
             }
@@ -447,15 +438,15 @@ namespace SqlSugar
             foreach (var info in subForeignInfoes)
             {
                 // 分组条件
-                if (info.SubForeignValue.TableName == tableName)
+                if (info.Attribute.ForeignTable == tableName)
                 {
                     foreach (var t in list)
                     {
                         // 查询条件去重
-                        object propValue = info.KeyPropInfo.GetValue(t);
-                        if (propValue is null || propValues.Exists(p => p.ParentColumn == info.SubForeignValue.ParentColumn && p.ParentKey == info.SubForeignValue.ParentKey && p.KeyColumn == info.SubForeignValue.TableColumn && p.Key.ToString() == propValue.ToString())) continue;
+                        object propValue = info.Value2Property.Info.GetValue(t);
+                        if (propValue is null || propValues.Exists(p => p.ParentColumn == info.Attribute.ForeignColumn1 && p.ParentKey == info.Attribute.ForeignValue1 && p.KeyColumn == info.Attribute.ForeignColumn2 && p.Key.ToString() == propValue.ToString())) continue;
 
-                        propValues.Add(new DoubleKey(info.SubForeignValue.ParentColumn, info.SubForeignValue.ParentKey, info.SubForeignValue.TableColumn, propValue));
+                        propValues.Add(new DoubleKey(info.Attribute.ForeignColumn1, info.Attribute.ForeignValue1, info.Attribute.ForeignColumn2, propValue));
 
                         string propValueStr;
                         if (propValue is Enum)
@@ -465,27 +456,27 @@ namespace SqlSugar
 
                         // 组装复合查询条件
                         var condiModels = new List<KeyValuePair<WhereType, ConditionalModel>>();
-                        condiModels.Add(WhereType.Or, info.SubForeignValue.ParentColumn, info.SubForeignValue.ParentKey, info.KeyPropType);
-                        condiModels.Add(WhereType.And, info.SubForeignValue.TableColumn, propValueStr, info.KeyPropType);
+                        condiModels.Add(WhereType.Or, info.Attribute.ForeignColumn1, info.Attribute.ForeignValue1, info.ForeignProperty1.Type);
+                        condiModels.Add(WhereType.And, info.Attribute.ForeignColumn2, propValueStr, info.ForeignProperty2.Type);
 
                         tableInfo.ConditionalModels.Add(SugarConditional.CreateList(condiModels));
                     }
 
                     // 组装复合Select条件
-                    if (!fieldNames.Contains(info.SubForeignValue.ParentColumn))
+                    if (!fieldNames.Contains(info.Attribute.ForeignColumn1))
                     {
-                        fieldNames.Add(info.SubForeignValue.ParentColumn);
-                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.SubForeignValue.ParentColumn, AsName = info.SubForeignValue.ParentColumn });
+                        fieldNames.Add(info.Attribute.ForeignColumn1);
+                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.Attribute.ForeignColumn1, AsName = info.Attribute.ForeignColumn1 });
                     }
-                    if (!fieldNames.Contains(info.SubForeignValue.TableColumn))
+                    if (!fieldNames.Contains(info.Attribute.ForeignColumn2))
                     {
-                        fieldNames.Add(info.SubForeignValue.TableColumn);
-                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.SubForeignValue.TableColumn, AsName = info.SubForeignValue.TableColumn });
+                        fieldNames.Add(info.Attribute.ForeignColumn2);
+                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.Attribute.ForeignColumn2, AsName = info.Attribute.ForeignColumn2 });
                     }
-                    if (!fieldNames.Contains(info.SubForeignValue.TargetColumn))
+                    if (!fieldNames.Contains(info.Attribute.ResultColumn))
                     {
-                        fieldNames.Add(info.SubForeignValue.TargetColumn);
-                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.SubForeignValue.TargetColumn, AsName = info.SubForeignValue.TargetColumn });
+                        fieldNames.Add(info.Attribute.ResultColumn);
+                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.Attribute.ResultColumn, AsName = info.Attribute.ResultColumn });
                     }
 
                 }
@@ -500,9 +491,9 @@ namespace SqlSugar
             var tableNames = new List<string>();
             foreach (ForeignListValueInfo info in foreignInfoes)
             {
-                if (string.IsNullOrEmpty(info.ForeignListValue.TableName) || tableNames.Contains(info.ForeignListValue.TableName)) continue;
+                if (string.IsNullOrEmpty(info.Attribute.ForeignTable) || tableNames.Contains(info.Attribute.ForeignTable)) continue;
 
-                tableNames.Add(info.ForeignListValue.TableName);
+                tableNames.Add(info.Attribute.ForeignTable);
             }
 
             // 根据表名分组查询
@@ -524,12 +515,12 @@ namespace SqlSugar
                 foreach (var info in foreignInfoes)
                 {
                     //数据库数据集
-                    var dataSet = tableInfoes.FirstOrDefault(x => x.TableName == info.ForeignListValue.TableName)?.TableList;
+                    var dataSet = tableInfoes.FirstOrDefault(x => x.TableName == info.Attribute.ForeignTable)?.TableList;
                     if (dataSet is null || dataSet.Count == 0) continue;
 
                     //当前行数据
                     //原始条件将被拆分为多个单独的条件
-                    object rowPropValue = info.KeyPropInfo.GetValue(t);
+                    object rowPropValue = info.ValueProperty.Info.GetValue(t);
                     if (rowPropValue is null) continue;
 
                     string? rowPropValueStr = rowPropValue.ToString();
@@ -544,7 +535,7 @@ namespace SqlSugar
                         dynamic firstObj = null;
                         foreach (var data in dataSet)
                         {
-                            if (DynamicExtensions.TryGetDynamicValue(data, info.ForeignListValue.TableColumn, out object columnValue)
+                            if (DynamicExtensions.TryGetDynamicValue(data, info.Attribute.ForeignColumn, out object columnValue)
                                 && columnValue != null
                                 && columnValue.ToString() == propValue
                              )
@@ -556,7 +547,7 @@ namespace SqlSugar
                         if (firstObj is null) continue;
 
                         // 给当前属性赋值
-                        if (DynamicExtensions.TryGetDynamicValue(firstObj, info.ForeignListValue.TargetColumn, out object targetValue)
+                        if (DynamicExtensions.TryGetDynamicValue(firstObj, info.Attribute.ResultColumn, out object targetValue)
                             && targetValue != null)
                         {
                             var targetValueStr = targetValue.ToString();
@@ -569,7 +560,7 @@ namespace SqlSugar
                     if (!string.IsNullOrEmpty(targetValues))
                     {
                         targetValues = targetValues.TrimEnd(',');
-                        info.PropInfo.SetValue(t, targetValues);
+                        info.AttributeProperty.Info.SetValue(t, targetValues);
                     }
                 }
             }
@@ -587,12 +578,12 @@ namespace SqlSugar
             foreach (var info in foreignInfoes)
             {
                 // 分组条件
-                if (info.ForeignListValue.TableName == tableName)
+                if (info.Attribute.ForeignTable == tableName)
                 {
                     foreach (var t in list)
                     {
                         //原始条件将被拆分为多个单独的条件
-                        object rowPropValue = info.KeyPropInfo.GetValue(t);
+                        object rowPropValue = info.ValueProperty.Info.GetValue(t);
                         if (rowPropValue is null) continue;
 
                         string? rowPropValueStr = rowPropValue.ToString();
@@ -604,21 +595,21 @@ namespace SqlSugar
                         foreach (var propValue in keyPropValues)
                         {
                             // 查询条件去重
-                            if (string.IsNullOrEmpty(propValue) || propValues.Exists(p => p.KeyColumn == info.ForeignListValue.TableColumn && p.Key.ToString() == propValue)) continue;
+                            if (string.IsNullOrEmpty(propValue) || propValues.Exists(p => p.KeyColumn == info.Attribute.ForeignColumn && p.Key.ToString() == propValue)) continue;
 
                             //对于Id，需要做额外的判断
-                            if (info.ForeignListValue.IsId)
+                            if (info.Attribute.IsId)
                             {
                                 if (!long.TryParse(propValue, out var id)) continue;
                             }
 
-                            propValues.Add(new SingleKey(info.ForeignListValue.TableColumn, propValue));
+                            propValues.Add(new SingleKey(info.Attribute.ForeignColumn, propValue));
 
                             // 组装查询条件
                             //对于非bool类型条件，可以将多个Or合并为一个In
-                            if (info.KeyPropType != typeof(bool))
+                            if (info.ValueProperty.Type != typeof(bool))
                             {
-                                ConditionMerge merge = merges.FirstOrDefault(p => p.Column == info.ForeignListValue.TableColumn);
+                                ConditionMerge merge = merges.FirstOrDefault(p => p.Column == info.Attribute.ForeignColumn);
                                 if (merge != null)
                                 {
                                     //二次匹配，表示有多个，从Equal=>In
@@ -629,26 +620,26 @@ namespace SqlSugar
                                 }
                                 else
                                 {
-                                    merges.Add(new ConditionMerge(ConditionalType.Equal, info.ForeignListValue.TableColumn, propValue, info.KeyPropType));
+                                    merges.Add(new ConditionMerge(ConditionalType.Equal, info.Attribute.ForeignColumn, propValue, info.ForeignProperty.Type));
                                 }
                             }
                             else
                             {
-                                condiModels.Add(WhereType.Or, info.ForeignListValue.TableColumn, propValue, info.KeyPropType);
+                                condiModels.Add(WhereType.Or, info.Attribute.ForeignColumn, propValue, info.ForeignProperty.Type);
                             }
                         }
                     }
 
                     // 组装Select条件
-                    if (!fieldNames.Contains(info.ForeignListValue.TableColumn))
+                    if (!fieldNames.Contains(info.Attribute.ForeignColumn))
                     {
-                        fieldNames.Add(info.ForeignListValue.TableColumn);
-                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.ForeignListValue.TableColumn, AsName = info.ForeignListValue.TableColumn });
+                        fieldNames.Add(info.Attribute.ForeignColumn);
+                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.Attribute.ForeignColumn, AsName = info.Attribute.ForeignColumn });
                     }
-                    if (!fieldNames.Contains(info.ForeignListValue.TargetColumn))
+                    if (!fieldNames.Contains(info.Attribute.ResultColumn))
                     {
-                        fieldNames.Add(info.ForeignListValue.TargetColumn);
-                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.ForeignListValue.TargetColumn, AsName = info.ForeignListValue.TargetColumn });
+                        fieldNames.Add(info.Attribute.ResultColumn);
+                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.Attribute.ResultColumn, AsName = info.Attribute.ResultColumn });
                     }
                 }
             }
@@ -667,62 +658,78 @@ namespace SqlSugar
 
     internal class EnumNameInfo
     {
-        public EnumNameInfo(PropertyInfo propInfo, EnumName enumName, Type type)
+        public EnumNameInfo(ColumnProperty attributeProperty, EnumName attribute, TableType tableType)
         {
-            PropInfo = propInfo;
-            EnumName = enumName;
-            KeyPropInfo = type.GetProperty(enumName.Property);
-            if (KeyPropInfo != null)
-                KeyPropType = Nullable.GetUnderlyingType(KeyPropInfo.PropertyType) ?? KeyPropInfo.PropertyType;
+            AttributeProperty = attributeProperty;
+            Attribute = attribute;
+            ValueProperty = tableType.GetProperty(attribute.ValueColumn);
+            if (ValueProperty is null)
+                throw new Exception($"Unknow value property [{attribute.ValueColumn}] in table [{tableType.Type.Name}]");
         }
 
-        public PropertyInfo PropInfo { get; set; }
+        public ColumnProperty AttributeProperty { get; set; }
 
-        public PropertyInfo KeyPropInfo { get; set; }
+        public EnumName Attribute { get; set; }
 
-        public Type KeyPropType { get; set; }
-
-        public EnumName EnumName { get; set; }
+        public ColumnProperty ValueProperty { get; set; }
     }
 
     internal class ForeignValueInfo
     {
-        public ForeignValueInfo(PropertyInfo propInfo, ForeignValue foreign, Type type)
+        public ForeignValueInfo(ColumnProperty attributeProperty, ForeignValue attribute, TableType tableType)
         {
-            PropInfo = propInfo;
-            ForeignValue = foreign;
-            KeyPropInfo = type.GetProperty(foreign.Property);
-            if (KeyPropInfo != null)
-                KeyPropType = Nullable.GetUnderlyingType(KeyPropInfo.PropertyType) ?? KeyPropInfo.PropertyType;
+            AttributeProperty = attributeProperty;
+            Attribute = attribute;
+            ForeignTableType = attribute.ForeignTable.GetTable();
+            if (ForeignTableType is null)
+                throw new Exception($"Unknow foreign table [{attribute.ForeignTable}]");
+
+            ForeignProperty = ForeignTableType.GetProperty(attribute.ForeignColumn);
+            if (ForeignProperty is null)
+                throw new Exception($"Unknow foreign property [{attribute.ForeignColumn}] in table [{ForeignTableType.Type.Name}]");
+            ValueProperty = tableType.GetProperty(attribute.ValueColumn);
+            if (ValueProperty is null)
+                throw new Exception($"Unknow value property [{attribute.ValueColumn}] in table [{tableType.Type.Name}]");
         }
 
-        public PropertyInfo PropInfo { get; set; }
+        public ColumnProperty AttributeProperty { get; set; }
 
-        public PropertyInfo KeyPropInfo { get; set; }
+        public ForeignValue Attribute { get; set; }
 
-        public Type KeyPropType { get; set; }
+        public TableType ForeignTableType { get; set; }
 
-        public ForeignValue ForeignValue { get; set; }
+        public ColumnProperty ForeignProperty { get; set; }
+
+        public ColumnProperty ValueProperty { get; set; }
     }
 
     internal class ForeignListValueInfo
     {
-        public ForeignListValueInfo(PropertyInfo propInfo, ForeignListValue foreign, Type type)
+        public ForeignListValueInfo(ColumnProperty attributeProperty, ForeignListValue attribute, TableType tableType)
         {
-            PropInfo = propInfo;
-            ForeignListValue = foreign;
-            KeyPropInfo = type.GetProperty(foreign.Property);
-            if (KeyPropInfo != null)
-                KeyPropType = Nullable.GetUnderlyingType(KeyPropInfo.PropertyType) ?? KeyPropInfo.PropertyType;
+            AttributeProperty = attributeProperty;
+            Attribute = attribute;
+            ForeignTableType = attribute.ForeignTable.GetTable();
+            if (ForeignTableType is null)
+                throw new Exception($"Unknow foreign table [{attribute.ForeignTable}]");
+
+            ForeignProperty = ForeignTableType.GetProperty(attribute.ForeignColumn);
+            if (ForeignProperty is null)
+                throw new Exception($"Unknow foreign property [{attribute.ForeignColumn}] in table [{ForeignTableType.Type.Name}]");
+            ValueProperty = tableType.GetProperty(attribute.ValueColumn);
+            if (ValueProperty is null)
+                throw new Exception($"Unknow value property [{attribute.ValueColumn}] in table [{tableType.Type.Name}]");
         }
 
-        public PropertyInfo PropInfo { get; set; }
+        public ColumnProperty AttributeProperty { get; set; }
 
-        public PropertyInfo KeyPropInfo { get; set; }
+        public ForeignListValue Attribute { get; set; }
 
-        public Type KeyPropType { get; set; }
+        public TableType ForeignTableType { get; set; }
 
-        public ForeignListValue ForeignListValue { get; set; }
+        public ColumnProperty ForeignProperty { get; set; }
+
+        public ColumnProperty ValueProperty { get; set; }
     }
 
     internal class ConditionMerge
@@ -746,22 +753,36 @@ namespace SqlSugar
 
     internal class SubForeignValueInfo
     {
-        public SubForeignValueInfo(PropertyInfo propInfo, SubForeignValue foreign, Type type)
+        public SubForeignValueInfo(ColumnProperty attributeProperty, SubForeignValue attribute, TableType tableType)
         {
-            PropInfo = propInfo;
-            SubForeignValue = foreign;
-            KeyPropInfo = type.GetProperty(foreign.Property);
-            if (KeyPropInfo != null)
-                KeyPropType = Nullable.GetUnderlyingType(KeyPropInfo.PropertyType) ?? KeyPropInfo.PropertyType;
+            AttributeProperty = attributeProperty;
+            Attribute = attribute;
+            ForeignTableType = attribute.ForeignTable.GetTable();
+            if (ForeignTableType is null)
+                throw new Exception($"Unknow foreign table [{attribute.ForeignTable}]");
+
+            ForeignProperty1 = ForeignTableType.GetProperty(attribute.ForeignColumn1);
+            if (ForeignProperty1 is null)
+                throw new Exception($"Unknow foreign property1 [{attribute.ForeignColumn1}] in table [{ForeignTableType.Type.Name}]");
+            ForeignProperty2 = ForeignTableType.GetProperty(attribute.ForeignColumn2);
+            if (ForeignProperty2 is null)
+                throw new Exception($"Unknow foreign property2 [{attribute.ForeignColumn2}] in table [{ForeignTableType.Type.Name}]");
+            Value2Property = tableType.GetProperty(attribute.Value2Column);
+            if (Value2Property is null)
+                throw new Exception($"Unknow value property [{attribute.Value2Column}] in table [{tableType.Type.Name}]");
         }
 
-        public PropertyInfo PropInfo { get; set; }
+        public ColumnProperty AttributeProperty { get; set; }
 
-        public PropertyInfo KeyPropInfo { get; set; }
+        public SubForeignValue Attribute { get; set; }
 
-        public Type KeyPropType { get; set; }
+        public TableType ForeignTableType { get; set; }
 
-        public SubForeignValue SubForeignValue { get; set; }
+        public ColumnProperty ForeignProperty1 { get; set; }
+
+        public ColumnProperty ForeignProperty2 { get; set; }
+
+        public ColumnProperty Value2Property { get; set; }
     }
 
     internal class SingleKey

@@ -9,32 +9,32 @@ namespace SqlSugar
     public class DictItemValue : Attribute
     {
         public readonly string ParentCode;
-        public readonly string CodeProperty;
-        public readonly string TargetColumn;
+        public readonly string CodeColumn;
+        public readonly string ResultColumn;
 
         /// <summary>
         /// parentCode + SysDictItem.Code => "Name"
         /// </summary>
         /// <param name="parentCode">SysDictType的Code值</param>
-        /// <param name="codeProperty">当前表存储Code的字段</param>
-        public DictItemValue(string parentCode, string codeProperty)
+        /// <param name="codeColumn">当前表存储Code的列</param>
+        public DictItemValue(string parentCode, string codeColumn)
         {
             ParentCode = parentCode;
-            CodeProperty = codeProperty;
-            TargetColumn = "Name";
+            CodeColumn = codeColumn;
+            ResultColumn = "Name";
         }
 
         /// <summary>
-        /// parentCode + SysDictItem.Code => SysDictType.targetColumn
+        /// parentCode + SysDictItem.Code => SysDictType.[ResultColumn]
         /// </summary>
         /// <param name="parentCode">SysDictType的Code值</param>
-        /// <param name="codeProperty">当前表存储Code的字段</param>
-        /// <param name="targetColumn">字典类型表目标字段</param>
-        public DictItemValue(string parentCode, string codeProperty, string targetColumn)
+        /// <param name="codeColumn">当前表存储Code的列</param>
+        /// <param name="resultColumn">字典类型表结果列</param>
+        public DictItemValue(string parentCode, string codeColumn, string resultColumn)
         {
             ParentCode = parentCode;
-            CodeProperty = codeProperty;
-            TargetColumn = targetColumn;
+            CodeColumn = codeColumn;
+            ResultColumn = resultColumn;
         }
     }
 }

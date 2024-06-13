@@ -3,60 +3,60 @@
 namespace SqlSugar
 {
     /// <summary>
-    /// 自定义特性，用于标记外键表字段（单主键）
+    /// 自定义特性，用于标记外键表指定列（单主键）
     /// </summary>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
     public class ForeignValue : Attribute
     {
-        public readonly string TableName;
-        public readonly string TableColumn;
-        public readonly string TargetColumn;
-        public readonly string Property;
+        public readonly string ForeignTable;
+        public readonly string ForeignColumn;
+        public readonly string ResultColumn;
+        public readonly string ValueColumn;
         public readonly bool IsId;
 
         /// <summary>
         /// "Id" => "Name"
         /// </summary>
-        /// <param name="tableName">外表名称</param>
-        /// <param name="property">当前表查询值字段</param>
-        public ForeignValue(string tableName, string property)
+        /// <param name="foreignTable">外键表名称</param>
+        /// <param name="valueColumn">外键表主键列的值 —— 当前表某个列</param>
+        public ForeignValue(string foreignTable, string valueColumn)
         {
-            TableName = tableName;
-            TableColumn = "Id";
-            TargetColumn = "Name";
+            ForeignTable = foreignTable;
+            ForeignColumn = "Id";
+            ResultColumn = "Name";
             IsId = true;
-            Property = property;
+            ValueColumn = valueColumn;
         }
 
         /// <summary>
-        /// tableColumn => "Name"
+        /// ForeignColumn => "Name"
         /// </summary>
-        /// <param name="tableName">外表名称</param>
-        /// <param name="tableColumn">外键表(逻辑)主键列</param>
-        /// <param name="property">当前表查询值字段</param>
-        public ForeignValue(string tableName, string tableColumn, string property)
+        /// <param name="foreignTable">外键表名称</param>
+        /// <param name="foreignColumn">外键表主键列</param>
+        /// <param name="valueColumn">外键表主键列的值 —— 当前表某个列</param>
+        public ForeignValue(string foreignTable, string foreignColumn, string valueColumn)
         {
-            TableName = tableName;
-            TableColumn = tableColumn;
-            IsId = "Id".Equals(tableColumn);
-            TargetColumn = "Name";
-            Property = property;
+            ForeignTable = foreignTable;
+            ForeignColumn = foreignColumn;
+            IsId = "Id".Equals(foreignColumn);
+            ResultColumn = "Name";
+            ValueColumn = valueColumn;
         }
 
         /// <summary>
-        /// tableColumn => targetColumn
+        /// ForeignColumn => ResultColumn
         /// </summary>
-        /// <param name="tableName">外表名称</param>
-        /// <param name="tableColumn">外键表(逻辑)主键列</param>
-        /// <param name="property">当前表查询值字段</param>
-        /// <param name="targetColumn">外键表目标字段</param>
-        public ForeignValue(string tableName, string tableColumn, string property, string targetColumn)
+        /// <param name="foreignTable">外键表名称</param>
+        /// <param name="foreignColumn">外键表主键列</param>
+        /// <param name="valueColumn">外键表主键列的值 —— 当前表某个列</param>
+        /// <param name="resultColumn">外键表结果列</param>
+        public ForeignValue(string foreignTable, string foreignColumn, string valueColumn, string resultColumn)
         {
-            TableName = tableName;
-            TableColumn = tableColumn;
-            IsId = "Id".Equals(tableColumn);
-            TargetColumn = targetColumn;
-            Property = property;
+            ForeignTable = foreignTable;
+            ForeignColumn = foreignColumn;
+            IsId = "Id".Equals(foreignColumn);
+            ResultColumn = resultColumn;
+            ValueColumn = valueColumn;
         }
     }
 }
