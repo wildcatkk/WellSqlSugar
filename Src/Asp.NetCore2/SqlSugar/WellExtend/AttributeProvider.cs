@@ -197,6 +197,25 @@ namespace SqlSugar
             }
         }
 
+        private static object GetValue(object originalVal, ColumnProperty property)
+        {
+            Type originalValType = originalVal.GetType();
+            if (originalValType != property.Type)
+            {
+                if (property.Type.IsEnum)
+                {
+                    if (originalValType != property.EnumValueType)
+                        return Convert.ChangeType(originalVal, property.EnumValueType);
+                    else
+                        return originalVal;
+                }
+                else
+                    return Convert.ChangeType(originalVal, property.Type);
+            }
+            else
+                return originalVal;
+        }
+
         private static void ForeignValueProcess(ISqlSugarClient db, ICollection list, List<ForeignValueInfo> foreignInfoes)
         {
             // 获取所有表名
@@ -258,13 +277,7 @@ namespace SqlSugar
                     if (DynamicExtensions.TryGetDynamicValue(firstObj, item.Attribute.ResultColumn, out object targetValue)
                         && targetValue != null)
                     {
-                        object value;
-                        if (targetValue.GetType() != item.AttributeProperty.Type)
-                            value = Convert.ChangeType(targetValue, item.AttributeProperty.Type);
-                        else
-                            value = targetValue;
-
-                        item.AttributeProperty.Info.SetValue(t, value);
+                        item.AttributeProperty.Info.SetValue(t, GetValue(targetValue, item.AttributeProperty));
                     }
                 }
             }
@@ -429,13 +442,7 @@ namespace SqlSugar
                     if (DynamicExtensions.TryGetDynamicValue(firstObj, info.Attribute.ResultColumn, out object targetValue)
                         && targetValue != null)
                     {
-                        object value;
-                        if (targetValue.GetType() != info.AttributeProperty.Type)
-                            value = Convert.ChangeType(targetValue, info.AttributeProperty.Type);
-                        else
-                            value = targetValue;
-
-                        info.AttributeProperty.Info.SetValue(t, value);
+                        info.AttributeProperty.Info.SetValue(t, GetValue(targetValue, info.AttributeProperty));
                     }
                 }
             }

@@ -112,10 +112,16 @@ namespace SqlSugar
         {
             Info = property;
             Type = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
+            if (Type.IsEnum)
+            {
+                EnumValueType = Enum.GetUnderlyingType(Type);
+            }
         }
 
         public PropertyInfo Info { get; set; }
 
         public Type Type { get; set; }
+
+        public Type EnumValueType { get; set; }
     }
 }
