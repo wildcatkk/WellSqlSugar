@@ -156,7 +156,7 @@ namespace SqlSugar
                         }
                         else
                         {
-                            item.PropertyInfo.SetValue(parentObj, dataReader.GetValue(itemIndex));
+                            item.PropertyInfo.SetValue(parentObj, dataReader.GetWellValueOrDBNull(itemIndex));
                         }
                     }
                 }
@@ -219,7 +219,7 @@ namespace SqlSugar
                 foreach (var item in QueryBuilder.AppendColumns)
                 {
                     var vi = dataReader.GetOrdinal(item.AsName);
-                    var value = dataReader.GetValue(vi);
+                    var value = dataReader.GetWellValueOrDBNull(vi);
                     addItems.Add(new QueryableAppendColumn()
                     {
                         Name = item.Name,
@@ -235,7 +235,7 @@ namespace SqlSugar
                 foreach (var item in QueryBuilder?.AppendNavInfo.AppendProperties)
                 {
                     var vi = dataReader.GetOrdinal("SugarNav_" + item.Key);
-                    var value = dataReader.GetValue(vi);
+                    var value = dataReader.GetWellValueOrDBNull(vi);
                     navResult.result.Add("SugarNav_"+item.Key,value);
                 }
                 QueryBuilder?.AppendNavInfo.Result.Add(navResult);
@@ -250,7 +250,7 @@ namespace SqlSugar
             for (int i = 0; i < count; i++)
             {
                 keys.Add(dataReader.GetName(i));
-                var type = dataReader.GetFieldType(i);
+                var type = dataReader.GetWellFieldType(i);
                 if (type != null)
                 {
                     sbTypes.Append(type.Name.Substring(0, 2));
@@ -284,7 +284,7 @@ namespace SqlSugar
         {
             if (UtilConstants.DicOO == type)
             {
-                var kv = new KeyValuePair<object, object>(dataReader.GetValue(0), dataReader.GetValue(1));
+                var kv = new KeyValuePair<object, object>(dataReader.GetWellValueOrDBNull(0), dataReader.GetWellValueOrDBNull(1));
                 result.Add((T)Convert.ChangeType(kv, typeof(KeyValuePair<object, object>)));
             }
             else if (UtilConstants.DicIS == type)
@@ -304,7 +304,7 @@ namespace SqlSugar
             }
             else if (UtilConstants.DicSo == type)
             {
-                var kv = new KeyValuePair<string, object>(dataReader.GetValue(0).ObjToString(), dataReader.GetValue(1));
+                var kv = new KeyValuePair<string, object>(dataReader.GetValue(0).ObjToString(), dataReader.GetWellValueOrDBNull(1));
                 result.Add((T)Convert.ChangeType(kv, typeof(KeyValuePair<string, object>)));
             }
             else if (UtilConstants.DicSS == type)
@@ -350,7 +350,7 @@ namespace SqlSugar
             object[] array = new object[count];
             for (int i = 0; i < count; i++)
             {
-                array[i] = Convert.ChangeType(dataReader.GetValue(i), childType);
+                array[i] = Convert.ChangeType(dataReader.GetWellValueOrDBNull(i), childType);
             }
             if (childType == UtilConstants.StringType)
                 result.Add((T)Convert.ChangeType(array.Select(it => it.ObjToString()).ToArray(), type));
@@ -393,7 +393,7 @@ namespace SqlSugar
 
         private static void GetValueTypeList<T>(Type type, IDataReader dataReader, List<T> result)
         {
-            var value = dataReader.GetValue(0);
+            var value = dataReader.GetWellValueOrDBNull(0);
             if (type == UtilConstants.GuidType)
             {
                 value = Guid.Parse(value.ToString());

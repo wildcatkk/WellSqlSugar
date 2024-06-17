@@ -186,7 +186,7 @@ namespace SqlSugar
             {
                 return DateTime.MinValue;
             }
-            var offsetValue = (DateTimeOffset)dr.GetValue(i);
+            var offsetValue = (DateTimeOffset)dr.GetWellValue(i);
             var result = offsetValue.DateTime;
             return result;
         }
@@ -197,7 +197,7 @@ namespace SqlSugar
             {
                 return DateTime.MinValue;
             }
-            var offsetValue = (DateTimeOffset)dr.GetValue(i);
+            var offsetValue = (DateTimeOffset)dr.GetWellValue(i);
             var result = offsetValue.DateTime;
             return result;
         }
@@ -208,7 +208,7 @@ namespace SqlSugar
             {
                 return default(DateTimeOffset);
             }
-            var date = dr.GetValue(i);
+            var date = dr.GetWellValue(i);
             if (date is DateTime)
             {
                return new DateTimeOffset((DateTime)(date));
@@ -226,7 +226,7 @@ namespace SqlSugar
             {
                 return default(DateTimeOffset);
             }
-            var date = dr.GetValue(i);
+            var date = dr.GetWellValue(i);
             if (date is DateTime)
             {
                 return new DateTimeOffset((DateTime)(date));
@@ -267,7 +267,7 @@ namespace SqlSugar
                 {
                     return default(T);
                 }
-                var result = dr.GetValue(i);
+                var result = dr.GetWellValue(i);
                 return UtilMethods.To<T>(result);
             }
             catch (Exception ex)
@@ -278,7 +278,7 @@ namespace SqlSugar
 
         public static T GetJson<T>(this IDataReader dr, int i)
         {
-            var obj = dr.GetValue(i);
+            var obj = dr.GetWellValueOrDBNull(i);
             if (obj == null)
                 return default(T);
             var value = obj.ObjToString();
@@ -287,7 +287,7 @@ namespace SqlSugar
         public static T GetArray<T>(this IDataReader dr, int i)
         {
             //pgsql
-            var obj = dr.GetValue(i);
+            var obj = dr.GetWellValueOrDBNull(i);
             if (obj == null)
                 return default(T);
             return  (T)obj;

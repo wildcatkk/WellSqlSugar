@@ -53,7 +53,7 @@ namespace SqlSugar
                 string columnName = reader.GetName(i);
 
                 // 获取列的数据类型  
-                Type columnType = reader.GetFieldType(i);
+                Type columnType = reader.GetWellFieldType(i);
 
                 // 将列名和类型添加到列表中  
                 columnInfo.Add(Tuple.Create(columnName, columnType));

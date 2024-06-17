@@ -62,3 +62,60 @@ public static object ConvertDataByTypeName(string ctypename,string value)
     }
 ......
 }
+
+5 IDataRecord.GetValue|GetFieldType Oracle DateTimeOffset 类型支持
+
+全局搜索 IDataRecord.GetFieldType 根据情况调整为 GetWellFieldType，当前受影响的文件、类和函数为：
+
+C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar\Utilities\UtilMethods.cs
+GetColumnInfo(IDataReader reader)
+
+C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar\OnlyCore\DataExtensions.cs
+MyOracleDataAdapter.Fill(DataTable dt)
+MyOracleDataAdapter.Fill(DataSet ds)
+
+C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar\Infrastructure\ContextMethods.cs
+DataReaderToValueTupleType<T>(IDataReader reader)
+DataReaderToValueTupleTypeAsync<T>(IDataReader reader)
+
+C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar\Abstract\DbBindProvider\DbBindAccessory.cs
+GetDataReaderNames(IDataReader dataReader,ref string types)
+
+
+全局搜索 IDataRecord.GetValue 根据情况调整为 GetWellValue|GetWellValueOrDBNull，当前受影响的文件、类和函数为：
+
+C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar\OnlyCore\DataExtensions.cs
+MyOracleDataAdapter.Fill(DataTable dt)
+MyOracleDataAdapter.Fill(DataSet ds)
+
+C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar\Infrastructure\ContextMethods.cs
+DataReaderToValueTupleType<T>(IDataReader reader)
+DataReaderToValueTupleTypeAsync<T>(IDataReader reader)
+DataReaderToExpandoObject(IDataReader reader)
+DataReaderToDictionary(IDataReader reader)
+DataReaderToDictionary(IDataReader reader, Type type)
+DataReaderToSelectJsonList<T>(IDataReader dataReader)
+DataReaderToSelectArrayList<T>(IDataReader dataReader)
+DataReaderToSelectJsonListAsync<T>(IDataReader dataReader)
+DataReaderToSelectArrayListAsync<T>(IDataReader dataReader)
+SetAppendColumns(IDataReader dataReader)
+
+C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar\Entities\DefaultCustom.cs
+NoParameterCommonPropertyConvert.QueryConverter<T>(IDataRecord dr, int i)
+CommonPropertyConvert.QueryConverter<T>(IDataRecord dr, int i)
+
+C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar\Abstract\DbBindProvider\IDataRecordExtensions.cs
+GetdatetimeoffsetDate(this IDataRecord dr, int i)
+GetConvertdatetimeoffsetDate(this IDataRecord dr, int i)
+Getdatetimeoffset(this IDataRecord dr, int i)
+GetConvertdatetimeoffset(this IDataRecord dr, int i)
+GetOther<T>(this IDataReader dr, int i)
+GetJson<T>(this IDataReader dr, int i)
+GetArray<T>(this IDataReader dr, int i)
+
+C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar\Abstract\DbBindProvider\DbBindAccessory.cs
+SetOwnsOne(object addItem, bool isOwnsOne, EntityInfo entityInfo, IDataReader dataReader)
+SetAppendColumns(IDataReader dataReader)
+GetKeyValueList<T>(Type type, IDataReader dataReader, List<T> result)
+GetArrayList<T>(Type type, IDataReader dataReader, List<T> result, int count, Type childType)
+GetValueTypeList<T>(Type type, IDataReader dataReader, List<T> result)

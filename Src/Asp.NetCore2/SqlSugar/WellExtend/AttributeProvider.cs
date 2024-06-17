@@ -258,7 +258,13 @@ namespace SqlSugar
                     if (DynamicExtensions.TryGetDynamicValue(firstObj, item.Attribute.ResultColumn, out object targetValue)
                         && targetValue != null)
                     {
-                        item.AttributeProperty.Info.SetValue(t, targetValue);
+                        object value;
+                        if (targetValue.GetType() != item.AttributeProperty.Type)
+                            value = Convert.ChangeType(targetValue, item.AttributeProperty.Type);
+                        else
+                            value = targetValue;
+
+                        item.AttributeProperty.Info.SetValue(t, value);
                     }
                 }
             }
@@ -423,7 +429,13 @@ namespace SqlSugar
                     if (DynamicExtensions.TryGetDynamicValue(firstObj, info.Attribute.ResultColumn, out object targetValue)
                         && targetValue != null)
                     {
-                        info.AttributeProperty.Info.SetValue(t, targetValue);
+                        object value;
+                        if (targetValue.GetType() != info.AttributeProperty.Type)
+                            value = Convert.ChangeType(targetValue, info.AttributeProperty.Type);
+                        else
+                            value = targetValue;
+
+                        info.AttributeProperty.Info.SetValue(t, value);
                     }
                 }
             }

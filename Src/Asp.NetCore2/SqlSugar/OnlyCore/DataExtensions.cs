@@ -516,10 +516,10 @@ namespace SqlSugar
                 {
                     string name = dr.GetName(i).Trim();
                     if (!columns.Contains(name))
-                        columns.Add(new DataColumn(name, dr.GetFieldType(i)));
+                        columns.Add(new DataColumn(name, dr.GetWellFieldType(i)));
                     else
                     {
-                        columns.Add(new DataColumn(name + i, dr.GetFieldType(i)));
+                        columns.Add(new DataColumn(name + i, dr.GetWellFieldType(i)));
                     }
                 }
 
@@ -528,7 +528,7 @@ namespace SqlSugar
                     DataRow daRow = dt.NewRow();
                     for (int i = 0; i < columns.Count; i++)
                     {
-                        daRow[columns[i].ColumnName] = dr.GetValue(i);
+                        daRow[columns[i].ColumnName] = dr.GetWellValueOrDBNull(i, columns[i].DataType);
                     }
                     dt.Rows.Add(daRow);
                 }
@@ -557,10 +557,10 @@ namespace SqlSugar
                     {
                         string name = dr.GetName(i).Trim();
                         if (!columns.Contains(name))
-                            columns.Add(new DataColumn(name, dr.GetFieldType(i)));
+                            columns.Add(new DataColumn(name, dr.GetWellFieldType(i)));
                         else
                         {
-                            columns.Add(new DataColumn(name + i, dr.GetFieldType(i)));
+                            columns.Add(new DataColumn(name + i, dr.GetWellFieldType(i)));
                         }
                     }
 
@@ -569,7 +569,7 @@ namespace SqlSugar
                         DataRow daRow = dt.NewRow();
                         for (int i = 0; i < columns.Count; i++)
                         {
-                            daRow[columns[i].ColumnName] = dr.GetValue(i);
+                            daRow[columns[i].ColumnName] = dr.GetWellValueOrDBNull(i, columns[i].DataType);
                         }
                         dt.Rows.Add(daRow);
                     }

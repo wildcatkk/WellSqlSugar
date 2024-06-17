@@ -47,7 +47,7 @@ namespace SqlSugar.DbConvert
         public T QueryConverter<T>(IDataRecord dr, int i)
         {
 
-            var value = dr.GetValue(i);
+            var value = dr.GetWellValueOrDBNull(i);
             return (T)UtilMethods.ChangeType2(value, typeof(T));
         }
     }
@@ -64,7 +64,7 @@ namespace SqlSugar.DbConvert
         {
 
             
-            var value = dr.GetValue(i);
+            var value = dr.GetWellValueOrDBNull(i);
             if (value is byte[] && typeof(T) != UtilConstants.ByteArrayType) 
             {
                 value = Encoding.UTF8.GetString((byte[])value);

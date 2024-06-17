@@ -27,7 +27,7 @@ namespace SqlSugar
             var propertyNames = Enumerable.Range(0, reader.FieldCount)
                                            .Select(reader.GetName).ToList();
             var propertyTypes = Enumerable.Range(0, reader.FieldCount)
-                                           .Select(reader.GetFieldType).ToList();
+                                           .Select(reader.GetWellFieldType).ToList();
 
             using (reader)
             {
@@ -41,8 +41,8 @@ namespace SqlSugar
                     for (int i = 0; i < reader.FieldCount; i++)
                     {
                         var propertyName = propertyNames[i];
-                        var propertyValue = reader.GetValue(i);
                         var propertyType = propertyTypes[i];
+                        var propertyValue = reader.GetWellValueOrDBNull(i, propertyType);
 
                         var propertyInfo = tupleType.GetFields()[i];
                         propertyInfo.SetValue(tupleInstance, UtilMethods.ChangeType2(propertyValue, propertyInfo.FieldType));
@@ -62,7 +62,7 @@ namespace SqlSugar
             var propertyNames = Enumerable.Range(0, reader.FieldCount)
                                            .Select(reader.GetName).ToList();
             var propertyTypes = Enumerable.Range(0, reader.FieldCount)
-                                           .Select(reader.GetFieldType).ToList();
+                                           .Select(reader.GetWellFieldType).ToList();
 
             using (reader)
             {
@@ -76,8 +76,8 @@ namespace SqlSugar
                     for (int i = 0; i < reader.FieldCount; i++)
                     {
                         var propertyName = propertyNames[i];
-                        var propertyValue = reader.GetValue(i);
                         var propertyType = propertyTypes[i];
+                        var propertyValue = reader.GetWellValueOrDBNull(i, propertyType);
 
                         var propertyInfo = tupleType.GetFields()[i];
                         propertyInfo.SetValue(tupleInstance, Convert.ChangeType(propertyValue, propertyType));
@@ -104,7 +104,7 @@ namespace SqlSugar
             {
                 try
                 {
-                    var addItem = reader.GetValue(i);
+                    var addItem = reader.GetWellValueOrDBNull(i);
                     if (addItem == DBNull.Value)
                         addItem = null;
                     dic.Add(reader.GetName(i), addItem);
@@ -208,7 +208,7 @@ namespace SqlSugar
             {
                 try
                 {
-                    var addItem = reader.GetValue(i);
+                    var addItem = reader.GetWellValueOrDBNull(i);
                     if (addItem == DBNull.Value)
                         addItem = null;
                     result.Add(reader.GetName(i), addItem);
@@ -235,7 +235,7 @@ namespace SqlSugar
                 try
                 {
                     name = this.Context.EntityMaintenance.GetPropertyName(name, type);
-                    var addItem = reader.GetValue(i);
+                    var addItem = reader.GetWellValueOrDBNull(i);
                     if (addItem == DBNull.Value)
                         addItem = null;
                     result.Add(name, addItem);
@@ -286,7 +286,7 @@ namespace SqlSugar
             {
                 while (dataReader.Read())
                 {
-                    var value = dataReader.GetValue(0);
+                    var value = dataReader.GetWellValueOrDBNull(0);
                     if (value == null || value == DBNull.Value)
                     {
                         result.Add(default(T));
@@ -308,7 +308,7 @@ namespace SqlSugar
             {
                 while (dataReader.Read())
                 {
-                    var value = dataReader.GetValue(0);
+                    var value = dataReader.GetWellValueOrDBNull(0);
                     if (value == null || value == DBNull.Value)
                     {
                         result.Add(default(T));
@@ -379,7 +379,7 @@ namespace SqlSugar
             {
                 while (await ((DbDataReader)dataReader).ReadAsync())
                 {
-                    var value = dataReader.GetValue(0);
+                    var value = dataReader.GetWellValueOrDBNull(0);
                     if (value == null || value == DBNull.Value)
                     {
                         result.Add(default(T));
@@ -399,7 +399,7 @@ namespace SqlSugar
             {
                 while (await ((DbDataReader)dataReader).ReadAsync())
                 {
-                    var value = dataReader.GetValue(0);
+                    var value = dataReader.GetWellValueOrDBNull(0);
                     if (value == null || value == DBNull.Value)
                     {
                         result.Add(default(T));
@@ -567,7 +567,7 @@ namespace SqlSugar
                 foreach (var item in QueryBuilder.AppendColumns)
                 {
                     var vi = dataReader.GetOrdinal(item.AsName);
-                    var value = dataReader.GetValue(vi);
+                    var value = dataReader.GetWellValueOrDBNull(vi);
                     addItems.Add(new QueryableAppendColumn()
                     {
                         Name = item.Name,
@@ -583,7 +583,7 @@ namespace SqlSugar
                 foreach (var item in QueryBuilder?.AppendNavInfo.AppendProperties)
                 {
                     var vi = dataReader.GetOrdinal("SugarNav_" + item.Key);
-                    var value = dataReader.GetValue(vi);
+                    var value = dataReader.GetWellValueOrDBNull(vi);
                     navResult.result.Add("SugarNav_" + item.Key, value);
                 }
                 QueryBuilder?.AppendNavInfo.Result.Add(navResult);
