@@ -115,7 +115,8 @@ namespace SqlSugar
             var result = 0;
             if (sql != Environment.NewLine)
             {
-                result = this.Ado.ExecuteCommand(sql, UpdateBuilder.Parameters == null ? null : UpdateBuilder.Parameters.ToArray());
+                //result = this.Ado.ExecuteCommand(sql, UpdateBuilder.Parameters == null ? null : UpdateBuilder.Parameters.ToArray());
+                result = this.Ado.ExecuteCommand(sql, UpdateBuilder.Parameters.CopyToArray());
             }
             After(sql);
             return result;
@@ -168,7 +169,8 @@ namespace SqlSugar
             {
                 return 0;
             }
-            var result = await this.Ado.ExecuteCommandAsync(sql, UpdateBuilder.Parameters == null ? null : UpdateBuilder.Parameters.ToArray());
+            //var result = await this.Ado.ExecuteCommandAsync(sql, UpdateBuilder.Parameters == null ? null : UpdateBuilder.Parameters.ToArray());
+            var result = await this.Ado.ExecuteCommandAsync(sql, UpdateBuilder.Parameters.CopyToArray());
             After(sql);
             return result;
         }

@@ -119,3 +119,11 @@ SetAppendColumns(IDataReader dataReader)
 GetKeyValueList<T>(Type type, IDataReader dataReader, List<T> result)
 GetArrayList<T>(Type type, IDataReader dataReader, List<T> result, int count, Type childType)
 GetValueTypeList<T>(Type type, IDataReader dataReader, List<T> result)
+
+6、Oracle OrderNo更新带日志，第三条Sql报错问题
+C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar\Abstract\UpdateProvider\UpdateableProvider.cs
+ExecuteCommand/ExecuteCommandAsync
+将：
+UpdateBuilder.Parameters == null ? null : UpdateBuilder.Parameters.ToArray()
+改为：
+UpdateBuilder.Parameters.CopyToArray()
