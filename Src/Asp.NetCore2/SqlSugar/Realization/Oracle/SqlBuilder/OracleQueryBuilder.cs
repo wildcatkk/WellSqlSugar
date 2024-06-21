@@ -79,7 +79,7 @@ namespace SqlSugar
                 this.OrderByValue = this.PartitionByValue + this.OrderByValue;
             }
             var isRowNumber = Skip != null || Take != null;
-            var rowNumberString = string.Format(",ROW_NUMBER() OVER({0}) AS RowIndex ", GetOrderByString);
+            var rowNumberString = string.Format(",ROW_NUMBER() OVER({0}) AS " + 0.GetRowIndexName() + " ", GetOrderByString);
             string groupByValue = GetGroupByString + HavingInfos;
             string orderByValue = (!isRowNumber && this.OrderByValue.HasValue()) ? GetOrderByString : null;
             if (isIgnoreOrderBy) { orderByValue = null; }
@@ -98,7 +98,7 @@ namespace SqlSugar
                 {
                     externalOrderBy = " ORDER BY "+ this.Builder.SqlDateNow + " ";
                 }
-                result = string.Format("SELECT ExternalTable.*,ROW_NUMBER() OVER({0}) AS RowIndex2 FROM ({1}) ExternalTable ", GetExternalOrderBy(externalOrderBy), result);
+                result = string.Format("SELECT ExternalTable.*,ROW_NUMBER() OVER({0}) AS " + 1.GetRowIndexName() + " FROM ({1}) ExternalTable ", GetExternalOrderBy(externalOrderBy), result);
                 result = ToPageSql2(result, ExternalPageIndex, ExternalPageSize, true);
             }
             this.OrderByValue = oldOrderBy;

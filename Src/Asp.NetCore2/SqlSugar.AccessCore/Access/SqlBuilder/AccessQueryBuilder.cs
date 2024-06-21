@@ -36,7 +36,7 @@ namespace SqlSugar.Access
             var oldTake = Take;
             Skip = null;
             Take = null;
-            var rowNumberString = string.Format(",ROW_NUMBER() OVER({0}) AS RowIndex ", GetOrderByString);
+            var rowNumberString = string.Format(",ROW_NUMBER() OVER({0}) AS " + 0.GetRowIndexName() + " ", GetOrderByString);
             string groupByValue = GetGroupByString + HavingInfos;
             string orderByValue = (!isRowNumber && this.OrderByValue.HasValue()) ? GetOrderByString : null;
             if (isIgnoreOrderBy) { orderByValue = null; }

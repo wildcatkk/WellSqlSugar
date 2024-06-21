@@ -127,3 +127,24 @@ ExecuteCommand/ExecuteCommandAsync
 UpdateBuilder.Parameters == null ? null : UpdateBuilder.Parameters.ToArray()
 改为：
 UpdateBuilder.Parameters.CopyToArray()
+
+7、表列名包含RowIndex问题
+
+将 RowIndex 修改为 0.GetRowIndexName()
+将 RowIndex2 修改为 1.GetRowIndexName()
+
+受影响的位置：
+C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar\Abstract\SqlBuilderProvider\QueryBuilder.cs
+PageTempalte
+ExternalPageTempalte
+ToSqlString
+C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar\Realization\Dm\SqlBuilder\DmQueryBuilder.cs
+ToSqlString()
+C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar\Realization\Oracle\SqlBuilder\OracleQueryBuilder.cs
+_ToSqlString()
+C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar\Realization\SqlServer\SqlBuilder\SqlServerQueryBuilder.cs
+_ToSqlString()
+C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar.AccessCore\Access\SqlBuilder\AccessQueryBuilder.cs
+ToSqlString()
+C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar.OceanBaseForOracle\OceanBase\SqlBuilder\OceanBaseForOracleQueryBuilder.cs
+_ToSqlString()

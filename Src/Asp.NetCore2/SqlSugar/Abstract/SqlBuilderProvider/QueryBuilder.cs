@@ -158,14 +158,14 @@ namespace SqlSugar
         {
             get
             {
-                return @"SELECT * FROM ({0}) T WHERE RowIndex BETWEEN {1} AND {2}";
+                return @"SELECT * FROM ({0}) T WHERE " + 0.GetRowIndexName() + @" BETWEEN {1} AND {2}";
             }
         }
         public virtual string ExternalPageTempalte
         {
             get
             {
-                return @"SELECT * FROM ({0}) T WHERE RowIndex2 BETWEEN {1} AND {2}";
+                return @"SELECT * FROM ({0}) T WHERE " + 1.GetRowIndexName() + @" BETWEEN {1} AND {2}";
             }
         }
         public virtual string DefaultOrderByTemplate
@@ -356,7 +356,7 @@ namespace SqlSugar
                 this.OrderByValue = this.PartitionByValue + this.OrderByValue;
             }
             var isRowNumber = Skip != null || Take != null;
-            var rowNumberString = string.Format(",ROW_NUMBER() OVER({0}) AS RowIndex ", GetOrderByString);
+            var rowNumberString = string.Format(",ROW_NUMBER() OVER({0}) AS " + 0.GetRowIndexName() + " ", GetOrderByString);
             string groupByValue = GetGroupByString + HavingInfos;
             string orderByValue = (!isRowNumber && this.OrderByValue.HasValue()) ? GetOrderByString : null;
             if (isIgnoreOrderBy) { orderByValue = null; }
@@ -370,7 +370,7 @@ namespace SqlSugar
                 {
                     externalOrderBy = " ORDER BY GetDate() ";
                 }
-                result = string.Format("SELECT *,ROW_NUMBER() OVER({0}) AS RowIndex2 FROM ({1}) ExternalTable ", GetExternalOrderBy(externalOrderBy), result);
+                result = string.Format("SELECT *,ROW_NUMBER() OVER({0}) AS " + 1.GetRowIndexName() + " FROM ({1}) ExternalTable ", GetExternalOrderBy(externalOrderBy), result);
                 result = ToPageSql2(result, ExternalPageIndex, ExternalPageSize, true);
             }
             this.OrderByValue = oldOrderBy;
