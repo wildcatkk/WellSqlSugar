@@ -8,8 +8,8 @@ namespace SqlSugar
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
     public class DictTypeValue : Attribute
     {
-        public readonly string CodeColumn;
-        public readonly string ResultColumn;
+        public string CodeColumn { get; }
+        public string ResultColumn { get; }
 
         /// <summary>
         /// SysDictType.Code => SysDictType.Name

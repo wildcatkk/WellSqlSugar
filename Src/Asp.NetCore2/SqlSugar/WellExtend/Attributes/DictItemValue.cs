@@ -8,9 +8,9 @@ namespace SqlSugar
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
     public class DictItemValue : Attribute
     {
-        public readonly string ParentCode;
-        public readonly string CodeColumn;
-        public readonly string ResultColumn;
+        public string ParentCode { get; }
+        public string CodeColumn { get; }
+        public string ResultColumn { get; }
 
         /// <summary>
         /// parentCode + SysDictItem.Code => "Name"

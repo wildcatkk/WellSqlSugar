@@ -2,40 +2,46 @@
 
 namespace SqlSugar
 {
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, Inherited = true)]
     public class ForeignListValue : Attribute
     {
-        public readonly string ForeignTable;
-        public readonly string ForeignColumn;
-        public readonly string ResultColumn;
-        public readonly string ValueColumn;
-        public readonly bool IsId;
+        public string ForeignTable { get; }
+        public string ForeignColumn { get; }
+        public string ValueColumn { get; }
+        public string ResultColumn { get; }
+
+        /// <summary>
+        /// 工厂值
+        /// </summary>
+        public object FactoryId { get; set; } = null;
+
+        /// <summary>
+        /// 工厂值所在列
+        /// </summary>
+        public string FactoryIdColumn { get; set; }
 
         public ForeignListValue(string foreignTable, string valueColumn)
         {
             ForeignTable = foreignTable;
             ForeignColumn = "Id";
-            ResultColumn = "Name";
-            IsId = true;
             ValueColumn = valueColumn;
+            ResultColumn = "Name";
         }
 
         public ForeignListValue(string foreignTable, string foreignColumn, string valueColumn)
         {
             ForeignTable = foreignTable;
             ForeignColumn = foreignColumn;
-            IsId = "Id".Equals(foreignColumn);
-            ResultColumn = "Name";
             ValueColumn = valueColumn;
+            ResultColumn = "Name";
         }
 
         public ForeignListValue(string foreignTable, string foreignColumn, string valueColumn, string resultColumn)
         {
             ForeignTable = foreignTable;
             ForeignColumn = foreignColumn;
-            IsId = "Id".Equals(foreignColumn);
-            ResultColumn = resultColumn;
             ValueColumn = valueColumn;
+            ResultColumn = resultColumn;
         }
     }
 }

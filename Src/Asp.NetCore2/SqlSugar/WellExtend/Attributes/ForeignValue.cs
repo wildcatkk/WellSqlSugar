@@ -5,14 +5,23 @@ namespace SqlSugar
     /// <summary>
     /// 自定义特性，用于标记外键表指定列（单主键）
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, Inherited = true)]
     public class ForeignValue : Attribute
     {
-        public readonly string ForeignTable;
-        public readonly string ForeignColumn;
-        public readonly string ResultColumn;
-        public readonly string ValueColumn;
-        public readonly bool IsId;
+        public string ForeignTable { get; }
+        public string ForeignColumn { get; }
+        public string ValueColumn { get; }
+        public string ResultColumn { get; }
+
+        /// <summary>
+        /// 工厂值
+        /// </summary>
+        public object FactoryId { get; set; } = null;
+
+        /// <summary>
+        /// 工厂值所在列
+        /// </summary>
+        public string FactoryIdColumn { get; set; }
 
         /// <summary>
         /// "Id" => "Name"
@@ -23,9 +32,8 @@ namespace SqlSugar
         {
             ForeignTable = foreignTable;
             ForeignColumn = "Id";
-            ResultColumn = "Name";
-            IsId = true;
             ValueColumn = valueColumn;
+            ResultColumn = "Name";
         }
 
         /// <summary>
@@ -38,9 +46,8 @@ namespace SqlSugar
         {
             ForeignTable = foreignTable;
             ForeignColumn = foreignColumn;
-            IsId = "Id".Equals(foreignColumn);
-            ResultColumn = "Name";
             ValueColumn = valueColumn;
+            ResultColumn = "Name";
         }
 
         /// <summary>
@@ -54,9 +61,8 @@ namespace SqlSugar
         {
             ForeignTable = foreignTable;
             ForeignColumn = foreignColumn;
-            IsId = "Id".Equals(foreignColumn);
-            ResultColumn = resultColumn;
             ValueColumn = valueColumn;
+            ResultColumn = resultColumn;
         }
     }
 }

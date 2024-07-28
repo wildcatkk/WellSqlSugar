@@ -2,10 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Dynamic;
 using System.Linq;
-using System.Reflection;
-using System.Xml.Linq;
 
 namespace SqlSugar
 {
@@ -14,7 +11,6 @@ namespace SqlSugar
     /// </summary>
     public class AttributeProvider
     {
-
         public static T Process<T>(ISqlSugarClient db, T obj)
         {
             Process(db, new List<T> { obj }, typeof(T));
@@ -63,103 +59,52 @@ namespace SqlSugar
 
             //1、反射收集特性
             var tableType = type.GetTable();
-            List<EnumNameInfo> enumInfoes = new List<EnumNameInfo>();
-            List<ForeignValueInfo> foreignInfoes = new List<ForeignValueInfo>();
-            List<SubForeignValueInfo> subForeignInfoes = new List<SubForeignValueInfo>();
-            List<ForeignListValueInfo> foreignListInfoes = new List<ForeignListValueInfo>();
+            var enumNameInfoes = new List<EnumNameInfo>();
+            var foreignTabelInfoes = new List<ForeignTableInfo>();
             foreach (var prop in tableType.Properties)
             {
                 //枚举特性
-                if (prop.Info.TryGetAtrribute(out EnumName enumAttr))
+                if (prop.EnumName != null)
                 {
                     if (prop.Type != typeof(string))
                     {
-                        throw new Exception($"特性EnumName({tableType.Type.Name}.{prop.Info.Name})仅支持string类型的属性。");
+                        throw new Exception($"特性EnumName({tableType.Name}.{prop.Name})仅支持string类型的属性。");
                     }
-                    EnumNameInfo enumInfo = new EnumNameInfo(prop, enumAttr, tableType);
+                    if (prop.EnumNameInfo is null)
+                        prop.EnumNameInfo = new EnumNameInfo(prop, prop.EnumName, tableType);
 
-                    if (enumInfo.ValueProperty != null) enumInfoes.Add(enumInfo);
+                    if (prop.EnumNameInfo.ValueProperty != null)
+                        enumNameInfoes.Add(prop.EnumNameInfo);
                 }
-                //字典类型特性（转换为ForeignValue处理）
-                else if (prop.Info.TryGetAtrribute(out DictTypeValue dictTypeAttr))
+                //外键表特性
+                else if (prop.ForeignTable != null)
                 {
-                    ForeignValue foreignAttr = new ForeignValue("SysDictType", "Code", dictTypeAttr.CodeColumn, dictTypeAttr.ResultColumn);
-                    var foreignInfo = new ForeignValueInfo(prop, foreignAttr, tableType);
+                    if (prop.ForeignTableInfo is null)
+                        prop.ForeignTableInfo = new ForeignTableInfo(prop, prop.ForeignTable, prop.ForeignConditions, tableType);
 
-                    if (foreignInfo.ValueProperty != null) foreignInfoes.Add(foreignInfo);
-                }
-                //字典项特性（转换为SubForeignValue处理）
-                else if (prop.Info.TryGetAtrribute(out DictItemValue dictItemAttr))
-                {
-                    SubForeignValue foreignAttr = new SubForeignValue("SysDictItem", "ParentCode", dictItemAttr.ParentCode, "Code", dictItemAttr.CodeColumn, dictItemAttr.ResultColumn);
-                    var subForeignInfo = new SubForeignValueInfo(prop, foreignAttr, tableType);
-
-                    if (subForeignInfo.Value2Property != null) subForeignInfoes.Add(subForeignInfo);
-                }
-                //外键表特性（单主键）
-                else if (prop.Info.TryGetAtrribute(out ForeignValue foreignAttr))
-                {
-                    if (foreignAttr.IsId && prop.Type != typeof(string))
-                    {
-                        throw new Exception($"特性ForeignValue({tableType.Type.Name}.{prop.Info.Name})仅支持string类型的属性。");
-                    }
-
-                    var foreignInfo = new ForeignValueInfo(prop, foreignAttr, tableType);
-
-                    if (foreignInfo.ValueProperty != null) foreignInfoes.Add(foreignInfo);
-                }
-                //外键表特性（复合主键）
-                else if (prop.Info.TryGetAtrribute(out SubForeignValue subForeignAttr))
-                {
-                    var subForeignInfo = new SubForeignValueInfo(prop, subForeignAttr, tableType);
-
-                    if (subForeignInfo.Value2Property != null) subForeignInfoes.Add(subForeignInfo);
-                }
-                //外键表特性（单主键）
-                else if (prop.Info.TryGetAtrribute(out ForeignListValue foreignListAttr))
-                {
-                    if (foreignListAttr.IsId && prop.Type != typeof(string))
-                    {
-                        throw new Exception($"特性ForeignListValue({tableType.Type.Name} . {prop.Info.Name})仅支持string类型的属性。");
-                    }
-
-                    var foreignInfo = new ForeignListValueInfo(prop, foreignListAttr, tableType);
-
-                    if (foreignInfo.ValueProperty != null) foreignListInfoes.Add(foreignInfo);
+                    foreignTabelInfoes.Add(prop.ForeignTableInfo);
                 }
             }
 
             // 2、[EnumName] 处理
-            if (enumInfoes.Count > 0)
+            if (enumNameInfoes.Count > 0)
             {
-                EnumNameProcess(list, enumInfoes);
+                EnumNameProcess(list, enumNameInfoes);
             }
 
-            // 3、[ForeignValue] 处理
-            if (foreignInfoes.Count > 0)
+            // 3、[ForeignTable] 处理
+            if (foreignTabelInfoes.Count > 0)
             {
-                ForeignValueProcess(db, list,foreignInfoes);
-            }
-
-            // 4、[SubForeignValue] 处理
-            if (subForeignInfoes.Count > 0)
-            {
-                SubForeignValueProcess(db, list, subForeignInfoes);
-            }
-
-            // 5、[ForeignListValue] 处理
-            if (foreignListInfoes.Count > 0)
-            {
-                ForeignListValueProcess(db, list, foreignListInfoes);
+                ForeignTableProcess(db, list, foreignTabelInfoes);
             }
 
             return list;
         }
 
-        private static void EnumNameProcess(ICollection list, List<EnumNameInfo> enumInfoes)
+        private static void EnumNameProcess(ICollection list, List<EnumNameInfo> enumNameInfoes)
         {
             Dictionary<object, string> enumCache = new Dictionary<object, string>();
-            foreach (var info in enumInfoes)
+            foreach (var info in enumNameInfoes)
             {
                 foreach (var t in list)
                 {
@@ -191,7 +136,6 @@ namespace SqlSugar
                     }
 
                     info.AttributeProperty.Info.SetValue(t, enumStr);
-
                 }
 
             }
@@ -216,645 +160,347 @@ namespace SqlSugar
                 return originalVal;
         }
 
-        private static void ForeignValueProcess(ISqlSugarClient db, ICollection list, List<ForeignValueInfo> foreignInfoes)
+        private static bool Equals(List<ForeignConditionValueInfo> l1, List<ForeignConditionValueInfo> l2)
         {
-            // 获取所有表名
-            var tableNames = new List<string>();
-            foreach (ForeignValueInfo info in foreignInfoes)
-            {
-                if (string.IsNullOrEmpty(info.Attribute.ForeignTable) || tableNames.Contains(info.Attribute.ForeignTable)) continue;
+            if (l1.Count != l2.Count) return false;
 
-                tableNames.Add(info.Attribute.ForeignTable);
+            foreach (var item1 in l1)
+            {
+                var item2 = l2.FirstOrDefault(p => p.Name == item1.Name);
+                if (item2 is null) return false;
+                if (item1.Value != item2.Value) return false;
+                if (item1.ConditionalType != item2.ConditionalType) return false;
             }
 
-            // 根据表名分组查询
-            var tableInfoes = new List<EntityTableInfo>();
-            foreach (var tableName in tableNames)
-            {
-                //根据数据集组装id条件
-                var tableInfo = GetForeignCondModel(list, tableName, foreignInfoes);
-
-                //查询数据库获取结果
-                tableInfo.TableList = db.Queryable<dynamic>().AS(tableName).Where(tableInfo.ConditionalModels).Select(tableInfo.SelectModels).ToSugarList();
-
-                tableInfoes.Add(tableInfo);
-            }
-
-            // 设置对象的属性值
-            foreach (var t in list)
-            {
-                foreach (var item in foreignInfoes)
-                {
-                    //数据库数据集
-                    var dataSet = tableInfoes.FirstOrDefault(x => x.TableName == item.Attribute.ForeignTable)?.TableList;
-                    if (dataSet is null || dataSet.Count == 0) continue;
-
-                    //当前行数据
-                    var infoValue = item.ValueProperty.Info.GetValue(t);
-                    if (infoValue is null) continue;
-
-                    string infoValueStr;
-                    if (infoValue is Enum)
-                        infoValueStr = ((int)infoValue).ToString();
-                    else
-                        infoValueStr = infoValue.ToString();
-
-                    dynamic firstObj = null;
-                    foreach (var data in dataSet)
-                    {
-                        if (DynamicExtensions.TryGetDynamicValue(data, item.Attribute.ForeignColumn, out object columnValue)
-                            && columnValue != null
-                            && columnValue.ToString() == infoValueStr
-                         )
-                        {
-                            firstObj = data;
-                            break;
-                        }
-                    }
-                    if (firstObj is null) continue;
-
-                    // 给当前属性赋值
-                    if (DynamicExtensions.TryGetDynamicValue(firstObj, item.Attribute.ResultColumn, out object targetValue)
-                        && targetValue != null)
-                    {
-                        item.AttributeProperty.Info.SetValue(t, GetValue(targetValue, item.AttributeProperty));
-                    }
-                }
-            }
+            return true;
         }
-
-        /// <summary>
-        /// 分组获取外键查询条件
-        /// </summary>
-        /// <param name="list"></param>
-        /// <param name="tableInfo"></param>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        private static EntityTableInfo GetForeignCondModel(ICollection list, string tableName, List<ForeignValueInfo> foreignInfoes)
+        private static TableQueryInfo GetForeignTableQueryInfo(ICollection list, string tableName, List<ForeignTableInfo> foreignTabelInfoes)
         {
-            EntityTableInfo tableInfo = new EntityTableInfo(tableName);
+            var tableInfo = new TableQueryInfo(tableName);
+            bool iLogicalDelete = false;
 
-            var propValues = new List<SingleKey>();
-            List<KeyValuePair<WhereType, ConditionalModel>> condiModels = new List<KeyValuePair<WhereType, ConditionalModel>>();
+            var foreignKeysGroup = new List<List<ForeignConditionValueInfo>>();
             List<string> fieldNames = new List<string>();
-            //对于非bool类型条件，可以将多个Or合并为一个In
-            List<ConditionMerge> merges = new List<ConditionMerge>();
-            foreach (var info in foreignInfoes)
+            foreach (var info in foreignTabelInfoes)
             {
                 // 分组条件
-                if (info.Attribute.ForeignTable == tableName)
+                if (info.ForeignTableType.Name == tableName)
                 {
+                    iLogicalDelete = info.ForeignTableType.ILogicalDelete;
+
                     foreach (var t in list)
                     {
-                        // 查询条件去重
-                        object propValue = info.ValueProperty.Info.GetValue(t);
-                        if (propValue is null || propValues.Exists(p => p.KeyColumn == info.Attribute.ForeignColumn && p.Key.ToString() == propValue.ToString())) continue;
-
-                        //对于Id，需要做额外的判断
-                        if (info.Attribute.IsId)
+                        var foreignKeys = new List<ForeignConditionValueInfo>();
+                        foreach (var foreignCondi in info.ForeignConditions)
                         {
-                            string idStr = propValue.ToString();
-                            
-                            if (string.IsNullOrEmpty(idStr) || !long.TryParse(idStr, out var id)) continue;
-                        }
-
-                        propValues.Add(new SingleKey(info.Attribute.ForeignColumn, propValue));
-
-                        // 组装查询条件
-                        string propValueStr;
-                        if (propValue is Enum)
-                            propValueStr = ((int)propValue).ToString();
-                        else
-                            propValueStr = propValue.ToString();
-
-                        //对于非bool类型条件，可以将多个Or合并为一个In
-                        if (info.ValueProperty.Type != typeof(bool))
-                        {
-                            ConditionMerge merge = merges.FirstOrDefault(p => p.Column == info.Attribute.ForeignColumn);
-                            if (merge != null)
+                            var condiType = foreignCondi.IsMultiValue ? ConditionalType.In : ConditionalType.Equal;
+                            object propValue;
+                            if (foreignCondi.ValueProperty != null)
                             {
-                                //二次匹配，表示有多个，从Equal=>In
-                                string columnValue = merge.Value;
-
-                                merge.Value += "," + propValueStr;
-                                merge.CondiType = ConditionalType.In;
+                                propValue = foreignCondi.ValueProperty.Info.GetValue(t);
                             }
                             else
                             {
-                                merges.Add(new ConditionMerge(ConditionalType.Equal, info.Attribute.ForeignColumn, propValueStr, info.ForeignProperty.Type));
+                                propValue = foreignCondi.Value;
                             }
-                        }
-                        else
-                        {
-                            condiModels.Add(WhereType.Or, info.Attribute.ForeignColumn, propValueStr, info.ForeignProperty.Type);
-                        }
-                    }
 
-                    // 组装Select条件
-                    if (!fieldNames.Contains(info.Attribute.ForeignColumn))
-                    {
-                        fieldNames.Add(info.Attribute.ForeignColumn);
-                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.Attribute.ForeignColumn, AsName = info.Attribute.ForeignColumn });
-                    }
-                    if (!fieldNames.Contains(info.Attribute.ResultColumn))
-                    {
-                        fieldNames.Add(info.Attribute.ResultColumn);
-                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.Attribute.ResultColumn, AsName = info.Attribute.ResultColumn });
-                    }
-                }
-            }
-
-            foreach (var merge in merges)
-            {
-                condiModels.Add(WhereType.Or, merge.Column, merge.Value, merge.ValueType, merge.CondiType);
-            }
-
-            tableInfo.ConditionalModels = SugarConditional.Create(condiModels);
-
-            return tableInfo;
-        }
-
-        private static void SubForeignValueProcess(ISqlSugarClient db, ICollection list, List<SubForeignValueInfo> subForeignInfoes)
-        {
-            // 获取所有表名
-            var tableNames = new List<string>();
-            foreach (var info in subForeignInfoes)
-            {
-                if (string.IsNullOrEmpty(info.Attribute.ForeignTable) || tableNames.Contains(info.Attribute.ForeignTable)) continue;
-
-                tableNames.Add(info.Attribute.ForeignTable);
-            }
-
-            // 根据表名分组查询
-            var tableInfoes = new List<EntityTableInfo>();
-            foreach (var tableName in tableNames)
-            {
-                //根据数据集组装id条件
-                var tableInfo = GetSubForeignCondModel(list, tableName, subForeignInfoes);
-
-                //查询数据库获取结果
-                tableInfo.TableList = db.Queryable<dynamic>().AS(tableName).Where(tableInfo.ConditionalModels).Select(tableInfo.SelectModels).ToSugarList();
-
-                tableInfoes.Add(tableInfo);
-            }
-
-            // 设置对象的属性值
-            foreach (var t in list)
-            {
-                foreach (var info in subForeignInfoes)
-                {
-                    //数据库数据集
-                    var dataSet = tableInfoes.FirstOrDefault(x => x.TableName == info.Attribute.ForeignTable)?.TableList;
-                    if (dataSet is null || dataSet.Count == 0) continue;
-
-                    //当前行数据
-                    var infoValue = info.Value2Property.Info.GetValue(t);
-                    if (infoValue is null) continue;
-
-                    string infoValueStr;
-                    if (infoValue is Enum)
-                        infoValueStr = ((int)infoValue).ToString();
-                    else
-                        infoValueStr = infoValue.ToString();
-
-                    dynamic firstObj = null;
-                    foreach (var data in dataSet)
-                    {
-                        //比较复合主键以查找返回的数据，这里仅匹配第一个
-                        if (DynamicExtensions.TryGetDynamicValue(data, info.Attribute.ForeignColumn2, out object columnValue)
-                            && columnValue != null
-                            && columnValue.ToString() == infoValueStr
-                         )
-                        {
-                            if (DynamicExtensions.TryGetDynamicValue(data, info.Attribute.ForeignColumn1, out object parentValue)
-                                && parentValue != null
-                                && parentValue.ToString() == info.Attribute.ForeignValue1
-                             )
+                            string propValueStr;
+                            if (propValue is null)
                             {
-                                firstObj = data;
+                                if (foreignCondi.Property.Type == typeof(string))
+                                    condiType = ConditionalType.IsNullOrEmpty;
+                                else
+                                    condiType = ConditionalType.EqualNull;
+                                propValueStr = null;
+                            }
+                            else
+                            {
+                                if (propValue is Enum)
+                                    propValueStr = ((int)propValue).ToString();
+                                else
+                                    propValueStr = propValue.ToString();
+                            }
+
+                            foreignKeys.Add(new ForeignConditionValueInfo(foreignCondi.Property.Name, foreignCondi.Property.Type, propValueStr, condiType, foreignCondi.IsMultiValue));
+                        }
+
+                        // 查询条件去重
+                        bool isExist = false;
+                        foreach (var item in foreignKeysGroup)
+                        {
+                            if (Equals(foreignKeys, item))
+                            {
+                                isExist = true;
                                 break;
                             }
                         }
-                    }
-                    if (firstObj is null) continue;
-
-                    // 给当前属性赋值
-                    if (DynamicExtensions.TryGetDynamicValue(firstObj, info.Attribute.ResultColumn, out object targetValue)
-                        && targetValue != null)
-                    {
-                        info.AttributeProperty.Info.SetValue(t, GetValue(targetValue, info.AttributeProperty));
-                    }
-                }
-            }
-        }
-
-        private static EntityTableInfo GetSubForeignCondModel(ICollection list, string tableName, List<SubForeignValueInfo> subForeignInfoes)
-        {
-            EntityTableInfo tableInfo = new EntityTableInfo(tableName);
-
-            List<DoubleKey> propValues = new List<DoubleKey>();
-            List<string> fieldNames = new List<string>();
-            foreach (var info in subForeignInfoes)
-            {
-                // 分组条件
-                if (info.Attribute.ForeignTable == tableName)
-                {
-                    foreach (var t in list)
-                    {
-                        // 查询条件去重
-                        object propValue = info.Value2Property.Info.GetValue(t);
-                        if (propValue is null || propValues.Exists(p => p.ParentColumn == info.Attribute.ForeignColumn1 && p.ParentKey == info.Attribute.ForeignValue1 && p.KeyColumn == info.Attribute.ForeignColumn2 && p.Key.ToString() == propValue.ToString())) continue;
-
-                        propValues.Add(new DoubleKey(info.Attribute.ForeignColumn1, info.Attribute.ForeignValue1, info.Attribute.ForeignColumn2, propValue));
-
-                        string propValueStr;
-                        if (propValue is Enum)
-                            propValueStr = ((int)propValue).ToString();
+                        if (isExist)
+                            continue;
                         else
-                            propValueStr = propValue.ToString();
+                            foreignKeysGroup.Add(foreignKeys);
 
                         // 组装复合查询条件
                         var condiModels = new List<KeyValuePair<WhereType, ConditionalModel>>();
-                        condiModels.Add(WhereType.Or, info.Attribute.ForeignColumn1, info.Attribute.ForeignValue1, info.ForeignProperty1.Type);
-                        condiModels.Add(WhereType.And, info.Attribute.ForeignColumn2, propValueStr, info.ForeignProperty2.Type);
+                        bool isFirst = true;
+                        foreach (var foreignKey in foreignKeys)
+                        {
+                            if (isFirst)
+                            {
+                                condiModels.Add(WhereType.Or, foreignKey.Name, foreignKey.Value, foreignKey.Type, foreignKey.ConditionalType);
+                                isFirst = false;
+                                continue;
+                            }
+
+                            condiModels.Add(WhereType.And, foreignKey.Name, foreignKey.Value, foreignKey.Type, foreignKey.ConditionalType);
+                        }
 
                         tableInfo.ConditionalModels.Add(SugarConditional.CreateList(condiModels));
                     }
 
                     // 组装复合Select条件
-                    if (!fieldNames.Contains(info.Attribute.ForeignColumn1))
+                    foreach (var foreignCondi in info.ForeignConditions)
                     {
-                        fieldNames.Add(info.Attribute.ForeignColumn1);
-                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.Attribute.ForeignColumn1, AsName = info.Attribute.ForeignColumn1 });
+                        if (!fieldNames.Contains(foreignCondi.Property.Name))
+                        {
+                            fieldNames.Add(foreignCondi.Property.Name);
+                            tableInfo.SelectModels.Add(new SelectModel() { FieldName = foreignCondi.Property.Name, AsName = foreignCondi.Property.Name });
+                        }
                     }
-                    if (!fieldNames.Contains(info.Attribute.ForeignColumn2))
+                    if (!fieldNames.Contains(info.ResultProperty.Name))
                     {
-                        fieldNames.Add(info.Attribute.ForeignColumn2);
-                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.Attribute.ForeignColumn2, AsName = info.Attribute.ForeignColumn2 });
-                    }
-                    if (!fieldNames.Contains(info.Attribute.ResultColumn))
-                    {
-                        fieldNames.Add(info.Attribute.ResultColumn);
-                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.Attribute.ResultColumn, AsName = info.Attribute.ResultColumn });
+                        fieldNames.Add(info.ResultProperty.Name);
+                        tableInfo.SelectModels.Add(new SelectModel() { FieldName = info.ResultProperty.Name, AsName = info.ResultProperty.Name });
                     }
 
                 }
             }
+
+            if (iLogicalDelete)
+                tableInfo.ConditionalModels.Add(nameof(ILogicalDelete.IsDeleted), "0", typeof(long));
 
             return tableInfo;
         }
 
-        private static void ForeignListValueProcess(ISqlSugarClient db, ICollection list, List<ForeignListValueInfo> foreignInfoes)
+        private static void ForeignTableProcess(ISqlSugarClient db, ICollection list, List<ForeignTableInfo> foreignTabelInfoes)
         {
-            // 获取所有表名
+            // 根据表名分组聚合查询
+            var tableQueryInfoes = new List<TableQueryInfo>();
             var tableNames = new List<string>();
-            foreach (ForeignListValueInfo info in foreignInfoes)
+            foreach (var info in foreignTabelInfoes)
             {
-                if (string.IsNullOrEmpty(info.Attribute.ForeignTable) || tableNames.Contains(info.Attribute.ForeignTable)) continue;
+                var tableName = info.ForeignTableType.Name;
+                if (tableNames.Contains(tableName))
+                    continue;
+                tableNames.Add(tableName);
 
-                tableNames.Add(info.Attribute.ForeignTable);
-            }
-
-            // 根据表名分组查询
-            var tableInfoes = new List<EntityTableInfo>();
-            foreach (var tableName in tableNames)
-            {
-                //根据数据集组装id条件
-                var tableInfo = GetForeignListCondModel(list, tableName, foreignInfoes);
+                //根据数据集组装条件
+                var tableQueryInfo = GetForeignTableQueryInfo(list, tableName, foreignTabelInfoes);
 
                 //查询数据库获取结果
-                tableInfo.TableList = db.Queryable<dynamic>().AS(tableName).Where(tableInfo.ConditionalModels).Select(tableInfo.SelectModels).ToSugarList();
+                tableQueryInfo.DataTable = db.Queryable<dynamic>().AS(tableName).Where(tableQueryInfo.ConditionalModels).Select(tableQueryInfo.SelectModels).ToSugarList();
 
-                tableInfoes.Add(tableInfo);
+                tableQueryInfoes.Add(tableQueryInfo);
             }
 
-            // 设置对象的属性值
+            //按表名和主键条件回填数据
             foreach (var t in list)
             {
-                foreach (var info in foreignInfoes)
+                foreach (var info in foreignTabelInfoes)
                 {
                     //数据库数据集
-                    var dataSet = tableInfoes.FirstOrDefault(x => x.TableName == info.Attribute.ForeignTable)?.TableList;
-                    if (dataSet is null || dataSet.Count == 0) continue;
+                    var dataTable = tableQueryInfoes.FirstOrDefault(x => x.TableName == info.ForeignTableType.Name)?.DataTable;
+                    if (dataTable is null || dataTable.Count == 0) continue;
 
-                    //当前行数据
-                    //原始条件将被拆分为多个单独的条件
-                    object rowPropValue = info.ValueProperty.Info.GetValue(t);
-                    if (rowPropValue is null) continue;
-
-                    string? rowPropValueStr = rowPropValue.ToString();
-                    if (string.IsNullOrEmpty(rowPropValueStr)) continue;
-
-                    var keyPropValues = rowPropValueStr.Trim().Split(',').ToList();
-                    if (keyPropValues is null || keyPropValues.Count == 0) continue;
-
-                    string targetValues = "";
-                    foreach (var propValue in keyPropValues)
+                    var foreignKeys = new List<ForeignCompareValueInfo>();
+                    bool isMultiValue = false;
+                    foreach (var foreignCondi in info.ForeignConditions)
                     {
-                        dynamic firstObj = null;
-                        foreach (var data in dataSet)
+                        var propName = foreignCondi.Property.Name;
+                        object propValue;
+                        if (foreignCondi.ValueProperty != null)
                         {
-                            if (DynamicExtensions.TryGetDynamicValue(data, info.Attribute.ForeignColumn, out object columnValue)
-                                && columnValue != null
-                                && columnValue.ToString() == propValue
-                             )
-                            {
-                                firstObj = data;
-                                break;
-                            }
+                            propValue = foreignCondi.ValueProperty.Info.GetValue(t);
                         }
-                        if (firstObj is null) continue;
-
-                        // 给当前属性赋值
-                        if (DynamicExtensions.TryGetDynamicValue(firstObj, info.Attribute.ResultColumn, out object targetValue)
-                            && targetValue != null)
+                        else
                         {
-                            var targetValueStr = targetValue.ToString();
-                            if (string.IsNullOrEmpty(targetValueStr)) continue;
-
-                            targetValues += targetValueStr + ",";
+                            propValue = foreignCondi.Value;
                         }
+
+                        string propValueStr;
+                        if (propValue is null)
+                            propValueStr = null;
+                        else
+                        {
+                            if (propValue is Enum)
+                                propValueStr = ((int)propValue).ToString();
+                            else
+                                propValueStr = propValue.ToString();
+                        }
+
+                        foreignKeys.Add(new ForeignCompareValueInfo(foreignCondi.Property.Name, foreignCondi.Property.Type, propValueStr, foreignCondi.IsMultiValue));
+
+                        isMultiValue |= foreignCondi.IsMultiValue;
                     }
 
-                    if (!string.IsNullOrEmpty(targetValues))
+                    if (isMultiValue)
                     {
-                        targetValues = targetValues.TrimEnd(',');
-                        info.AttributeProperty.Info.SetValue(t, targetValues);
-                    }
-                }
-            }
-        }
-
-        private static EntityTableInfo GetForeignListCondModel(ICollection list, string tableName, List<ForeignListValueInfo> foreignInfoes)
-        {
-            EntityTableInfo tableInfo = new EntityTableInfo(tableName);
-
-            var propValues = new List<SingleKey>();
-            List<KeyValuePair<WhereType, ConditionalModel>> condiModels = new List<KeyValuePair<WhereType, ConditionalModel>>();
-            List<string> fieldNames = new List<string>();
-            //对于非bool类型条件，可以将多个Or合并为一个In
-            List<ConditionMerge> merges = new List<ConditionMerge>();
-            foreach (var info in foreignInfoes)
-            {
-                // 分组条件
-                if (info.Attribute.ForeignTable == tableName)
-                {
-                    foreach (var t in list)
-                    {
-                        //原始条件将被拆分为多个单独的条件
-                        object rowPropValue = info.ValueProperty.Info.GetValue(t);
-                        if (rowPropValue is null) continue;
-
-                        string? rowPropValueStr = rowPropValue.ToString();
-                        if (string.IsNullOrEmpty(rowPropValueStr)) continue;
-
-                        var keyPropValues = rowPropValueStr.Trim().Split(',').ToList();
-                        if (keyPropValues is null || keyPropValues.Count == 0) continue;
-
-                        foreach (var propValue in keyPropValues)
+                        var dataResult = new List<dynamic>();
+                        foreach (var dataRow in dataTable)
                         {
-                            // 查询条件去重
-                            if (string.IsNullOrEmpty(propValue) || propValues.Exists(p => p.KeyColumn == info.Attribute.ForeignColumn && p.Key.ToString() == propValue)) continue;
-
-                            //对于Id，需要做额外的判断
-                            if (info.Attribute.IsId)
+                            //比较复合主键以查找返回的数据，这里匹配所有可能的数据
+                            bool isSuccess = true;
+                            foreach (var foreignKey in foreignKeys)
                             {
-                                if (!long.TryParse(propValue, out var id)) continue;
-                            }
-
-                            propValues.Add(new SingleKey(info.Attribute.ForeignColumn, propValue));
-
-                            // 组装查询条件
-                            //对于非bool类型条件，可以将多个Or合并为一个In
-                            if (info.ValueProperty.Type != typeof(bool))
-                            {
-                                ConditionMerge merge = merges.FirstOrDefault(p => p.Column == info.Attribute.ForeignColumn);
-                                if (merge != null)
+                                if (DynamicExtensions.TryGetDynamicValue(dataRow, foreignKey.Name, out object columnValue))
                                 {
-                                    //二次匹配，表示有多个，从Equal=>In
-                                    string columnValue = merge.Value;
-
-                                    merge.Value += "," + propValue;
-                                    merge.CondiType = ConditionalType.In;
+                                    if (columnValue is null && foreignKey.Value is null)
+                                        continue;
+                                    else if (columnValue != null && (columnValue.ToString().Equals(foreignKey.Value) || foreignKey.Values.Contains(columnValue.ToString())))
+                                    {
+                                        continue;
+                                    }
+                                    else
+                                    {
+                                        isSuccess = false;
+                                        break;
+                                    }
                                 }
                                 else
                                 {
-                                    merges.Add(new ConditionMerge(ConditionalType.Equal, info.Attribute.ForeignColumn, propValue, info.ForeignProperty.Type));
+                                    isSuccess = false;
+                                    break;
                                 }
                             }
-                            else
+
+                            if (isSuccess)
+                                dataResult.Add(dataRow);
+                        }
+
+                        if (dataResult.Count > 0)
+                        {
+                            var resultMultiValue = "";
+                            foreach (var dataRow in dataResult)
                             {
-                                condiModels.Add(WhereType.Or, info.Attribute.ForeignColumn, propValue, info.ForeignProperty.Type);
+                                // 给当前属性赋值
+                                if (DynamicExtensions.TryGetDynamicValue(dataRow, info.ResultProperty.Name, out object resultValue) && resultValue != null)
+                                {
+                                    resultMultiValue += GetValue(resultValue, info.AttributeProperty).ToString() + ",";
+                                }
+                            }
+                            resultMultiValue = resultMultiValue.TrimEnd(',');
+
+                            info.AttributeProperty.Info.SetValue(t, resultMultiValue);
+                        }
+                    }
+                    else
+                    {
+                        foreach (var dataRow in dataTable)
+                        {
+                            //比较复合主键以查找返回的数据，这里仅匹配第一个
+                            bool isSuccess = true;
+                            foreach (var foreignKey in foreignKeys)
+                            {
+                                if (DynamicExtensions.TryGetDynamicValue(dataRow, foreignKey.Name, out object columnValue))
+                                {
+                                    if (columnValue is null && foreignKey.Value is null)
+                                        continue;
+                                    else if (columnValue != null && columnValue.ToString().Equals(foreignKey.Value))
+                                        continue;
+                                    else
+                                    {
+                                        isSuccess = false;
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    isSuccess = false;
+                                    break;
+                                }
+                            }
+
+                            if (isSuccess)
+                            {
+                                // 给当前属性赋值
+                                if (DynamicExtensions.TryGetDynamicValue(dataRow, info.ResultProperty.Name, out object resultValue) && resultValue != null)
+                                {
+                                    info.AttributeProperty.Info.SetValue(t, GetValue(resultValue, info.AttributeProperty));
+                                }
+
+                                break;
                             }
                         }
                     }
-
-                    // 组装Select条件
-                    if (!fieldNames.Contains(info.Attribute.ForeignColumn))
-                    {
-                        fieldNames.Add(info.Attribute.ForeignColumn);
-                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.Attribute.ForeignColumn, AsName = info.Attribute.ForeignColumn });
-                    }
-                    if (!fieldNames.Contains(info.Attribute.ResultColumn))
-                    {
-                        fieldNames.Add(info.Attribute.ResultColumn);
-                        tableInfo.SelectModels.Add(new SelectModel() { FiledName = info.Attribute.ResultColumn, AsName = info.Attribute.ResultColumn });
-                    }
                 }
             }
-
-            foreach (var merge in merges)
-            {
-                condiModels.Add(WhereType.Or, merge.Column, merge.Value, merge.ValueType, merge.CondiType);
-            }
-
-            tableInfo.ConditionalModels = SugarConditional.Create(condiModels);
-
-            return tableInfo;
         }
 
     }
 
-    internal class EnumNameInfo
+    public class TableQueryInfo
     {
-        public EnumNameInfo(ColumnProperty attributeProperty, EnumName attribute, TableType tableType)
-        {
-            AttributeProperty = attributeProperty;
-            Attribute = attribute;
-            ValueProperty = tableType.GetProperty(attribute.ValueColumn);
-            if (ValueProperty is null)
-                throw new Exception($"Unknow value property [{attribute.ValueColumn}] in table [{tableType.Type.Name}]");
-        }
-
-        public ColumnProperty AttributeProperty { get; set; }
-
-        public EnumName Attribute { get; set; }
-
-        public ColumnProperty ValueProperty { get; set; }
-    }
-
-    internal class ForeignValueInfo
-    {
-        public ForeignValueInfo(ColumnProperty attributeProperty, ForeignValue attribute, TableType tableType)
-        {
-            AttributeProperty = attributeProperty;
-            Attribute = attribute;
-            ForeignTableType = attribute.ForeignTable.GetTable();
-            if (ForeignTableType is null)
-                throw new Exception($"Unknow foreign table [{attribute.ForeignTable}]");
-
-            ForeignProperty = ForeignTableType.GetProperty(attribute.ForeignColumn);
-            if (ForeignProperty is null)
-                throw new Exception($"Unknow foreign property [{attribute.ForeignColumn}] in table [{ForeignTableType.Type.Name}]");
-            ValueProperty = tableType.GetProperty(attribute.ValueColumn);
-            if (ValueProperty is null)
-                throw new Exception($"Unknow value property [{attribute.ValueColumn}] in table [{tableType.Type.Name}]");
-        }
-
-        public ColumnProperty AttributeProperty { get; set; }
-
-        public ForeignValue Attribute { get; set; }
-
-        public TableType ForeignTableType { get; set; }
-
-        public ColumnProperty ForeignProperty { get; set; }
-
-        public ColumnProperty ValueProperty { get; set; }
-    }
-
-    internal class ForeignListValueInfo
-    {
-        public ForeignListValueInfo(ColumnProperty attributeProperty, ForeignListValue attribute, TableType tableType)
-        {
-            AttributeProperty = attributeProperty;
-            Attribute = attribute;
-            ForeignTableType = attribute.ForeignTable.GetTable();
-            if (ForeignTableType is null)
-                throw new Exception($"Unknow foreign table [{attribute.ForeignTable}]");
-
-            ForeignProperty = ForeignTableType.GetProperty(attribute.ForeignColumn);
-            if (ForeignProperty is null)
-                throw new Exception($"Unknow foreign property [{attribute.ForeignColumn}] in table [{ForeignTableType.Type.Name}]");
-            ValueProperty = tableType.GetProperty(attribute.ValueColumn);
-            if (ValueProperty is null)
-                throw new Exception($"Unknow value property [{attribute.ValueColumn}] in table [{tableType.Type.Name}]");
-        }
-
-        public ColumnProperty AttributeProperty { get; set; }
-
-        public ForeignListValue Attribute { get; set; }
-
-        public TableType ForeignTableType { get; set; }
-
-        public ColumnProperty ForeignProperty { get; set; }
-
-        public ColumnProperty ValueProperty { get; set; }
-    }
-
-    internal class ConditionMerge
-    {
-        public ConditionMerge(ConditionalType condiType, string column, string value, Type valueType)
-        {
-            CondiType = condiType;
-            Column = column;
-            Value = value;
-            ValueType = valueType;
-        }
-
-        public ConditionalType CondiType { get; set; }
-
-        public string Column { get; set; }
-
-        public string Value { get; set; }
-
-        public Type ValueType { get; set; }
-    }
-
-    internal class SubForeignValueInfo
-    {
-        public SubForeignValueInfo(ColumnProperty attributeProperty, SubForeignValue attribute, TableType tableType)
-        {
-            AttributeProperty = attributeProperty;
-            Attribute = attribute;
-            ForeignTableType = attribute.ForeignTable.GetTable();
-            if (ForeignTableType is null)
-                throw new Exception($"Unknow foreign table [{attribute.ForeignTable}]");
-
-            ForeignProperty1 = ForeignTableType.GetProperty(attribute.ForeignColumn1);
-            if (ForeignProperty1 is null)
-                throw new Exception($"Unknow foreign property1 [{attribute.ForeignColumn1}] in table [{ForeignTableType.Type.Name}]");
-            ForeignProperty2 = ForeignTableType.GetProperty(attribute.ForeignColumn2);
-            if (ForeignProperty2 is null)
-                throw new Exception($"Unknow foreign property2 [{attribute.ForeignColumn2}] in table [{ForeignTableType.Type.Name}]");
-            Value2Property = tableType.GetProperty(attribute.Value2Column);
-            if (Value2Property is null)
-                throw new Exception($"Unknow value property [{attribute.Value2Column}] in table [{tableType.Type.Name}]");
-        }
-
-        public ColumnProperty AttributeProperty { get; set; }
-
-        public SubForeignValue Attribute { get; set; }
-
-        public TableType ForeignTableType { get; set; }
-
-        public ColumnProperty ForeignProperty1 { get; set; }
-
-        public ColumnProperty ForeignProperty2 { get; set; }
-
-        public ColumnProperty Value2Property { get; set; }
-    }
-
-    internal class SingleKey
-    {
-        public SingleKey(string keyColumn, object key)
-        {
-            KeyColumn = keyColumn;
-            Key = key;
-        }
-
-        public string KeyColumn { get; set; }
-
-        public object Key { get; set; }
-    }
-
-    internal class DoubleKey
-    {
-        public DoubleKey(string parentColumn, string parentKey, string keyColumn, object key)
-        {
-            ParentColumn = parentColumn;
-            ParentKey = parentKey;
-            KeyColumn = keyColumn;
-            Key = key;
-        }
-
-        public string ParentColumn { get; set; }
-
-        public string ParentKey { get; set; }
-
-        public string KeyColumn { get; set; }
-
-        public object Key { get; set; }
-    }
-
-    /// <summary>
-    /// 表，对象对应关系
-    /// </summary>
-    internal class EntityTableInfo
-    {
-        public EntityTableInfo(string tableName)
+        public TableQueryInfo(string tableName)
         {
             TableName = tableName;
-            TableList = new List<dynamic>();
+            DataTable = new List<dynamic>();
             ConditionalModels = new List<IConditionalModel>();
             SelectModels = new List<SelectModel>();
         }
 
         public string TableName { get; set; }
 
-        public List<dynamic> TableList { get; set; }
+        public List<dynamic> DataTable { get; set; }
 
         public List<IConditionalModel> ConditionalModels { get; set; }
 
         public List<SelectModel> SelectModels { get; set; }
+    }
+
+    public class ForeignCompareValueInfo
+    {
+        public ForeignCompareValueInfo(string name, Type type, string value, bool isMultiValue)
+        {
+            Name = name;
+            Type = type;
+            Value = value;
+            IsMultiValue = isMultiValue;
+
+            if (IsMultiValue && !string.IsNullOrEmpty(value))
+                Values = value.Split(',').ToList();
+            else
+                Values = new List<string>();
+        }
+
+        public string Name { get; set; }
+
+        public Type Type { get; set; }
+
+        public string Value { get; set; }
+
+        public List<string> Values { get; set; }
+
+        public bool IsMultiValue { get; set; }
+    }
+
+    public class ForeignConditionValueInfo
+    {
+        public ForeignConditionValueInfo(string name, Type type, string value, ConditionalType condiType, bool isMultiValue)
+        {
+            Name = name;
+            Type = type;
+            Value = value;
+            ConditionalType = condiType;
+            IsMultiValue = isMultiValue;
+        }
+
+        public string Name { get; set; }
+
+        public Type Type { get; set; }
+
+        public string Value { get; set; }
+
+        public ConditionalType ConditionalType { get; set; }
+
+        public bool IsMultiValue { get; set; }
     }
 }
