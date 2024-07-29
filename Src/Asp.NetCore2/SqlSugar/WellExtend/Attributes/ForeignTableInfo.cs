@@ -22,6 +22,14 @@ namespace SqlSugar
             {
                 ForeignConditions.Add(new ForeignConditionInfo(foreignConditionAttr, ForeignTableType, tableType));
             }
+
+            if (!foreignConditionAttrs.Exists(p => nameof(IFactory.FactoryId).Equals(p.Column)))
+            {
+                if (ForeignTableType.IFactory && !ForeignTableType.IGroupCo && tableType.IFactory && !tableType.IGroupCo)
+                {
+                    ForeignConditions.Add(new ForeignConditionInfo(new ForeignCondition(nameof(IFactory.FactoryId), nameof(IFactory.FactoryId), null, false), ForeignTableType, tableType));
+                }
+            }
         }
 
 
