@@ -31,7 +31,8 @@ namespace SqlSugar
         {
             if (!string.IsNullOrEmpty(tableName) && Tables.Count > 0)
             {
-                return Tables.Exists(p => p.Name.ToLower().Equals(tableName.Trim().ToLower()));
+                tableName = tableName.Trim();
+                return Tables.Exists(p => p.Name.Equals(tableName));
             }
 
             return false;
@@ -41,10 +42,11 @@ namespace SqlSugar
         {
             if (!string.IsNullOrEmpty(name))
             {
-                var item = Tables.FirstOrDefault(p => p.Name.ToLower().Equals(name.Trim().ToLower()));
+                name = name.Trim();
+                var item = Tables.FirstOrDefault(p => p.Name.Equals(name));
                 if (item is null)
                 {
-                    var items = RuntimeUtil.GetTypes(u => !u.IsInterface && u is { IsAbstract: false, IsClass: true } && u.Name.ToLower().Equals(name.Trim().ToLower()));
+                    var items = RuntimeUtil.GetTypes(u => !u.IsInterface && u is { IsAbstract: false, IsClass: true } && u.Name.Equals(name));
                     if (items.Any())
                     {
                         item = new TableType(items.First());
@@ -100,6 +102,11 @@ namespace SqlSugar
                 IGroupCo = interfaces.Contains(typeof(IGroupCo));
             }
 
+            if (type.TryGetAtrribute(out TenantAttribute tenantAttr))
+                ConfigId = tenantAttr.configId;
+
+            if (type.TryGetAtrribute(out SugarTable sugarTableAttr))
+                SugarTable = sugarTableAttr;
 
             IsDiffLog = type.IsDefined(typeof(DiffLog));
         }
@@ -114,13 +121,18 @@ namespace SqlSugar
 
         public bool IsDiffLog { get; set; }
 
+        public object ConfigId { get; set; }
+
+        public SugarTable SugarTable { get; set; }
+
         public List<ColumnProperty> Properties { get; set; }
 
         public ColumnProperty GetProperty(string name)
         {
             if (!string.IsNullOrEmpty(name) && Properties.Count > 0)
             {
-                return Properties.FirstOrDefault(p => p.Name.ToLower().Equals(name.Trim().ToLower()));
+                name = name.Trim();
+                return Properties.FirstOrDefault(p => p.Name.Equals(name));
             }
 
             return default;
