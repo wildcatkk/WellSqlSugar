@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
@@ -29,24 +30,30 @@ namespace SqlSugar
 
         public static bool IsSugarTable(this string tableName)
         {
-            if (!string.IsNullOrEmpty(tableName) && Tables.Count > 0)
-            {
-                tableName = tableName.Trim();
-                return Tables.Exists(p => p.Name.Equals(tableName));
-            }
+            if (string.IsNullOrEmpty(tableName))
+                return false;
+            
+            tableName = tableName.Trim();
+            var type = GetTable(tableName);
+            if (type is null)
+                return false;
 
-            return false;
+            return type.Type.IsSugarTable();
         }
 
-        public static TableType GetTable(this string name)
+        public static bool IsSugarTable(this TableType tableType)
+            => tableType.Type.IsSugarTable();
+
+
+        public static TableType GetTable(this string tableName)
         {
-            if (!string.IsNullOrEmpty(name))
+            if (!string.IsNullOrEmpty(tableName))
             {
-                name = name.Trim();
-                var item = Tables.FirstOrDefault(p => p.Name.Equals(name));
+                tableName = tableName.Trim();
+                var item = Tables.FirstOrDefault(p => p.Name.Equals(tableName));
                 if (item is null)
                 {
-                    var items = RuntimeUtil.GetTypes(u => !u.IsInterface && u is { IsAbstract: false, IsClass: true } && u.Name.Equals(name));
+                    var items = RuntimeUtil.GetTypes(u => !u.IsInterface && u is { IsAbstract: false, IsClass: true } && u.Name.Equals(tableName));
                     if (items.Any())
                     {
                         item = new TableType(items.First());
@@ -77,6 +84,21 @@ namespace SqlSugar
             }
 
             return default;
+        }
+
+
+        public static bool TryGetTable([NotNullWhen(true)] this string tableName, out TableType tableType)
+        {
+            tableType = GetTable(tableName);
+
+            return tableType != null;
+        }
+
+        public static bool TryGetTable([NotNullWhen(true)] this Type type, out TableType tableType)
+        {
+            tableType = GetTable(type);
+
+            return tableType != null;
         }
     }
 
