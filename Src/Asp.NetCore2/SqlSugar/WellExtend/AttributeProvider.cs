@@ -174,10 +174,13 @@ namespace SqlSugar
 
             return true;
         }
-        private static TableQueryInfo GetForeignTableQueryInfo(ICollection list, string tableName, List<ForeignTableInfo> foreignTabelInfoes)
+        private static TableQueryInfo GetForeignTableQueryInfo(ICollection list, TableType tableType, List<ForeignTableInfo> foreignTabelInfoes)
         {
+            var tableName = tableType.Name;
             var tableInfo = new TableQueryInfo(tableName);
-            bool iLogicalDelete = false;
+            if (tableType.ILogicalDelete)
+                tableInfo.ConditionalModels.Add(nameof(ILogicalDelete.IsDeleted), "0", typeof(long));
+            var isFirst = true;
 
             var foreignKeysGroup = new List<List<ForeignConditionValueInfo>>();
             List<string> fieldNames = new List<string>();
@@ -186,8 +189,6 @@ namespace SqlSugar
                 // 分组条件
                 if (info.ForeignTableType.Name == tableName)
                 {
-                    iLogicalDelete = info.ForeignTableType.ILogicalDelete;
-
                     foreach (var t in list)
                     {
                         var foreignKeys = new List<ForeignConditionValueInfo>();
@@ -241,17 +242,26 @@ namespace SqlSugar
 
                         // 组装复合查询条件
                         var condiModels = new List<KeyValuePair<WhereType, ConditionalModel>>();
-                        bool isFirst = true;
+                        bool isCellFirst = true;
                         foreach (var foreignKey in foreignKeys)
                         {
-                            if (isFirst)
+                            var where = WhereType.And;
+                            if (isCellFirst)
                             {
-                                condiModels.Add(WhereType.Or, foreignKey.Name, foreignKey.Value, foreignKey.Type, foreignKey.ConditionalType);
-                                isFirst = false;
-                                continue;
+                                if (isFirst)
+                                {
+                                    where = WhereType.And;
+                                    isFirst = false;
+                                    isCellFirst = false;
+                                }
+                                else
+                                {
+                                    where = WhereType.Or;
+                                    isCellFirst = false;
+                                }
                             }
 
-                            condiModels.Add(WhereType.And, foreignKey.Name, foreignKey.Value, foreignKey.Type, foreignKey.ConditionalType);
+                            condiModels.Add(where, foreignKey.Name, foreignKey.Value, foreignKey.Type, foreignKey.ConditionalType);
                         }
 
                         tableInfo.ConditionalModels.Add(SugarConditional.CreateList(condiModels));
@@ -275,9 +285,6 @@ namespace SqlSugar
                 }
             }
 
-            if (iLogicalDelete)
-                tableInfo.ConditionalModels.Add(nameof(ILogicalDelete.IsDeleted), "0", typeof(long));
-
             return tableInfo;
         }
 
@@ -294,7 +301,7 @@ namespace SqlSugar
                 tableNames.Add(tableName);
 
                 //根据数据集组装条件
-                var tableQueryInfo = GetForeignTableQueryInfo(list, tableName, foreignTabelInfoes);
+                var tableQueryInfo = GetForeignTableQueryInfo(list, info.ForeignTableType, foreignTabelInfoes);
 
                 //查询数据库获取结果
                 tableQueryInfo.DataTable = db.Queryable<dynamic>().AS(tableName).Where(tableQueryInfo.ConditionalModels).Select(tableQueryInfo.SelectModels).ToSugarList();
