@@ -11,41 +11,41 @@ namespace SqlSugar
     /// </summary>
     public class AttributeProvider
     {
-        public static T Process<T>(ISqlSugarClient db, T obj)
+        public static T Process<T>(ISqlSugarClient db, T obj, List<string> maskColumns = null)
         {
-            Process(db, new List<T> { obj }, typeof(T));
+            Process(db, new List<T> { obj }, typeof(T), maskColumns);
 
             return obj;
         }
 
-        public static object Process(ISqlSugarClient db, object obj)
+        public static object Process(ISqlSugarClient db, object obj, List<string> maskColumns = null)
         {
             if (obj is IEnumerable)
                 throw new Exception("类型异常，函数AttributeProvider.Process(ISqlSugarClient db, object obj)，参数obj不支持IEnumerable类型。");
 
-            Process(db, new List<object> { obj }, obj.GetType());
+            Process(db, new List<object> { obj }, obj.GetType(), maskColumns);
 
             return obj;
         }
 
-        public static object Process(ISqlSugarClient db, object obj, Type objType)
+        public static object Process(ISqlSugarClient db, object obj, Type objType, List<string> maskColumns = null)
         {
             if (obj is IEnumerable)
                 throw new Exception("类型异常，函数AttributeProvider.Process(ISqlSugarClient db, object obj, Type objType)，参数obj不支持IEnumerable类型。");
 
-            Process(db, new List<object> { obj }, objType);
+            Process(db, new List<object> { obj }, objType, maskColumns);
 
             return obj;
         }
 
-        public static List<T> Process<T>(ISqlSugarClient db, List<T> list)
+        public static List<T> Process<T>(ISqlSugarClient db, List<T> list, List<string> maskColumns = null)
         {
-            Process(db, list, typeof(T));
+            Process(db, list, typeof(T), maskColumns);
 
             return list;
         }
 
-        public static ICollection Process(ISqlSugarClient db, ICollection list, Type type)
+        public static ICollection Process(ISqlSugarClient db, ICollection list, Type type, List<string> maskColumns = null)
         {
             if (list is null || list.Count == 0)
             {
@@ -96,6 +96,11 @@ namespace SqlSugar
             if (foreignTabelInfoes.Count > 0)
             {
                 ForeignTableProcess(db, list, foreignTabelInfoes);
+            }
+
+            if (maskColumns?.Count > 0)
+            {
+                MaskProcess(list, tableType, maskColumns);
             }
 
             return list;
@@ -442,6 +447,21 @@ namespace SqlSugar
             }
         }
 
+        private static void MaskProcess(ICollection list, TableType tableType, List<string> maskColumns)
+        {
+            var maskProps = tableType.Properties.Where(p => maskColumns.Contains(p.Name) && p.Type == typeof(string));
+
+            if (maskProps.Any())
+            {
+                foreach (var t in list)
+                {
+                    foreach (var prop in maskProps)
+                    {
+                        prop.Info.SetValue(t, "******");
+                    }
+                }
+            }
+        }
     }
 
     public class TableQueryInfo
