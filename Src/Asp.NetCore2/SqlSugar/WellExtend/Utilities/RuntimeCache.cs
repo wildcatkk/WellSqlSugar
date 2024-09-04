@@ -127,15 +127,41 @@ namespace SqlSugar
             if (type.TryGetAtrribute(out TenantAttribute tenantAttr))
                 ConfigId = tenantAttr.configId;
 
-            if (type.TryGetAtrribute(out SugarTable sugarTableAttr))
+            if (type.TryGetObjectAtrribute(out SugarTable sugarTableAttr))
+            {
                 SugarTable = sugarTableAttr;
+                DbTable = this;
+            }
+            else
+            {
+                var sugarTableType = GetSugarTableType(type);
+                if (sugarTableType != null)
+                {
+                    DbTable = sugarTableType.GetTable();
+                }
+            }
 
             IsDiffLog = type.IsDefined(typeof(DiffLog));
+        }
+
+        private Type GetSugarTableType(Type type)
+        {
+            if (type.BaseType != null && type.BaseType != typeof(object))
+            {
+                if (type.BaseType.TryGetObjectAtrribute(out SugarTable sugarTableAttr))
+                    return type.BaseType;
+                else
+                    return GetSugarTableType(type.BaseType);
+            }
+
+            return null;
         }
 
         public string Name { get; set; }
 
         public Type Type { get; set; }
+
+        public TableType DbTable { get; set; }
 
         public bool ILogicalDelete { get; set; }
         public bool IFactory { get; set; }

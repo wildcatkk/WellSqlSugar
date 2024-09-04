@@ -32,7 +32,7 @@ namespace SqlSugar
         }
 
         /// <summary>
-        /// 判断并返回属性的指定自定义特性
+        /// 判断并返回属性的指定自定义特性(包含基类中的特性)
         /// </summary>
         /// <param name="type"></param>
         /// <param name="t"></param>
@@ -44,6 +44,26 @@ namespace SqlSugar
         {
             // 读取自定义特性
             t = type.GetCustomAttribute<T>();
+            return t != null;
+        }
+
+        /// <summary>
+        /// 判断并返回属性的指定自定义特性(不包含基类中的特性)
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="t"></param>
+        /// <returns>
+        /// true：特性存在
+        /// false：特性不存在
+        /// </returns>
+        public static bool TryGetObjectAtrribute<T>(this Type type, out T t) where T : Attribute
+        {
+            if (type.CustomAttributes.FirstOrDefault(p => p.AttributeType == typeof(T)) != null)
+                // 读取自定义特性
+                t = type.GetCustomAttribute<T>();
+            else
+                t = default;
+
             return t != null;
         }
 

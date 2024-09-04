@@ -11,41 +11,43 @@ namespace SqlSugar
     /// </summary>
     public class AttributeProvider
     {
-        public static T Process<T>(ISqlSugarClient db, T obj, List<string> maskColumns = null)
+        public static event Func<ISqlSugarClient, TableType, long, List<string>> GetMaskColumns;
+
+        public static T Process<T>(ISqlSugarClient db, T obj, long? userId = null)
         {
-            Process(db, new List<T> { obj }, typeof(T), maskColumns);
+            Process(db, new List<T> { obj }, typeof(T), userId);
 
             return obj;
         }
 
-        public static object Process(ISqlSugarClient db, object obj, List<string> maskColumns = null)
+        public static object Process(ISqlSugarClient db, object obj, long? userId = null)
         {
             if (obj is IEnumerable)
                 throw new Exception("类型异常，函数AttributeProvider.Process(ISqlSugarClient db, object obj)，参数obj不支持IEnumerable类型。");
 
-            Process(db, new List<object> { obj }, obj.GetType(), maskColumns);
+            Process(db, new List<object> { obj }, obj.GetType(), userId);
 
             return obj;
         }
 
-        public static object Process(ISqlSugarClient db, object obj, Type objType, List<string> maskColumns = null)
+        public static object Process(ISqlSugarClient db, object obj, Type objType, long? userId = null)
         {
             if (obj is IEnumerable)
                 throw new Exception("类型异常，函数AttributeProvider.Process(ISqlSugarClient db, object obj, Type objType)，参数obj不支持IEnumerable类型。");
 
-            Process(db, new List<object> { obj }, objType, maskColumns);
+            Process(db, new List<object> { obj }, objType, userId);
 
             return obj;
         }
 
-        public static List<T> Process<T>(ISqlSugarClient db, List<T> list, List<string> maskColumns = null)
+        public static List<T> Process<T>(ISqlSugarClient db, List<T> list, long? userId = null)
         {
-            Process(db, list, typeof(T), maskColumns);
+            Process(db, list, typeof(T), userId);
 
             return list;
         }
 
-        public static ICollection Process(ISqlSugarClient db, ICollection list, Type type, List<string> maskColumns = null)
+        public static ICollection Process(ISqlSugarClient db, ICollection list, Type type, long? userId = null)
         {
             if (list is null || list.Count == 0)
             {
@@ -95,13 +97,10 @@ namespace SqlSugar
             // 3、[ForeignTable] 处理
             if (foreignTabelInfoes.Count > 0)
             {
-                ForeignTableProcess(db, list, foreignTabelInfoes);
+                ForeignTableProcess(db, list, foreignTabelInfoes, userId);
             }
 
-            if (maskColumns?.Count > 0)
-            {
-                MaskProcess(list, tableType, maskColumns);
-            }
+            MaskProcess(db, list, tableType, userId);
 
             return list;
         }
@@ -293,8 +292,10 @@ namespace SqlSugar
             return tableInfo;
         }
 
-        private static void ForeignTableProcess(ISqlSugarClient db, ICollection list, List<ForeignTableInfo> foreignTabelInfoes)
+        private static Type StringType = typeof(string);
+        private static void ForeignTableProcess(ISqlSugarClient db, ICollection list, List<ForeignTableInfo> foreignTabelInfoes, long? userId)
         {
+            bool isMaskColumns = (userId >= 0 && GetMaskColumns != null);
             // 根据表名分组聚合查询
             var tableQueryInfoes = new List<TableQueryInfo>();
             var tableNames = new List<string>();
@@ -311,6 +312,12 @@ namespace SqlSugar
                 //查询数据库获取结果
                 tableQueryInfo.DataTable = db.Queryable<dynamic>().AS(tableName).Where(tableQueryInfo.ConditionalModels).Select(tableQueryInfo.SelectModels).ToSugarList();
 
+                //处理掩码加密列
+                if (isMaskColumns && info.ForeignTableType.DbTable != null)
+                {
+                    tableQueryInfo.MaskColumns = GetMaskColumns.Invoke(db, info.ForeignTableType.DbTable, userId.Value);
+                }
+
                 tableQueryInfoes.Add(tableQueryInfo);
             }
 
@@ -319,8 +326,19 @@ namespace SqlSugar
             {
                 foreach (var info in foreignTabelInfoes)
                 {
-                    //数据库数据集
-                    var dataTable = tableQueryInfoes.FirstOrDefault(x => x.TableName == info.ForeignTableType.Name)?.DataTable;
+                    //外键表数据及信息收集对象
+                    var tableQueryInfo = tableQueryInfoes.FirstOrDefault(x => x.TableName == info.ForeignTableType.Name);
+                    if (tableQueryInfo is null) continue;
+
+                    //掩码加密列
+                    var maskColumns = tableQueryInfo.MaskColumns;
+                    if (maskColumns.Count > 0 && info.AttributeProperty.Type == StringType && maskColumns.Contains(info.AttributeProperty.ForeignTable.ResultColumn))
+                    {
+                        info.AttributeProperty.Info.SetValue(t, "******");
+                        continue;
+                    }
+
+                    var dataTable = tableQueryInfo.DataTable;
                     if (dataTable is null || dataTable.Count == 0) continue;
 
                     var foreignKeys = new List<ForeignCompareValueInfo>();
@@ -447,17 +465,21 @@ namespace SqlSugar
             }
         }
 
-        private static void MaskProcess(ICollection list, TableType tableType, List<string> maskColumns)
+        private static void MaskProcess(ISqlSugarClient db, ICollection list, TableType tableType, long? userId)
         {
-            var maskProps = tableType.Properties.Where(p => maskColumns.Contains(p.Name) && p.Type == typeof(string));
-
-            if (maskProps.Any())
+            if (userId >= 0 && GetMaskColumns != null && tableType.DbTable != null)
             {
-                foreach (var t in list)
+                var maskColumns = GetMaskColumns.Invoke(db, tableType.DbTable, userId.Value);
+                var maskProps = tableType.Properties.Where(p => maskColumns.Contains(p.Name) && p.Type == typeof(string));
+
+                if (maskProps.Any())
                 {
-                    foreach (var prop in maskProps)
+                    foreach (var t in list)
                     {
-                        prop.Info.SetValue(t, "******");
+                        foreach (var prop in maskProps)
+                        {
+                            prop.Info.SetValue(t, "******");
+                        }
                     }
                 }
             }
@@ -481,6 +503,8 @@ namespace SqlSugar
         public List<IConditionalModel> ConditionalModels { get; set; }
 
         public List<SelectModel> SelectModels { get; set; }
+
+        public List<string> MaskColumns { get; set; } = new List<string>();
     }
 
     public class ForeignCompareValueInfo
