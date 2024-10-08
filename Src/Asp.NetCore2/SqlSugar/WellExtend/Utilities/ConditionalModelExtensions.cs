@@ -35,6 +35,16 @@ namespace SqlSugar
 
             conditions.Add(SugarConditional.CreateModel(whereType, fieldName, fieldValue, fieldType, conditionalType));
         }
+
+        public static void Add(this List<KeyValuePair<WhereType, IConditionalModel>> conditions, WhereType whereType, string fieldName, string fieldValue, Type fieldType, ConditionalType conditionalType = ConditionalType.Equal)
+        {
+            if (conditions is null)
+            {
+                conditions = new List<KeyValuePair<WhereType, IConditionalModel>>();
+            }
+
+            conditions.Add(new KeyValuePair<WhereType, IConditionalModel>(whereType, SugarConditional.CreateModel(fieldName, fieldValue, fieldType, conditionalType)));
+        }
     }
 
     public static class SugarConditional
@@ -80,6 +90,9 @@ namespace SqlSugar
 
         public static ConditionalCollections CreateList(List<KeyValuePair<WhereType, ConditionalModel>> list)
             => new ConditionalCollections { ConditionalList = list };
+
+        public static ConditionalTree CreateTree(List<KeyValuePair<WhereType, IConditionalModel>> list)
+            => new ConditionalTree { ConditionalList = list };
 
     }
 }

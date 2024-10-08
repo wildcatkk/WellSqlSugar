@@ -182,12 +182,19 @@ namespace SqlSugar
         {
             var tableName = tableType.Name;
             var tableInfo = new TableQueryInfo(tableName);
+
+            var tableCondition = new TableQueryConditionInfo();
             if (tableType.ILogicalDelete)
-                tableInfo.ConditionalModels.Add(nameof(ILogicalDelete.IsDeleted), "0", typeof(long));
+                tableCondition.ConditionalModels.Add(nameof(ILogicalDelete.IsDeleted), "0", typeof(long));
             var isFirst = true;
+            ConditionalTree condiTree = new ConditionalTree
+            {
+                ConditionalList = new List<KeyValuePair<WhereType, IConditionalModel>>()
+            };
+            int condiIndex = 1;
+            List<string> fieldNames = new List<string>();
 
             var foreignKeysGroup = new List<List<ForeignConditionValueInfo>>();
-            List<string> fieldNames = new List<string>();
             foreach (var info in foreignTabelInfoes)
             {
                 // 分组条件
@@ -245,8 +252,9 @@ namespace SqlSugar
                             foreignKeysGroup.Add(foreignKeys);
 
                         // 组装复合查询条件
-                        var condiModels = new List<KeyValuePair<WhereType, ConditionalModel>>();
+                        var condiModels = new List<KeyValuePair<WhereType, IConditionalModel>>();
                         bool isCellFirst = true;
+                        var firstWhere = WhereType.And;
                         foreach (var foreignKey in foreignKeys)
                         {
                             var where = WhereType.And;
@@ -260,33 +268,73 @@ namespace SqlSugar
                                 }
                                 else
                                 {
+                                    firstWhere = WhereType.Or;
                                     where = WhereType.Or;
                                     isCellFirst = false;
                                 }
                             }
 
                             condiModels.Add(where, foreignKey.Name, foreignKey.Value, foreignKey.Type, foreignKey.ConditionalType);
+                            condiIndex++;
                         }
 
-                        tableInfo.ConditionalModels.Add(SugarConditional.CreateList(condiModels));
-                    }
-
-                    // 组装复合Select条件
-                    foreach (var foreignCondi in info.ForeignConditions)
-                    {
-                        if (!fieldNames.Contains(foreignCondi.Property.Name))
+                        condiTree.ConditionalList.Add(new KeyValuePair<WhereType, IConditionalModel>(firstWhere, SugarConditional.CreateTree(condiModels)));
+                        if (condiIndex > 1000)
                         {
-                            fieldNames.Add(foreignCondi.Property.Name);
-                            tableInfo.SelectModels.Add(new SelectModel() { FieldName = foreignCondi.Property.Name, AsName = foreignCondi.Property.Name });
+                            // 组装复合Select条件
+                            foreach (var foreignCondi in info.ForeignConditions)
+                            {
+                                if (!fieldNames.Contains(foreignCondi.Property.Name))
+                                {
+                                    fieldNames.Add(foreignCondi.Property.Name);
+                                    tableCondition.SelectModels.Add(new SelectModel() { FieldName = foreignCondi.Property.Name, AsName = foreignCondi.Property.Name });
+                                }
+                            }
+                            if (!fieldNames.Contains(info.ResultProperty.Name))
+                            {
+                                fieldNames.Add(info.ResultProperty.Name);
+                                tableCondition.SelectModels.Add(new SelectModel() { FieldName = info.ResultProperty.Name, AsName = info.ResultProperty.Name });
+                            }
+                            tableCondition.ConditionalModels.Add(condiTree);
+                            tableInfo.Conditions.Add(tableCondition);
+
+                            //重新开始
+                            tableCondition = new TableQueryConditionInfo();
+                            if (tableType.ILogicalDelete)
+                                tableCondition.ConditionalModels.Add(nameof(ILogicalDelete.IsDeleted), "0", typeof(long));
+                            isFirst = true;
+                            condiTree = new ConditionalTree
+                            {
+                                ConditionalList = new List<KeyValuePair<WhereType, IConditionalModel>>()
+                            };
+                            condiIndex = 1;
+                            fieldNames = new List<string>();
                         }
                     }
-                    if (!fieldNames.Contains(info.ResultProperty.Name))
-                    {
-                        fieldNames.Add(info.ResultProperty.Name);
-                        tableInfo.SelectModels.Add(new SelectModel() { FieldName = info.ResultProperty.Name, AsName = info.ResultProperty.Name });
-                    }
 
+                    if (!isFirst)
+                    {
+                        // 组装复合Select条件
+                        foreach (var foreignCondi in info.ForeignConditions)
+                        {
+                            if (!fieldNames.Contains(foreignCondi.Property.Name))
+                            {
+                                fieldNames.Add(foreignCondi.Property.Name);
+                                tableCondition.SelectModels.Add(new SelectModel() { FieldName = foreignCondi.Property.Name, AsName = foreignCondi.Property.Name });
+                            }
+                        }
+                        if (!fieldNames.Contains(info.ResultProperty.Name))
+                        {
+                            fieldNames.Add(info.ResultProperty.Name);
+                            tableCondition.SelectModels.Add(new SelectModel() { FieldName = info.ResultProperty.Name, AsName = info.ResultProperty.Name });
+                        }
+                    }
                 }
+            }
+            if (!isFirst)
+            {
+                tableCondition.ConditionalModels.Add(condiTree);
+                tableInfo.Conditions.Add(tableCondition);
             }
 
             return tableInfo;
@@ -310,8 +358,13 @@ namespace SqlSugar
                 var tableQueryInfo = GetForeignTableQueryInfo(list, info.ForeignTableType, foreignTabelInfoes);
 
                 //查询数据库获取结果
-                tableQueryInfo.DataTable = db.Queryable<dynamic>().AS(tableName).Where(tableQueryInfo.ConditionalModels).Select(tableQueryInfo.SelectModels).ToSugarList();
-
+                foreach (var condition in tableQueryInfo.Conditions)
+                {
+                    var dataRows = db.Queryable<dynamic>().AS(tableName).Where(condition.ConditionalModels).Select(condition.SelectModels).ToSugarList();
+                    if (dataRows.Count > 0)
+                        tableQueryInfo.DataTable.AddRange(dataRows);
+                }
+                
                 //处理掩码加密列
                 if (isMaskColumns && info.ForeignTableType.DbTable != null)
                 {
@@ -491,20 +544,23 @@ namespace SqlSugar
         public TableQueryInfo(string tableName)
         {
             TableName = tableName;
-            DataTable = new List<dynamic>();
-            ConditionalModels = new List<IConditionalModel>();
-            SelectModels = new List<SelectModel>();
         }
 
         public string TableName { get; set; }
 
-        public List<dynamic> DataTable { get; set; }
+        public List<dynamic> DataTable { get; set; } = new List<dynamic>();
 
-        public List<IConditionalModel> ConditionalModels { get; set; }
-
-        public List<SelectModel> SelectModels { get; set; }
+        public List<TableQueryConditionInfo> Conditions { get; set; } = new List<TableQueryConditionInfo>();
 
         public List<string> MaskColumns { get; set; } = new List<string>();
+    }
+
+    public class TableQueryConditionInfo
+    {
+        public List<IConditionalModel> ConditionalModels { get; set; } = new List<IConditionalModel>();
+
+        public List<SelectModel> SelectModels { get; set; } = new List<SelectModel>();
+
     }
 
     public class ForeignCompareValueInfo
