@@ -116,30 +116,11 @@ namespace SqlSugar
 
                     if (enumValue is null) continue;
 
-                    string enumStr;
-                    //增加缓存，以减少反复解析枚举
-                    if (enumCache.ContainsKey(enumValue))
+                    if (enumValue is Enum)
                     {
-                        enumStr = enumCache[enumValue];
+                        var enumStr = (enumValue as Enum).GetDescription(info.ValueProperty.Type);
+                        info.AttributeProperty.Info.SetValue(t, enumStr);
                     }
-                    else
-                    {
-                        //先尝试获取Description
-                        DescriptionAttribute descrip = null;
-                        if (info.ValueProperty.Type.GetField(enumValue.ToString())?.TryGetAtrribute(out descrip) ?? false
-                            && !string.IsNullOrWhiteSpace(descrip?.Description))
-                        {
-                            enumStr = descrip.Description;
-                        }
-                        else
-                        {
-                            enumStr = Enum.GetName(info.ValueProperty.Type, enumValue) ?? "";
-                        }
-
-                        enumCache.Add(enumValue, enumStr);
-                    }
-
-                    info.AttributeProperty.Info.SetValue(t, enumStr);
                 }
 
             }
