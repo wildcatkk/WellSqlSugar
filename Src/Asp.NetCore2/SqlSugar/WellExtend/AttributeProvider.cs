@@ -209,7 +209,7 @@ namespace SqlSugar
                             else
                             {
                                 if (propValue is Enum)
-                                    propValueStr = ((int)propValue).ToString();
+                                    propValueStr = Convert.ToInt64(propValue).ToString();
                                 else
                                     propValueStr = propValue.ToString();
                             }
@@ -396,7 +396,7 @@ namespace SqlSugar
                         else
                         {
                             if (propValue is Enum)
-                                propValueStr = ((int)propValue).ToString();
+                                propValueStr = Convert.ToInt64(propValue).ToString();
                             else
                                 propValueStr = propValue.ToString();
                         }
