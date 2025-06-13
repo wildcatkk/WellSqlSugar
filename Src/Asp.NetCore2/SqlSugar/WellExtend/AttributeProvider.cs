@@ -408,11 +408,12 @@ namespace SqlSugar
 
                     if (isMultiValue)
                     {
-                        var dataResult = new List<dynamic>();
+                        var dataResult = new List<DataResultSorted>();
                         foreach (var dataRow in dataTable)
                         {
                             //比较复合主键以查找返回的数据，这里匹配所有可能的数据
                             bool isSuccess = true;
+                            int index = -1;
                             foreach (var foreignKey in foreignKeys)
                             {
                                 if (DynamicExtensions.TryGetDynamicValue(dataRow, foreignKey.Name, out object columnValue))
@@ -421,6 +422,12 @@ namespace SqlSugar
                                         continue;
                                     else if (columnValue != null && (columnValue.ToString().Equals(foreignKey.Value) || foreignKey.Values.Contains(columnValue.ToString())))
                                     {
+                                        if (foreignKey.Values.Contains(columnValue.ToString()))
+                                        {
+                                            var fIndex = foreignKey.Values.IndexOf(columnValue.ToString());
+                                            if (index == -1)
+                                                index = fIndex;
+                                        }
                                         continue;
                                     }
                                     else
@@ -437,16 +444,17 @@ namespace SqlSugar
                             }
 
                             if (isSuccess)
-                                dataResult.Add(dataRow);
+                                dataResult.Add(new DataResultSorted { Index = index, Value = dataRow });
                         }
 
                         if (dataResult.Count > 0)
                         {
+                            var results = dataResult.OrderBy(p => p.Index);
                             var resultMultiValue = "";
-                            foreach (var dataRow in dataResult)
+                            foreach (var dataRow in results)
                             {
                                 // 给当前属性赋值
-                                if (DynamicExtensions.TryGetDynamicValue(dataRow, info.ResultProperty.Name, out object resultValue) && resultValue != null)
+                                if (DynamicExtensions.TryGetDynamicValue(dataRow.Value, info.ResultProperty.Name, out object resultValue) && resultValue != null)
                                 {
                                     resultMultiValue += GetValue(resultValue, info.AttributeProperty).ToString() + ",";
                                 }
@@ -590,5 +598,12 @@ namespace SqlSugar
         public ConditionalType ConditionalType { get; set; }
 
         public bool IsMultiValue { get; set; }
+    }
+
+    public class DataResultSorted
+    {
+        public int Index { get; set; }
+
+        public dynamic Value { get; set; }
     }
 }
