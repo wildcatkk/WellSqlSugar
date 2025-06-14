@@ -28,11 +28,44 @@ namespace SqlSugar
             }
         }
 
+        private static Dictionary<string, bool> _tableConfigs = null;
+        private static object _tableConfigsLock = new object();
+        public static void InitTableConfig(Dictionary<string, bool> configs)
+        {
+            if (_tableConfigs is null)
+            {
+                lock (_tableConfigsLock)
+                {
+                    if (_tableConfigs is null)
+                    {
+                        _tableConfigs = configs is null ? new Dictionary<string, bool>() : new Dictionary<string, bool>(configs);
+                    }
+                }
+            }
+        }
+
+        public static bool? GetIGroupCoFromTableConfig(this Type type)
+        {
+            lock (_tableConfigsLock)
+            {
+                if (_tableConfigs is null || _tableConfigs.Count == 0)
+                    return null;
+
+                if (_tableConfigs.ContainsKey(type.FullName))
+                    return _tableConfigs[type.FullName];
+
+                if (_tableConfigs.ContainsKey(type.Name))
+                    return _tableConfigs[type.Name];
+
+                return null;
+            }
+        }
+
         public static bool IsSugarTable(this string tableName)
         {
             if (string.IsNullOrEmpty(tableName))
                 return false;
-            
+
             tableName = tableName.Trim();
             var type = GetTable(tableName);
             if (type is null)
@@ -124,6 +157,10 @@ namespace SqlSugar
                 IGroupCo = interfaces.Contains(typeof(IGroupCo));
             }
 
+            var iGroupCoConfig = type.GetIGroupCoFromTableConfig();
+            if (iGroupCoConfig != null)
+                IGroupCo = iGroupCoConfig.Value;
+
             if (type.TryGetAtrribute(out TenantAttribute tenantAttr))
                 ConfigId = tenantAttr.configId;
 
@@ -203,7 +240,7 @@ namespace SqlSugar
             if (Info.TryGetAtrribute(out EnumName enumNameAttr))
                 EnumName = enumNameAttr;
 
-            if(Info.TryGetAtrribute(out ForeignTable foreignTableAttr))
+            if (Info.TryGetAtrribute(out ForeignTable foreignTableAttr))
             {
                 if (Info.TryGetAtrributes(out List<ForeignCondition> conditions))
                 {
