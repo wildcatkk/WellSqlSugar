@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -357,6 +358,21 @@ namespace SqlSugar
                             item.IndexName = item.IndexName.Replace(".","_");
                             item.IndexName = item.IndexName.Replace("[", "").Replace("]", "");
                         }
+
+                        //Wellthinic
+                        if (this.Context.CurrentConnectionConfig.DbType == DbType.Oracle && item.IndexName.Length > 30)
+                        {
+                            string hash;
+                            using (MD5 md5 = MD5.Create())
+                            {
+                                var sourceBytes = Encoding.UTF8.GetBytes(item.IndexName);
+                                var hashBytes = md5.ComputeHash(sourceBytes);
+                                hash = BitConverter.ToString(hashBytes).Replace("-", "").Substring(0, 16);
+                            }
+
+                            item.IndexName = item.IndexName.Substring(0, 15) + "_" + hash;
+                        }
+                        //Wellthinic
                     }
                     if (!this.Context.DbMaintenance.IsAnyIndex(item.IndexName))
                     {

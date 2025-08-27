@@ -148,3 +148,7 @@ C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar.AccessCore\Access\SqlBuild
 ToSqlString()
 C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar.OceanBaseForOracle\OceanBase\SqlBuilder\OceanBaseForOracleQueryBuilder.cs
 _ToSqlString()
+
+8、Oracle11 索引超长问题
+C:\WellGitRepo\WellSqlSugar\Src\Asp.NetCore2\SqlSugar\Abstract\CodeFirstProvider\CodeFirstProvider.cs
+362行 //Wellthinic 标签处
