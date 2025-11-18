@@ -72,6 +72,31 @@ namespace SqlSugar
 
             return list;
         }
+        
+        /// <summary>
+        /// 从所有程序集中搜索类型（返回所有匹配项）
+        /// </summary>
+        /// <param name="predicate"></param>
+        /// <returns></returns>
+        public static Type GetType(Func<Type, bool> predicate)
+        {
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            var list = new List<Type>();
+            foreach (Assembly assembly in assemblies)
+            {
+                var types = assembly.GetTypes();
+                if (types != null && types.Length > 0)
+                {
+                    var re = types.Where(predicate);
+                    if (re.Any())
+                    {
+                        return re.First();
+                    }
+                }
+            }
+
+            return null;
+        }
 
         /// <summary>
         /// 从所有程序集中搜索类型（返回第一个匹配项）
@@ -165,7 +190,7 @@ namespace SqlSugar
                 Type[] types = ass.GetTypes();
                 foreach (Type st in types)
                 {
-                    if (st.Name.Equals(typeName))
+                    if (st.Name.Equals(typeName) || typeName.Equals(st.FullName))
                     {
                         type = st;
                         return type;

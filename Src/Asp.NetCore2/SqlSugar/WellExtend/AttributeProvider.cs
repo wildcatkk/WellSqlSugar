@@ -107,7 +107,6 @@ namespace SqlSugar
 
         private static void EnumNameProcess(ICollection list, List<EnumNameInfo> enumNameInfoes)
         {
-            Dictionary<object, string> enumCache = new Dictionary<object, string>();
             foreach (var info in enumNameInfoes)
             {
                 foreach (var t in list)
@@ -122,7 +121,6 @@ namespace SqlSugar
                         info.AttributeProperty.Info.SetValue(t, enumStr);
                     }
                 }
-
             }
         }
 

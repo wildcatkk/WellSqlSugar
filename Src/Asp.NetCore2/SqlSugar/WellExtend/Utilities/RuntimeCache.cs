@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Diagnostics.CodeAnalysis;
@@ -9,26 +10,24 @@ namespace SqlSugar
 {
     public static class RuntimeCache
     {
-        private static List<TableType>? _tables = null;
+        private static ConcurrentBag<TableType> _tables = null;
         private static object _tablesLock = new object();
-        public static List<TableType> Tables
+        private static void InitTables()
         {
-            get
+            if (_tables is null)
             {
-                if (_tables is null)
+                lock (_tablesLock)
                 {
-                    lock (_tablesLock)
+                    if (_tables is null)
                     {
-                        if (_tables is null)
-                            _tables = RuntimeUtil.GetSugarTables().Select(p => new TableType(p)).ToList();
+                        var list = RuntimeUtil.GetSugarTables().Select(p => new TableType(p)).ToList();
+                        _tables = (list is null || list.Count == 0) ? new ConcurrentBag<TableType>() : new ConcurrentBag<TableType>(list);
                     }
                 }
-
-                return _tables;
             }
         }
 
-        private static Dictionary<string, bool> _tableConfigs = null;
+        private static ConcurrentDictionary<string, bool> _tableConfigs = null;
         private static object _tableConfigsLock = new object();
         public static void InitTableConfig(Dictionary<string, bool> configs)
         {
@@ -38,7 +37,7 @@ namespace SqlSugar
                 {
                     if (_tableConfigs is null)
                     {
-                        _tableConfigs = configs is null ? new Dictionary<string, bool>() : new Dictionary<string, bool>(configs);
+                        _tableConfigs = (configs is null || configs.Count == 0) ? new ConcurrentDictionary<string, bool>() : new ConcurrentDictionary<string, bool>(configs);
                     }
                 }
             }
@@ -46,19 +45,16 @@ namespace SqlSugar
 
         public static bool? GetIGroupCoFromTableConfig(this Type type)
         {
-            lock (_tableConfigsLock)
-            {
-                if (_tableConfigs is null || _tableConfigs.Count == 0)
-                    return null;
-
-                if (_tableConfigs.ContainsKey(type.FullName))
-                    return _tableConfigs[type.FullName];
-
-                if (_tableConfigs.ContainsKey(type.Name))
-                    return _tableConfigs[type.Name];
-
+            if (_tableConfigs is null || _tableConfigs.Count == 0)
                 return null;
-            }
+
+            if (_tableConfigs.ContainsKey(type.FullName))
+                return _tableConfigs[type.FullName];
+
+            if (_tableConfigs.ContainsKey(type.Name))
+                return _tableConfigs[type.Name];
+
+            return null;
         }
 
         public static bool IsSugarTable(this string tableName)
@@ -83,40 +79,52 @@ namespace SqlSugar
             if (!string.IsNullOrEmpty(tableName))
             {
                 tableName = tableName.Trim();
-                var item = Tables.FirstOrDefault(p => p.Name.Equals(tableName));
+
+                InitTables();
+
+                var item = _tables.FirstOrDefault(p => p.Name == tableName || tableName.Equals(p.FullName));
                 if (item is null)
                 {
-                    var items = RuntimeUtil.GetTypes(u => !u.IsInterface && u is { IsAbstract: false, IsClass: true } && u.Name.Equals(tableName));
-                    if (items.Any())
+                    var type = RuntimeUtil.GetType(u => !u.IsInterface && u is { IsAbstract: false, IsClass: true } && (u.Name.Equals(tableName) || tableName.Equals(u.FullName)));
+                    if (type != null)
                     {
-                        item = new TableType(items.First());
-                        lock (_tablesLock)
+                        item = _tables.FirstOrDefault(p => p.Name == tableName || tableName.Equals(p.FullName));
+                        if (item is null)
+                        {
+                            item = new TableType(type);
                             _tables.Add(item);
+                        }
                     }
                 }
 
                 return item;
             }
 
-            return default;
+            return null;
         }
 
         public static TableType GetTable(this Type tableType)
         {
             if (tableType != null)
             {
-                var item = Tables.FirstOrDefault(p => p.Name.Equals(tableType.Name));
+                var tableName = tableType.Name;
+                var tableFullName = tableType.FullName;
+                if (string.IsNullOrEmpty(tableFullName))
+                    tableFullName = tableName;
+
+                InitTables();
+
+                var item = _tables.FirstOrDefault(p => p.Name == tableName || tableFullName.Equals(p.FullName));
                 if (item is null)
                 {
                     item = new TableType(tableType);
-                    lock (_tablesLock)
-                        _tables.Add(item);
+                    _tables.Add(item);
                 }
 
                 return item;
             }
 
-            return default;
+            return null;
         }
 
 
@@ -141,6 +149,10 @@ namespace SqlSugar
         {
             Type = type;
             Name = type.Name;
+            FullName = type.FullName;
+            if (string.IsNullOrEmpty(FullName))
+                FullName = Name;
+
             var props = type.GetProperties();
             if (props.Length > 0)
             {
@@ -196,6 +208,8 @@ namespace SqlSugar
 
         public string Name { get; set; }
 
+        public string FullName { get; set; }
+
         public Type Type { get; set; }
 
         public TableType DbTable { get; set; }
@@ -220,7 +234,7 @@ namespace SqlSugar
                 return Properties.FirstOrDefault(p => p.Name.Equals(name));
             }
 
-            return default;
+            return null;
         }
     }
 
