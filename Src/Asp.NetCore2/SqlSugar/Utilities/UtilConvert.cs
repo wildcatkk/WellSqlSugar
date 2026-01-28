@@ -152,6 +152,20 @@ namespace SqlSugar
             }
             return reval;
         }
+        
+        public static DateTimeOffset ObjToDateTimeOffset(this object thisValue)
+        {
+            if (thisValue is DateTimeOffset)
+            {
+                return (DateTimeOffset)thisValue;
+            }
+            DateTimeOffset reval = DateTimeOffset.MinValue;
+            if (thisValue != null && thisValue != DBNull.Value && DateTimeOffset.TryParse(thisValue.ToString(), out reval))
+            {
+                return reval;
+            }
+            return reval;
+        }
 
         public static DateTime ObjToDate(this object thisValue, DateTime errorValue)
         {

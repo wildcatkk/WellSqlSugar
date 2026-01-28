@@ -799,6 +799,11 @@ namespace SqlSugar
                 return currentConnectionConfig.MoreSettings.DbMinDate.Value;
             }
         }
+        
+        internal static DateTimeOffset GetMinDateTimeOffset(ConnectionConfig currentConnectionConfig)
+        {
+            return new DateTimeOffset(GetMinDate(currentConnectionConfig));
+        }
 
         public static Type GetUnderType(Type oldType)
         {
@@ -1554,9 +1559,26 @@ namespace SqlSugar
                             result = result.Replace(item.ParameterName, value);
                         }
                     }
+                    else if (item.Value is DateTimeOffset&& connectionConfig.DbType.IsIn(DbType.Dm,DbType.Oracle))
+                    {
+                        if (item.DbType == System.Data.DbType.Date|| connectionConfig?.MoreSettings?.DisableMillisecond == true)
+                        {
+                            var value = "to_timestamp_tz('" + item.Value.ObjToDateTimeOffset().ToString("yyyy-MM-dd HH:mm:ss zzz") + "', 'YYYY-MM-DD HH24:MI:SS TZH:TZM')  ";
+                            result = result.Replace(item.ParameterName, value);
+                        } 
+                        else 
+                        {
+                            var value = "to_timestamp_tz('" + item.Value.ObjToDateTimeOffset().ToString("yyyy-MM-dd HH:mm:ss.ffffff zzz") + "', 'YYYY-MM-DD HH24:MI:SS.FF TZH:TZM') ";
+                            result = result.Replace(item.ParameterName, value);
+                        }
+                    }
                     else if (item.Value is DateTime)
                     {
                         result = result.Replace(item.ParameterName, "'"+item.Value.ObjToDate().ToString("yyyy-MM-dd HH:mm:ss.fff")+"'");
+                    } 
+                    else if (item.Value is DateTimeOffset)
+                    {
+                        result = result.Replace(item.ParameterName, "'"+item.Value.ObjToDateTimeOffset().ToString("yyyy-MM-dd HH:mm:ss.fff zzz")+"'");
                     } 
                     else if (item.IsArray)
                     {

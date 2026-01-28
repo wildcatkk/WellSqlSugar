@@ -95,6 +95,22 @@ namespace SqlSugar
                         return "to_timestamp('" + date.ToString("yyyy-MM-dd HH:mm:ss.ffffff") + "', 'YYYY-MM-DD HH24:MI:SS.FF') ";
                     }
                 }
+                else if (type == UtilConstants.DateTimeOffsetType)
+                {
+                    var date = value.ObjToDateTimeOffset();
+                    if (date < UtilMethods.GetMinDateTimeOffset(this.Context.CurrentConnectionConfig))
+                    {
+                        date = UtilMethods.GetMinDateTimeOffset(this.Context.CurrentConnectionConfig);
+                    }
+                    if (this.Context.CurrentConnectionConfig?.MoreSettings?.DisableMillisecond == true)
+                    {
+                        return "to_timestamp_tz('" + date.ToString("yyyy-MM-dd HH:mm:ss zzz") + "', 'YYYY-MM-DD HH24:MI:SS TZH:TZM') ";
+                    }
+                    else
+                    {
+                        return "to_timestamp_tz('" + date.ToString("yyyy-MM-dd HH:mm:ss.ffffff zzz") + "', 'YYYY-MM-DD HH24:MI:SS.FF TZH:TZM') ";
+                    }
+                }
                 else if (type.IsEnum())
                 {
                     if (this.Context.CurrentConnectionConfig.MoreSettings?.TableEnumIsString == true)
