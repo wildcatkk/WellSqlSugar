@@ -10,6 +10,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Dm;
+using Kdbndp;
 namespace SqlSugar
 {
     ///<summary>
@@ -241,7 +243,13 @@ namespace SqlSugar
         {
             if (this.Transaction != null)
             {
-                this.Transaction.Rollback();
+                if (this.Transaction is KdbndpTransaction transaction)
+                {
+                    if (!transaction.IsCompleted)
+                        this.Transaction.Rollback();
+                }
+                else
+                    this.Transaction.Rollback();
                 this.Transaction = null;
                 if (this.Context.CurrentConnectionConfig.IsAutoCloseConnection) this.Close();
             }
